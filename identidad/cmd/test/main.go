@@ -143,263 +143,184 @@ func main() {
 	fmt.Printf("\n✓ 30 usuarios creados exitosamente\n")
 
 	// ============================================================================
-	// === SECCIÓN 3: PRUEBAS DE FILTROS ===
+	// === SECCIÓN 3: BÚSQUEDAS COMPUESTAS ===
 	// ============================================================================
 	fmt.Println("\n═════════════════════════════════════════════════════════════════")
-	fmt.Println("=== PRUEBAS DE FILTROS ===")
+	fmt.Println("=== BÚSQUEDAS COMPUESTAS ===")
 	fmt.Println("═════════════════════════════════════════════════════════════════")
 
-	// FILTRO 1: Estado = ACTIVO
-	fmt.Println("📌 FILTRO 1: Estado = ACTIVO")
+	// BÚSQUEDA 1: ACTIVO + @test.com + Ordenar apellido ASC
+	fmt.Println("\n🔍 BÚSQUEDA 1: ACTIVO + @test.com + Ordenar apellido ASC")
+	fmt.Println("   Filtros:")
+	fmt.Println("   ├─ Estado = ACTIVO")
+	fmt.Println("   └─ Correo LIKE \"%@test.com\"")
+	fmt.Println("   Ordenación: apellido ASC")
 	spec1 := usuario.EspecificacionUsuario{
 		ListaLiltros: []usuario.CriterioFiltro{
 			{Campo: "estado", Operador: "=", Valor: string(usuario.ACTIVO)},
+			{Campo: "correo", Operador: "LIKE", Valor: "%@test.com"},
 		},
 	}
-	pag1 := usuario.Paginacion{Pagina: 1, TamanoPagina: 100}
-	activos, err := repo.Listar(ctx, spec1, pag1)
-	if err != nil {
-		log.Fatalf("❌ Error filtro ACTIVO: %v", err)
+	pag1 := usuario.Paginacion{
+		Pagina:       1,
+		TamanoPagina: 100,
+		Ordenaciones: []usuario.Ordenacion{
+			{Campo: "apellido", Tipo: usuario.ASC},
+		},
 	}
-	fmt.Printf("   Resultados: %d usuarios\n", len(activos))
-	for _, u := range activos {
-		fmt.Printf("   ├─ %-20s (%s)\n", u.Nombre()+" "+u.Apellido(), u.Correo())
+	busqueda1, err := repo.Listar(ctx, spec1, pag1)
+	if err != nil {
+		log.Fatalf("❌ Error búsqueda 1: %v", err)
+	}
+	fmt.Printf("   Resultados: %d usuarios\n", len(busqueda1))
+	for _, u := range busqueda1 {
+		fmt.Printf("   ├─ %-25s (%s) - %s\n", u.Nombre()+" "+u.Apellido(), u.Correo(), u.Estado())
 	}
 
-	// FILTRO 2: Estado = NO_VERIFICADO
-	fmt.Println("\n📌 FILTRO 2: Estado = NO_VERIFICADO")
+	// BÚSQUEDA 2: NO_VERIFICADO + Apellido LIKE "García"
+	fmt.Println("\n🔍 BÚSQUEDA 2: NO_VERIFICADO + Apellido LIKE \"García\"")
+	fmt.Println("   Filtros:")
+	fmt.Println("   ├─ Estado = NO_VERIFICADO")
+	fmt.Println("   └─ Apellido LIKE (wildcard)García(wildcard)")
 	spec2 := usuario.EspecificacionUsuario{
 		ListaLiltros: []usuario.CriterioFiltro{
 			{Campo: "estado", Operador: "=", Valor: string(usuario.NO_VERIFICADO)},
+			{Campo: "apellido", Operador: "LIKE", Valor: "%García%"},
 		},
 	}
 	pag2 := usuario.Paginacion{Pagina: 1, TamanoPagina: 100}
-	noVerificados, err := repo.Listar(ctx, spec2, pag2)
+	busqueda2, err := repo.Listar(ctx, spec2, pag2)
 	if err != nil {
-		log.Fatalf("❌ Error filtro NO_VERIFICADO: %v", err)
+		log.Fatalf("❌ Error búsqueda 2: %v", err)
 	}
-	fmt.Printf("   Resultados: %d usuarios\n", len(noVerificados))
-	for _, u := range noVerificados {
-		fmt.Printf("   ├─ %-20s (%s)\n", u.Nombre()+" "+u.Apellido(), u.Correo())
+	fmt.Printf("   Resultados: %d usuarios\n", len(busqueda2))
+	for _, u := range busqueda2 {
+		fmt.Printf("   ├─ %-25s (%s) - %s\n", u.Nombre()+" "+u.Apellido(), u.Correo(), u.Estado())
 	}
 
-	// FILTRO 3: Correo LIKE "%@example.com"
-	fmt.Println("\n📌 FILTRO 3: Correo LIKE \"%@example.com\"")
+	// BÚSQUEDA 3: != BLOQUEADO + @example.com + Ordenar correo DESC
+	fmt.Println("\n🔍 BÚSQUEDA 3: != BLOQUEADO + @example.com + Ordenar correo DESC")
+	fmt.Println("   Filtros:")
+	fmt.Println("   ├─ Estado != BLOQUEADO")
+	fmt.Println("   └─ Correo LIKE \"%@example.com\"")
+	fmt.Println("   Ordenación: correo DESC")
 	spec3 := usuario.EspecificacionUsuario{
 		ListaLiltros: []usuario.CriterioFiltro{
+			{Campo: "estado", Operador: "!=", Valor: string(usuario.BLOQUEADO)},
 			{Campo: "correo", Operador: "LIKE", Valor: "%@example.com"},
 		},
 	}
-	pag3 := usuario.Paginacion{Pagina: 1, TamanoPagina: 100}
-	example, err := repo.Listar(ctx, spec3, pag3)
-	if err != nil {
-		log.Fatalf("❌ Error filtro example.com: %v", err)
+	pag3 := usuario.Paginacion{
+		Pagina:       1,
+		TamanoPagina: 100,
+		Ordenaciones: []usuario.Ordenacion{
+			{Campo: "correo", Tipo: usuario.DESC},
+		},
 	}
-	fmt.Printf("   Resultados: %d usuarios\n", len(example))
-	for _, u := range example {
-		fmt.Printf("   ├─ %-20s (%s)\n", u.Nombre()+" "+u.Apellido(), u.Correo())
+	busqueda3, err := repo.Listar(ctx, spec3, pag3)
+	if err != nil {
+		log.Fatalf("❌ Error búsqueda 3: %v", err)
+	}
+	fmt.Printf("   Resultados: %d usuarios\n", len(busqueda3))
+	for _, u := range busqueda3 {
+		fmt.Printf("   ├─ %-25s (%s) - %s\n", u.Nombre()+" "+u.Apellido(), u.Correo(), u.Estado())
 	}
 
-	// FILTRO 4: Correo LIKE "%test%"
-	fmt.Printf("📌 FILTRO 4: Correo LIKE \"%%test%%\"\n")
+	// BÚSQUEDA 4: != BLOQUEADO + Ordenar fecha_actualizacion DESC + Paginación
+	fmt.Println("\n🔍 BÚSQUEDA 4: != BLOQUEADO + Ordenar fecha_actualizacion DESC + Paginación")
+	fmt.Println("   Filtros:")
+	fmt.Println("   └─ Estado != BLOQUEADO")
+	fmt.Println("   Ordenación: fecha_actualizacion DESC")
+	fmt.Println("   Paginación: página 1, tamaño 5")
 	spec4 := usuario.EspecificacionUsuario{
 		ListaLiltros: []usuario.CriterioFiltro{
-			{Campo: "correo", Operador: "LIKE", Valor: "%test%"},
+			{Campo: "estado", Operador: "!=", Valor: string(usuario.BLOQUEADO)},
 		},
 	}
-	pag4 := usuario.Paginacion{Pagina: 1, TamanoPagina: 100}
-	testDom, err := repo.Listar(ctx, spec4, pag4)
-	if err != nil {
-		log.Fatalf("❌ Error filtro test domain: %v", err)
+	pag4 := usuario.Paginacion{
+		Pagina:       1,
+		TamanoPagina: 5,
+		Ordenaciones: []usuario.Ordenacion{
+			{Campo: "fecha_actualizacion", Tipo: usuario.DESC},
+		},
 	}
-	fmt.Printf("   Resultados: %d usuarios\n", len(testDom))
-	for _, u := range testDom {
-		fmt.Printf("   ├─ %-20s (%s)\n", u.Nombre()+" "+u.Apellido(), u.Correo())
+	busqueda4, err := repo.Listar(ctx, spec4, pag4)
+	if err != nil {
+		log.Fatalf("❌ Error búsqueda 4: %v", err)
+	}
+	fmt.Printf("   Resultados: %d usuarios (últimos modificados, no bloqueados)\n", len(busqueda4))
+	for i, u := range busqueda4 {
+		fmt.Printf("   ├─ [%d] %-25s (%s) - Actualizado: %v\n", i+1, u.Nombre()+" "+u.Apellido(), u.Correo(), u.FechaActualizacion())
 	}
 
-	// FILTRO 5: Estado = NO_VERIFICADO + Correo LIKE "%test%"
-	fmt.Printf("📌 FILTRO 5: Estado = NO_VERIFICADO + Correo LIKE \"%%test%%\"\n")
+	// BÚSQUEDA 5: BLOQUEADO + Múltiples ordenaciones (nombre ASC, luego correo DESC)
+	fmt.Println("\n🔍 BÚSQUEDA 5: BLOQUEADO + Múltiples ordenaciones")
+	fmt.Println("   Filtros:")
+	fmt.Println("   └─ Estado = BLOQUEADO")
+	fmt.Println("   Ordenación: nombre ASC, luego correo DESC")
+	fmt.Println("   Paginación: todos (5 usuarios)")
 	spec5 := usuario.EspecificacionUsuario{
-		ListaLiltros: []usuario.CriterioFiltro{
-			{Campo: "estado", Operador: "=", Valor: string(usuario.NO_VERIFICADO)},
-			{Campo: "correo", Operador: "LIKE", Valor: "%test%"},
-		},
-	}
-	pag5 := usuario.Paginacion{Pagina: 1, TamanoPagina: 100}
-	combinado, err := repo.Listar(ctx, spec5, pag5)
-	if err != nil {
-		log.Fatalf("❌ Error filtro combinado: %v", err)
-	}
-	fmt.Printf("   Resultados: %d usuarios\n", len(combinado))
-	for _, u := range combinado {
-		fmt.Printf("   ├─ %-20s (%s)\n", u.Nombre()+" "+u.Apellido(), u.Correo())
-	}
-
-	// FILTRO 6: Estado = BLOQUEADO
-	fmt.Println("\n📌 FILTRO 6: Estado = BLOQUEADO")
-	spec6 := usuario.EspecificacionUsuario{
 		ListaLiltros: []usuario.CriterioFiltro{
 			{Campo: "estado", Operador: "=", Valor: string(usuario.BLOQUEADO)},
 		},
 	}
-	pag6 := usuario.Paginacion{Pagina: 1, TamanoPagina: 100}
-	bloqueados, err := repo.Listar(ctx, spec6, pag6)
-	if err != nil {
-		log.Fatalf("❌ Error filtro BLOQUEADO: %v", err)
-	}
-	fmt.Printf("   Resultados: %d usuarios\n", len(bloqueados))
-	for _, u := range bloqueados {
-		fmt.Printf("   ├─ %-20s (%s)\n", u.Nombre()+" "+u.Apellido(), u.Correo())
-	}
-
-	// FILTRO 7: Nombre LIKE "%García%"
-	fmt.Printf("📌 FILTRO 7: Nombre LIKE \"%%García%%\"\n")
-	spec7 := usuario.EspecificacionUsuario{
-		ListaLiltros: []usuario.CriterioFiltro{
-			{Campo: "nombre", Operador: "LIKE", Valor: "%García%"},
-		},
-	}
-	pag7 := usuario.Paginacion{Pagina: 1, TamanoPagina: 100}
-	garcia, err := repo.Listar(ctx, spec7, pag7)
-	if err != nil {
-		log.Fatalf("❌ Error filtro García: %v", err)
-	}
-	fmt.Printf("   Resultados: %d usuarios\n", len(garcia))
-	for _, u := range garcia {
-		fmt.Printf("   ├─ %-20s (%s)\n", u.Nombre()+" "+u.Apellido(), u.Correo())
-	}
-
-	// ============================================================================
-	// === SECCIÓN 4: PRUEBAS DE PAGINACIÓN ===
-	// ============================================================================
-	fmt.Println("\n═════════════════════════════════════════════════════════════════")
-	fmt.Println("=== PRUEBAS DE PAGINACIÓN ===")
-	fmt.Println("═════════════════════════════════════════════════════════════════")
-
-	// PÁGINA 1 (10 usuarios, tamaño 10)
-	fmt.Println("📄 PÁGINA 1 (tamaño 10)")
-	specTodos := usuario.EspecificacionUsuario{ListaLiltros: []usuario.CriterioFiltro{}}
-	pagPag1 := usuario.Paginacion{
+	pag5 := usuario.Paginacion{
 		Pagina:       1,
-		TamanoPagina: 10,
+		TamanoPagina: 100,
 		Ordenaciones: []usuario.Ordenacion{
 			{Campo: "nombre", Tipo: usuario.ASC},
-		},
-	}
-	pag1Usuarios, err := repo.Listar(ctx, specTodos, pagPag1)
-	if err != nil {
-		log.Fatalf("❌ Error página 1: %v", err)
-	}
-	fmt.Printf("   Mostrando 1-10 de 30\n")
-	for i, u := range pag1Usuarios {
-		fmt.Printf("   ├─ [%2d] %-20s (%s) - %s\n", i+1, u.Nombre()+" "+u.Apellido(), u.Correo(), u.Estado())
-	}
-
-	// PÁGINA 2 (10 usuarios, tamaño 10)
-	fmt.Println("\n📄 PÁGINA 2 (tamaño 10)")
-	pagPag2 := usuario.Paginacion{
-		Pagina:       2,
-		TamanoPagina: 10,
-		Ordenaciones: []usuario.Ordenacion{
-			{Campo: "nombre", Tipo: usuario.ASC},
-		},
-	}
-	pag2Usuarios, err := repo.Listar(ctx, specTodos, pagPag2)
-	if err != nil {
-		log.Fatalf("❌ Error página 2: %v", err)
-	}
-	fmt.Printf("   Mostrando 11-20 de 30\n")
-	for i, u := range pag2Usuarios {
-		fmt.Printf("   ├─ [%2d] %-20s (%s) - %s\n", 11+i, u.Nombre()+" "+u.Apellido(), u.Correo(), u.Estado())
-	}
-
-	// PÁGINA 3 (10 usuarios, tamaño 10)
-	fmt.Println("\n📄 PÁGINA 3 (tamaño 10)")
-	pagPag3 := usuario.Paginacion{
-		Pagina:       3,
-		TamanoPagina: 10,
-		Ordenaciones: []usuario.Ordenacion{
-			{Campo: "nombre", Tipo: usuario.ASC},
-		},
-	}
-	pag3Usuarios, err := repo.Listar(ctx, specTodos, pagPag3)
-	if err != nil {
-		log.Fatalf("❌ Error página 3: %v", err)
-	}
-	fmt.Printf("   Mostrando 21-30 de 30\n")
-	for i, u := range pag3Usuarios {
-		fmt.Printf("   ├─ [%2d] %-20s (%s) - %s\n", 21+i, u.Nombre()+" "+u.Apellido(), u.Correo(), u.Estado())
-	}
-
-	// PAGINACIÓN CON ORDENACIÓN ASC
-	fmt.Println("\n📊 PAGINACIÓN CON ORDENACIÓN: Nombre ASC (Página 1, tamaño 5)")
-	pagAscNombre := usuario.Paginacion{
-		Pagina:       1,
-		TamanoPagina: 5,
-		Ordenaciones: []usuario.Ordenacion{
-			{Campo: "nombre", Tipo: usuario.ASC},
-		},
-	}
-	ascNombre, err := repo.Listar(ctx, specTodos, pagAscNombre)
-	if err != nil {
-		log.Fatalf("❌ Error ordenación ASC nombre: %v", err)
-	}
-	for i, u := range ascNombre {
-		fmt.Printf("   ├─ [%d] %-20s (%s)\n", i+1, u.Nombre()+" "+u.Apellido(), u.Correo())
-	}
-
-	// PAGINACIÓN CON ORDENACIÓN DESC
-	fmt.Println("\n📊 PAGINACIÓN CON ORDENACIÓN: Correo DESC (Página 1, tamaño 5)")
-	pagDescCorreo := usuario.Paginacion{
-		Pagina:       1,
-		TamanoPagina: 5,
-		Ordenaciones: []usuario.Ordenacion{
 			{Campo: "correo", Tipo: usuario.DESC},
 		},
 	}
-	descCorreo, err := repo.Listar(ctx, specTodos, pagDescCorreo)
+	busqueda5, err := repo.Listar(ctx, spec5, pag5)
 	if err != nil {
-		log.Fatalf("❌ Error ordenación DESC correo: %v", err)
+		log.Fatalf("❌ Error búsqueda 5: %v", err)
 	}
-	for i, u := range descCorreo {
-		fmt.Printf("   ├─ [%d] %-20s (%s)\n", i+1, u.Nombre()+" "+u.Apellido(), u.Correo())
+	fmt.Printf("   Resultados: %d usuarios bloqueados (ordenados)\n", len(busqueda5))
+	for i, u := range busqueda5 {
+		fmt.Printf("   ├─ [%d] %-25s (%s) - %s\n", i+1, u.Nombre()+" "+u.Apellido(), u.Correo(), u.Estado())
 	}
 
-	// Paginación con filtro combinado
-	fmt.Println("\n📊 PAGINACIÓN CON FILTRO Y ORDENACIÓN: Estado=ACTIVO, Correo DESC (Página 1, tamaño 5)")
-	specActivoDesc := usuario.EspecificacionUsuario{
+	// BÚSQUEDA 6: INACTIVO + @demo.com + Ordenar nombre ASC
+	fmt.Println("\n🔍 BÚSQUEDA 6: INACTIVO + @demo.com + Ordenar nombre ASC")
+	fmt.Println("   Filtros:")
+	fmt.Println("   ├─ Estado = INACTIVO")
+	fmt.Println("   └─ Correo LIKE \"%@demo.com\"")
+	fmt.Println("   Ordenación: nombre ASC")
+	spec6 := usuario.EspecificacionUsuario{
 		ListaLiltros: []usuario.CriterioFiltro{
-			{Campo: "estado", Operador: "=", Valor: string(usuario.ACTIVO)},
+			{Campo: "estado", Operador: "=", Valor: string(usuario.INACTIVO)},
+			{Campo: "correo", Operador: "LIKE", Valor: "%@demo.com"},
 		},
 	}
-	pagActivoDesc := usuario.Paginacion{
+	pag6 := usuario.Paginacion{
 		Pagina:       1,
-		TamanoPagina: 5,
+		TamanoPagina: 100,
 		Ordenaciones: []usuario.Ordenacion{
-			{Campo: "correo", Tipo: usuario.DESC},
+			{Campo: "nombre", Tipo: usuario.ASC},
 		},
 	}
-	activoDesc, err := repo.Listar(ctx, specActivoDesc, pagActivoDesc)
+	busqueda6, err := repo.Listar(ctx, spec6, pag6)
 	if err != nil {
-		log.Fatalf("❌ Error filtro ACTIVO + ordenación DESC: %v", err)
+		log.Fatalf("❌ Error búsqueda 6: %v", err)
 	}
-	for i, u := range activoDesc {
-		fmt.Printf("   ├─ [%d] %-20s (%s)\n", i+1, u.Nombre()+" "+u.Apellido(), u.Correo())
+	fmt.Printf("   Resultados: %d usuarios inactivos con correo demo\n", len(busqueda6))
+	for _, u := range busqueda6 {
+		fmt.Printf("   ├─ %-25s (%s) - %s\n", u.Nombre()+" "+u.Apellido(), u.Correo(), u.Estado())
 	}
 
 	// ============================================================================
 	// === RESUMEN FINAL ===
 	// ============================================================================
 	fmt.Println("\n═════════════════════════════════════════════════════════════════")
-	fmt.Println("=== RESUMEN FINAL ===")
+	fmt.Println("=== RESUMEN FINAL - BÚSQUEDAS COMPUESTAS ===")
 	fmt.Println("═════════════════════════════════════════════════════════════════")
 	fmt.Printf("✅ Total de usuarios creados: %d\n", len(usuariosCreados))
-	fmt.Printf("✅ ACTIVOS: %d\n", len(activos))
-	fmt.Printf("✅ NO_VERIFICADOS: %d\n", len(noVerificados))
-	fmt.Printf("✅ BLOQUEADOS: %d\n", len(bloqueados))
-	fmt.Printf("✅ INACTIVOS: %d (no se filtraron explícitamente)\n", 5)
-	fmt.Printf("✅ Correos en @example.com: %d\n", len(example))
-	fmt.Printf("✅ Correos con 'test': %d\n", len(testDom))
-	fmt.Printf("✅ García (nombre): %d\n", len(garcia))
-	fmt.Println("\n✓ Pruebas completadas exitosamente")
+	fmt.Printf("✅ Búsqueda 1 (ACTIVO + @test.com, ordenados por apellido): %d\n", len(busqueda1))
+	fmt.Printf("✅ Búsqueda 2 (NO_VERIFICADO + García): %d\n", len(busqueda2))
+	fmt.Printf("✅ Búsqueda 3 (!= BLOQUEADO + @example.com, correo DESC): %d\n", len(busqueda3))
+	fmt.Printf("✅ Búsqueda 4 (!= BLOQUEADO, últimos 5 modificados): %d\n", len(busqueda4))
+	fmt.Printf("✅ Búsqueda 5 (BLOQUEADO, múltiples ordenaciones): %d\n", len(busqueda5))
+	fmt.Printf("✅ Búsqueda 6 (INACTIVO + @demo.com, ordenados por nombre): %d\n", len(busqueda6))
+	fmt.Println("\n✓ Pruebas de búsquedas compuestas completadas exitosamente")
 }

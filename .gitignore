@@ -1,5 +1,2 @@
 #variables de entorno
 .env
-
-.venv
-.__pycache__

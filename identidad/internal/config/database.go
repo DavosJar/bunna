@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/persistence/postgres"
+	seguridad_postgres "github.com/davosjar/bunna/services/identidad/internal/seguridad/infrastructure/persistence/postgres"
 	postgresdriver "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -30,5 +31,15 @@ func RunMigrations(db *gorm.DB) error {
 		return fmt.Errorf("failed to create uuid-ossp extension: %w", err)
 	}
 
-	return db.AutoMigrate(&postgres.UsuarioModel{})
+	// Migrate usuario
+	if err := db.AutoMigrate(&postgres.UsuarioModel{}); err != nil {
+		return fmt.Errorf("failed to migrate usuario: %w", err)
+	}
+
+	// Migrate credenciales
+	if err := db.AutoMigrate(&seguridad_postgres.CredencialesModel{}); err != nil {
+		return fmt.Errorf("failed to migrate credenciales: %w", err)
+	}
+
+	return nil
 }

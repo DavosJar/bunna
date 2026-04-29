@@ -20,7 +20,7 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	reg := registry.NewRegistry(db)
+	reg := registry.NewRegistry(db, cfg)
 	h := handler.NewHandler(reg)
 	h.RegisterRoutes()
 

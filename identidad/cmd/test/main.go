@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/davosjar/bunna/services/identidad/internal/application/services/registro"
 	"github.com/davosjar/bunna/services/identidad/internal/config"
-	"github.com/davosjar/bunna/services/identidad/internal/domain/usuario"
 	"github.com/davosjar/bunna/services/identidad/internal/registry"
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
+	"github.com/davosjar/bunna/services/identidad/internal/usuarios/application/services/registro"
+	"github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 	"github.com/google/uuid"
 )
 
@@ -52,7 +52,7 @@ func main() {
 	fmt.Println("✓ Tabla usuarios limpiada y migrada")
 
 	// Crear registry e inyectar repositorio
-	reg := registry.NewRegistry(db)
+	reg := registry.NewRegistry(db, cfg)
 	repo := reg.UsuarioRepository()
 	ctx := context.Background()
 
@@ -339,9 +339,7 @@ func main() {
 
 	// Crear servicio de registro
 	servicioRegistro := registro.NuevoServicioRegistro(
-		reg.UsuarioRepository(),
-		reg.CredencialesRepository(),
-		db,
+		reg.UsuarioUnitOfWork(),
 	)
 
 	// Casos de prueba de registro

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/persistence/postgres"
 	seguridad_postgres "github.com/davosjar/bunna/services/identidad/internal/seguridad/infrastructure/persistence/postgres"
+	usuarios_postgres "github.com/davosjar/bunna/services/identidad/internal/usuarios/infrastructure/persistence/postgres"
 	postgresdriver "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -32,7 +32,7 @@ func RunMigrations(db *gorm.DB) error {
 	}
 
 	// Migrate usuario
-	if err := db.AutoMigrate(&postgres.UsuarioModel{}); err != nil {
+	if err := db.AutoMigrate(&usuarios_postgres.UsuarioModel{}); err != nil {
 		return fmt.Errorf("failed to migrate usuario: %w", err)
 	}
 

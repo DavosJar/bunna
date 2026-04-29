@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 type Config struct {
@@ -12,9 +13,22 @@ type Config struct {
 	DBPassword string
 	DBName     string
 	DBSSLMode  string
+	BcryptCost int
 }
 
 func LoadConfig() (*Config, error) {
+	// Parse BcryptCost
+	bcryptCostStr := getEnv("BCRYPT_COST", "12")
+	bcryptCost, err := strconv.Atoi(bcryptCostStr)
+	if err != nil {
+		return nil, fmt.Errorf("BCRYPT_COST debe ser un número válido: %w", err)
+	}
+
+	// Validar que BcryptCost esté en rango válido (10-14)
+	if bcryptCost < 10 || bcryptCost > 14 {
+		return nil, fmt.Errorf("BCRYPT_COST debe estar entre 10 y 14, se obtuvo: %d", bcryptCost)
+	}
+
 	config := &Config{
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     getEnv("DB_PORT", "5432"),
@@ -22,6 +36,7 @@ func LoadConfig() (*Config, error) {
 		DBPassword: getEnv("DB_PASSWORD", "identidad_pass_dev"),
 		DBName:     getEnv("DB_NAME", "identidad_db"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
+		BcryptCost: bcryptCost,
 	}
 
 	if config.DBPassword == "" {

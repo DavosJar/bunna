@@ -75,7 +75,7 @@ func (s *ServicioRegistro) Ejecutar(ctx context.Context, comando *ComandoRegistr
 	})
 
 	if err != nil {
-		return nil, err // ← ROLLBACK automático ocurrió aquí
+		return nil, err // ← ROLLBACK automático
 	}
 
 	return respuesta, nil

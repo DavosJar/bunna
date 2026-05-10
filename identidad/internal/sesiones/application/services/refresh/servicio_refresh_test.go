@@ -352,3 +352,21 @@ func TestRefresh_FalloAccessToken(t *testing.T) {
 		t.Errorf("esperaba ErrErrorGenerandoTokens, got %v", err)
 	}
 }
+// Escenario 13: Post-detección de robo no quedan sesiones activas
+func TestRefresh_SinSesionesActivasPostDeteccion(t *testing.T) {
+	sesionRepo := &mockSesionRepo{
+		errPorHash: errors.New("no encontrado"),
+	}
+	uow := uowValido(sesionRepo, &mockTokenServicio{claimsValidos: claimsValidos()})
+	svc := refresh.NuevoServicioRefresh(uow, configDefault())
+	_, err := svc.Ejecutar(context.Background(), refresh.ComandoRefresh{
+		RefreshToken: "refresh-token-rotado",
+	})
+	if !errors.Is(err, refresh.ErrTokenInvalido) {
+		t.Errorf("esperaba ErrTokenInvalido, got %v", err)
+	}
+	// verificar que se intentó invalidar todas las sesiones del usuario
+	if sesionRepo.invalidadasUserID == "" {
+		t.Error("esperaba que se invalidaran las sesiones del usuario tras detección de robo")
+	}
+}

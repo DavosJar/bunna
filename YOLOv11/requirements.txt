@@ -3,3 +3,6 @@ torch
 torchvision
 opencv-python
 Pillow
+fastapi
+uvicorn
+python-multipart

@@ -1,2 +1,40 @@
 #variables de entorno
 .env
+
+# Entorno virtual
+yolo-env/
+.venv/
+venv/
+env/
+YOLOv11/yolo-env/
+YOLOv11/.venv/
+YOLOv11/venv/
+YOLOv11/env/
+
+# Pesos entrenados (pesados)
+*.pt
+*.onnx
+*.torchscript
+YOLOv11/*.pt
+YOLOv11/*.onnx
+YOLOv11/*.torchscript
+
+# Resultados de runs
+runs/
+YOLOv11/runs/
+
+# Imagenes 
+train/images/
+valid/images/
+YOLOv11/train/images/
+YOLOv11/valid/images/
+
+# Archivos del sistema
+.DS_Store
+__pycache__/
+*.pyc
+*.pyo
+
+# Zips y temporales
+*.zip
+*.tar.gz

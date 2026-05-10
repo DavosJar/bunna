@@ -25,6 +25,9 @@ type mockUnitOfWork struct {
 }
 
 func (m *mockUnitOfWork) Transaccional(ctx context.Context, fn func(tx sesiones_domain.UnitOfWork) error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	return fn(m)
 }
 func (m *mockUnitOfWork) SesionRepositorio() sesiones_domain.SesionRepositorio             { return m.sesionRepo }
@@ -56,15 +59,18 @@ func (m *mockUsuarioRepo) Listar(ctx context.Context, spec usuario_domain.Especi
 
 // mockCredencialesRepo
 type mockCredencialesRepo struct {
-	credenciales *seguridad_domain.CredencialesUsuario
-	err          error
-	actualizado  bool
+	credenciales  *seguridad_domain.CredencialesUsuario
+	err           error
+	errActualizar error
+	actualizado   bool
 }
-
 func (m *mockCredencialesRepo) Crear(ctx context.Context, c *seguridad_domain.CredencialesUsuario) (*seguridad_domain.CredencialesUsuario, error) {
 	return nil, nil
 }
 func (m *mockCredencialesRepo) Actualizar(ctx context.Context, c *seguridad_domain.CredencialesUsuario) (*seguridad_domain.CredencialesUsuario, error) {
+	if m.errActualizar != nil {
+		return nil, m.errActualizar
+	}
 	m.actualizado = true
 	return c, nil
 }
@@ -335,5 +341,183 @@ func TestLogin_FalloRefreshToken(t *testing.T) {
 	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{Email: "test@correo.com", Password: "secreto"})
 	if !errors.Is(err, login.ErrErrorGenerandoTokens) {
 		t.Errorf("esperaba ErrErrorGenerandoTokens, got %v", err)
+	}
+}
+
+// Escenario 2: Login tras reintentos previos
+func TestLogin_LoginTrasReintentos(t *testing.T) {
+	// 3 intentos fallidos previos, password correcto ahora
+	creds := seguridad_domain.NuevaCredencialesUsuarioDesdeBD(
+		"user-id-1", "hash:secreto", true, false, 3, time.Time{},
+	)
+	credRepo := &mockCredencialesRepo{credenciales: creds}
+	uow := uowValido(
+		&mockSesionRepo{},
+		credRepo,
+		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
+		&mockTokenServicio{},
+	)
+	svc := login.NuevoServicioLogin(uow)
+	resp, err := svc.Ejecutar(context.Background(), login.ComandoLogin{
+		Email: "test@correo.com", Password: "secreto",
+	})
+	if err != nil {
+		t.Fatalf("esperaba login exitoso tras reintentos, got %v", err)
+	}
+	if resp.AccessToken == "" {
+		t.Error("esperaba access token en respuesta")
+	}
+	// credenciales deben haberse actualizado (intentos reseteados)
+	if !credRepo.actualizado {
+		t.Error("esperaba que se resetearan los intentos fallidos")
+	}
+}
+
+// Escenario 8: Bloqueo expirado permite login
+func TestLogin_BloqueoExpirado(t *testing.T) {
+	// bloqueadoHasta en el pasado → bloqueo ya venció
+	creds := seguridad_domain.NuevaCredencialesUsuarioDesdeBD(
+		"user-id-1", "hash:secreto", true, false, 5, time.Now().Add(-1*time.Hour),
+	)
+	uow := uowValido(
+		&mockSesionRepo{},
+		&mockCredencialesRepo{credenciales: creds},
+		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
+		&mockTokenServicio{},
+	)
+	svc := login.NuevoServicioLogin(uow)
+	resp, err := svc.Ejecutar(context.Background(), login.ComandoLogin{
+		Email: "test@correo.com", Password: "secreto",
+	})
+	if err != nil {
+		t.Fatalf("esperaba login permitido con bloqueo expirado, got %v", err)
+	}
+	if resp.AccessToken == "" {
+		t.Error("esperaba access token en respuesta")
+	}
+}
+
+// Escenario 10: Correo no verificado permite login
+func TestLogin_CorreoNoVerificado(t *testing.T) {
+	// correoVerificado = false → login permitido según política actual
+	creds := seguridad_domain.NuevaCredencialesUsuarioDesdeBD(
+		"user-id-1", "hash:secreto", true, false, 0, time.Time{},
+	)
+	uow := uowValido(
+		&mockSesionRepo{},
+		&mockCredencialesRepo{credenciales: creds},
+		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
+		&mockTokenServicio{},
+	)
+	svc := login.NuevoServicioLogin(uow)
+	resp, err := svc.Ejecutar(context.Background(), login.ComandoLogin{
+		Email: "test@correo.com", Password: "secreto",
+	})
+	if err != nil {
+		t.Fatalf("esperaba login permitido con correo no verificado, got %v", err)
+	}
+	if resp.AccessToken == "" {
+		t.Error("esperaba access token en respuesta")
+	}
+}
+
+// Escenario 12: 5to intento incorrecto bloquea la cuenta 15 minutos
+func TestLogin_5toIntentoBloquea(t *testing.T) {
+	// 4 intentos previos, el 5to dispara el bloqueo
+	creds := seguridad_domain.NuevaCredencialesUsuarioDesdeBD(
+		"user-id-1", "hash:secreto", true, false, 4, time.Time{},
+	)
+	credRepo := &mockCredencialesRepo{credenciales: creds}
+	uow := uowValido(
+		&mockSesionRepo{},
+		credRepo,
+		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
+		&mockTokenServicio{},
+	)
+	svc := login.NuevoServicioLogin(uow)
+	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{
+		Email: "test@correo.com", Password: "incorrecta",
+	})
+	if !errors.Is(err, login.ErrCredencialesInvalidas) {
+		t.Errorf("esperaba ErrCredencialesInvalidas, got %v", err)
+	}
+	if !credRepo.actualizado {
+		t.Error("esperaba que se actualizaran las credenciales")
+	}
+	// verificar que la cuenta quedó bloqueada
+	if !creds.EstaBloqueado(time.Now()) {
+		t.Error("esperaba que la cuenta quedara bloqueada tras el 5to intento")
+	}
+}
+
+// Escenario 13: Intento con cuenta ya bloqueada no incrementa contador
+func TestLogin_IntentoEnCuentaBloqueada(t *testing.T) {
+	creds := seguridad_domain.NuevaCredencialesUsuarioDesdeBD(
+		"user-id-1", "hash:secreto", true, false, 5, time.Now().Add(15*time.Minute),
+	)
+	intentosAntes := creds.IntentosFallidos()
+	credRepo := &mockCredencialesRepo{credenciales: creds}
+	uow := uowValido(
+		&mockSesionRepo{},
+		credRepo,
+		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
+		&mockTokenServicio{},
+	)
+	svc := login.NuevoServicioLogin(uow)
+	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{
+		Email: "test@correo.com", Password: "incorrecta",
+	})
+	if !errors.Is(err, login.ErrCuentaBloqueada) {
+		t.Errorf("esperaba ErrCuentaBloqueada, got %v", err)
+	}
+	// el contador NO debe haberse incrementado
+	if creds.IntentosFallidos() != intentosAntes {
+		t.Errorf("el contador no debería incrementarse en cuenta bloqueada: antes=%d, después=%d",
+			intentosAntes, creds.IntentosFallidos())
+	}
+	// credenciales NO deben haberse actualizado
+	if credRepo.actualizado {
+		t.Error("no debería actualizarse credenciales si la cuenta ya está bloqueada")
+	}
+}
+
+// Escenario 15: Fallo al actualizar credenciales → rollback
+func TestLogin_FalloAlActualizarCredenciales(t *testing.T) {
+	credRepo := &mockCredencialesRepo{
+		credenciales: credencialesValidas(),
+		// el primer Actualizar (resetear intentos) falla
+		errActualizar: errors.New("fallo bd al actualizar"),
+	}
+	uow := uowValido(
+		&mockSesionRepo{},
+		credRepo,
+		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
+		&mockTokenServicio{},
+	)
+	svc := login.NuevoServicioLogin(uow)
+	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{
+		Email: "test@correo.com", Password: "secreto",
+	})
+	if err == nil {
+		t.Error("esperaba error al fallar la actualización de credenciales")
+	}
+}
+
+// Escenario 16: Context cancelado → rollback
+func TestLogin_ContextCancelado(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancelar inmediatamente
+	uow := uowValido(
+		&mockSesionRepo{},
+		&mockCredencialesRepo{credenciales: credencialesValidas()},
+		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
+		&mockTokenServicio{},
+	)
+	svc := login.NuevoServicioLogin(uow)
+	_, err := svc.Ejecutar(ctx, login.ComandoLogin{
+		Email: "test@correo.com", Password: "secreto",
+	})
+	if err == nil {
+		t.Error("esperaba error con context cancelado")
 	}
 }

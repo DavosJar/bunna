@@ -1,0 +1,75 @@
+# 🔍 Informe de Tester — Etapa 2: Login (Servicio de Aplicación)
+
+> **Propósito**: Validar el servicio de aplicación de login contra los 19 escenarios definidos en la especificación.
+> **Fecha**: 2026-05-10
+> **Tester**: Alexis Jara
+> **Developer**: Cesar Ramos
+
+---
+
+## Resultado
+
+| Ítem | Resultado |
+|------|-----------|
+| Tests ejecutados | 40 (11 login + 29 dominio) |
+| Tests pasan | ✅ 40/40 |
+| Escenarios de spec cubiertos | ✅ 11/19 |
+| **Veredicto** | 🟡 **Aprueba condicional — avanzar a Etapa 3. Los 8 escenarios faltantes se resuelven en paralelo.** |
+
+---
+
+## Cobertura vs Especificación
+
+| # | Escenario | Estado | ¿Depende de etapa superior? |
+|---|-----------|--------|---------------------------|
+| 1 | Login exitoso | ✅ | — |
+| 2 | Login después de reintentos | ❌ | No — mismo test con otros valores |
+| 3 | Email vacío | ✅ | — |
+| 4 | Email mal formado | ✅ | — |
+| 5 | Password vacío | ✅ | — |
+| 6 | Credenciales no existen | ✅ | — |
+| 7 | Cuenta bloqueada | ✅ | — |
+| 8 | Bloqueo expirado | ❌ | No — solo cambiar datos del mock |
+| 9 | Cuenta inactiva | ✅ | — |
+| 10 | Correo no verificado | ❌ | No — solo checkear flag en credenciales |
+| 11 | Password incorrecto | ✅ | — |
+| 12 | 5to intento → bloqueo 15 min | ❌ | No — la lógica ya está en dominio |
+| 13 | Intento en cuenta ya bloqueada | ❌ | No — el servicio checkea bloqueo antes que password |
+| 14 | Fallo al crear sesión (rollback) | ✅ | — |
+| 15 | Fallo al actualizar credenciales (rollback) | ❌ | No — mock que falle en Actualizar |
+| 16 | Context timeout | ❌ | No — se mockea con context.WithCancel |
+| 17 | TokenServicio falla access | ✅ | — |
+| 18 | TokenServicio falla refresh | ✅ | — |
+| 19 | Hash colisiona | 🟢 | No aplica (spec dice "no se maneja, riesgo documentado") |
+
+---
+
+## Tests a agregar (resolver en Etapa 2)
+
+Son **6 tests nuevos**, todos unitarios con los mocks que ya existen. No requieren nueva infraestructura ni cambios en producción.
+
+| Test | Escenario # | Descripción |
+|------|-------------|-------------|
+| `TestLogin_LoginTrasReintentos` | 2 | Credenciales con 3 intentos fallidos previos, ahora password correcto → login OK, intentos → 0 |
+| `TestLogin_BloqueoExpirado` | 8 | `bloqueadoHasta` en pasado → login permitido. Intentos NO se resetean |
+| `TestLogin_CorreoNoVerificado` | 10 | `correoVerificado = false` → login permitido (según política actual) |
+| `TestLogin_5toIntentoBloquea` | 12 | 5 passwords incorrectos consecutivos → cuenta bloqueada 15 min |
+| `TestLogin_IntentoEnCuentaBloqueada` | 13 | Cuenta bloqueada, nuevo intento → error sin incrementar contador |
+| `TestLogin_FalloAlActualizarCredenciales` | 15 | Sesión creada OK, pero `Actualizar` credenciales falla → rollback completo |
+| `TestLogin_ContextTimeout` | 16 | Context cancelado durante transacción → rollback |
+
+---
+
+## Acción para Cesar Ramos
+
+Agregar los **7 tests** listados arriba en `servicio_login_test.go`. Todos usan los mismos mocks ya definidos. Ninguno requiere modificar `servicio_login.go` ni otras capas.
+
+---
+
+## Decisión
+
+**Se aprueba Etapa 2 y se avanza a Etapa 3.** Los tests faltantes son ortogonales y no bloquean las siguientes etapas. Se resuelven en paralelo mientras se avanza.
+
+---
+
+*Fin del informe — Etapa 2: ✅ Lista para avanzar.*

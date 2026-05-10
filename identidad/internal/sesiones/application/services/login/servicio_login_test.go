@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/login"
-	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
+	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/bloqueo_ip"
 	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
 	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
+	"github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/login"
+	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 	usuario_domain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 )
 
@@ -64,6 +65,7 @@ type mockCredencialesRepo struct {
 	errActualizar error
 	actualizado   bool
 }
+
 func (m *mockCredencialesRepo) Crear(ctx context.Context, c *seguridad_domain.CredencialesUsuario) (*seguridad_domain.CredencialesUsuario, error) {
 	return nil, nil
 }
@@ -153,6 +155,32 @@ func (m *mockGeneradorID) NextID(ctx context.Context) (string, error) {
 	return "sesion-id-generado", nil
 }
 
+// mockIntentoIPBloqueoRepo
+type mockIntentoIPBloqueoRepo struct {
+	intento    *seguridad_domain.IntentoPorIP
+	errObtener error
+}
+
+func (m *mockIntentoIPBloqueoRepo) ObtenerPorIP(ctx context.Context, ip string) (*seguridad_domain.IntentoPorIP, error) {
+	return m.intento, m.errObtener
+}
+func (m *mockIntentoIPBloqueoRepo) Crear(ctx context.Context, i *seguridad_domain.IntentoPorIP) (*seguridad_domain.IntentoPorIP, error) {
+	return i, nil
+}
+func (m *mockIntentoIPBloqueoRepo) Actualizar(ctx context.Context, i *seguridad_domain.IntentoPorIP) (*seguridad_domain.IntentoPorIP, error) {
+	return i, nil
+}
+func (m *mockIntentoIPBloqueoRepo) EliminarExpirados(ctx context.Context, ahora time.Time, ventana time.Duration) error {
+	return nil
+}
+
+// mockGeneradorIDBloqueo
+type mockGeneradorIDBloqueo struct{}
+
+func (m *mockGeneradorIDBloqueo) NextID(ctx context.Context) (string, error) {
+	return "id-bloqueo", nil
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 func usuarioValido() *usuario_domain.Usuario {
@@ -187,7 +215,7 @@ func TestLogin_Exitoso(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	svc := login.NuevoServicioLogin(uow)
+	svc := login.NuevoServicioLogin(uow, nil, nil)
 	resp, err := svc.Ejecutar(context.Background(), login.ComandoLogin{
 		Email: "test@correo.com", Password: "secreto",
 	})
@@ -204,7 +232,7 @@ func TestLogin_Exitoso(t *testing.T) {
 
 // Escenario 3: Email vacío
 func TestLogin_EmailVacio(t *testing.T) {
-	svc := login.NuevoServicioLogin(&mockUnitOfWork{})
+	svc := login.NuevoServicioLogin(&mockUnitOfWork{}, nil, nil)
 	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{Email: "", Password: "secreto"})
 	if !errors.Is(err, login.ErrEmailRequerido) {
 		t.Errorf("esperaba ErrEmailRequerido, got %v", err)
@@ -213,7 +241,7 @@ func TestLogin_EmailVacio(t *testing.T) {
 
 // Escenario 4: Email mal formado
 func TestLogin_EmailInvalido(t *testing.T) {
-	svc := login.NuevoServicioLogin(&mockUnitOfWork{})
+	svc := login.NuevoServicioLogin(&mockUnitOfWork{}, nil, nil)
 	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{Email: "invalido", Password: "secreto"})
 	if !errors.Is(err, login.ErrEmailInvalido) {
 		t.Errorf("esperaba ErrEmailInvalido, got %v", err)
@@ -222,7 +250,7 @@ func TestLogin_EmailInvalido(t *testing.T) {
 
 // Escenario 5: Password vacío
 func TestLogin_PasswordVacio(t *testing.T) {
-	svc := login.NuevoServicioLogin(&mockUnitOfWork{})
+	svc := login.NuevoServicioLogin(&mockUnitOfWork{}, nil, nil)
 	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{Email: "test@correo.com", Password: ""})
 	if !errors.Is(err, login.ErrPasswordRequerido) {
 		t.Errorf("esperaba ErrPasswordRequerido, got %v", err)
@@ -237,7 +265,7 @@ func TestLogin_EmailNoRegistrado(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{}},
 		&mockTokenServicio{},
 	)
-	svc := login.NuevoServicioLogin(uow)
+	svc := login.NuevoServicioLogin(uow, nil, nil)
 	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{Email: "noexiste@correo.com", Password: "secreto"})
 	if !errors.Is(err, login.ErrCredencialesInvalidas) {
 		t.Errorf("esperaba ErrCredencialesInvalidas, got %v", err)
@@ -255,7 +283,7 @@ func TestLogin_CuentaBloqueada(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	svc := login.NuevoServicioLogin(uow)
+	svc := login.NuevoServicioLogin(uow, nil, nil)
 	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{Email: "test@correo.com", Password: "secreto"})
 	if !errors.Is(err, login.ErrCuentaBloqueada) {
 		t.Errorf("esperaba ErrCuentaBloqueada, got %v", err)
@@ -273,7 +301,7 @@ func TestLogin_CuentaInactiva(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	svc := login.NuevoServicioLogin(uow)
+	svc := login.NuevoServicioLogin(uow, nil, nil)
 	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{Email: "test@correo.com", Password: "secreto"})
 	if !errors.Is(err, login.ErrCuentaInactiva) {
 		t.Errorf("esperaba ErrCuentaInactiva, got %v", err)
@@ -289,7 +317,7 @@ func TestLogin_PasswordIncorrecto(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	svc := login.NuevoServicioLogin(uow)
+	svc := login.NuevoServicioLogin(uow, nil, nil)
 	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{Email: "test@correo.com", Password: "incorrecta"})
 	if !errors.Is(err, login.ErrCredencialesInvalidas) {
 		t.Errorf("esperaba ErrCredencialesInvalidas, got %v", err)
@@ -307,7 +335,7 @@ func TestLogin_FalloAlCrearSesion(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	svc := login.NuevoServicioLogin(uow)
+	svc := login.NuevoServicioLogin(uow, nil, nil)
 	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{Email: "test@correo.com", Password: "secreto"})
 	if err == nil {
 		t.Error("esperaba error al fallar la creación de sesión")
@@ -322,7 +350,7 @@ func TestLogin_FalloAccessToken(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{failAccess: true},
 	)
-	svc := login.NuevoServicioLogin(uow)
+	svc := login.NuevoServicioLogin(uow, nil, nil)
 	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{Email: "test@correo.com", Password: "secreto"})
 	if !errors.Is(err, login.ErrErrorGenerandoTokens) {
 		t.Errorf("esperaba ErrErrorGenerandoTokens, got %v", err)
@@ -337,7 +365,7 @@ func TestLogin_FalloRefreshToken(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{failRefresh: true},
 	)
-	svc := login.NuevoServicioLogin(uow)
+	svc := login.NuevoServicioLogin(uow, nil, nil)
 	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{Email: "test@correo.com", Password: "secreto"})
 	if !errors.Is(err, login.ErrErrorGenerandoTokens) {
 		t.Errorf("esperaba ErrErrorGenerandoTokens, got %v", err)
@@ -346,7 +374,6 @@ func TestLogin_FalloRefreshToken(t *testing.T) {
 
 // Escenario 2: Login tras reintentos previos
 func TestLogin_LoginTrasReintentos(t *testing.T) {
-	// 3 intentos fallidos previos, password correcto ahora
 	creds := seguridad_domain.NuevaCredencialesUsuarioDesdeBD(
 		"user-id-1", "hash:secreto", true, false, 3, time.Time{},
 	)
@@ -357,7 +384,7 @@ func TestLogin_LoginTrasReintentos(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	svc := login.NuevoServicioLogin(uow)
+	svc := login.NuevoServicioLogin(uow, nil, nil)
 	resp, err := svc.Ejecutar(context.Background(), login.ComandoLogin{
 		Email: "test@correo.com", Password: "secreto",
 	})
@@ -367,7 +394,6 @@ func TestLogin_LoginTrasReintentos(t *testing.T) {
 	if resp.AccessToken == "" {
 		t.Error("esperaba access token en respuesta")
 	}
-	// credenciales deben haberse actualizado (intentos reseteados)
 	if !credRepo.actualizado {
 		t.Error("esperaba que se resetearan los intentos fallidos")
 	}
@@ -375,7 +401,6 @@ func TestLogin_LoginTrasReintentos(t *testing.T) {
 
 // Escenario 8: Bloqueo expirado permite login
 func TestLogin_BloqueoExpirado(t *testing.T) {
-	// bloqueadoHasta en el pasado → bloqueo ya venció
 	creds := seguridad_domain.NuevaCredencialesUsuarioDesdeBD(
 		"user-id-1", "hash:secreto", true, false, 5, time.Now().Add(-1*time.Hour),
 	)
@@ -385,7 +410,7 @@ func TestLogin_BloqueoExpirado(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	svc := login.NuevoServicioLogin(uow)
+	svc := login.NuevoServicioLogin(uow, nil, nil)
 	resp, err := svc.Ejecutar(context.Background(), login.ComandoLogin{
 		Email: "test@correo.com", Password: "secreto",
 	})
@@ -399,7 +424,6 @@ func TestLogin_BloqueoExpirado(t *testing.T) {
 
 // Escenario 10: Correo no verificado permite login
 func TestLogin_CorreoNoVerificado(t *testing.T) {
-	// correoVerificado = false → login permitido según política actual
 	creds := seguridad_domain.NuevaCredencialesUsuarioDesdeBD(
 		"user-id-1", "hash:secreto", true, false, 0, time.Time{},
 	)
@@ -409,7 +433,7 @@ func TestLogin_CorreoNoVerificado(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	svc := login.NuevoServicioLogin(uow)
+	svc := login.NuevoServicioLogin(uow, nil, nil)
 	resp, err := svc.Ejecutar(context.Background(), login.ComandoLogin{
 		Email: "test@correo.com", Password: "secreto",
 	})
@@ -421,9 +445,8 @@ func TestLogin_CorreoNoVerificado(t *testing.T) {
 	}
 }
 
-// Escenario 12: 5to intento incorrecto bloquea la cuenta 15 minutos
+// Escenario 12: 5to intento incorrecto bloquea la cuenta
 func TestLogin_5toIntentoBloquea(t *testing.T) {
-	// 4 intentos previos, el 5to dispara el bloqueo
 	creds := seguridad_domain.NuevaCredencialesUsuarioDesdeBD(
 		"user-id-1", "hash:secreto", true, false, 4, time.Time{},
 	)
@@ -434,7 +457,7 @@ func TestLogin_5toIntentoBloquea(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	svc := login.NuevoServicioLogin(uow)
+	svc := login.NuevoServicioLogin(uow, nil, nil)
 	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{
 		Email: "test@correo.com", Password: "incorrecta",
 	})
@@ -444,13 +467,12 @@ func TestLogin_5toIntentoBloquea(t *testing.T) {
 	if !credRepo.actualizado {
 		t.Error("esperaba que se actualizaran las credenciales")
 	}
-	// verificar que la cuenta quedó bloqueada
 	if !creds.EstaBloqueado(time.Now()) {
 		t.Error("esperaba que la cuenta quedara bloqueada tras el 5to intento")
 	}
 }
 
-// Escenario 13: Intento con cuenta ya bloqueada no incrementa contador
+// Escenario 13: Intento en cuenta bloqueada no incrementa contador
 func TestLogin_IntentoEnCuentaBloqueada(t *testing.T) {
 	creds := seguridad_domain.NuevaCredencialesUsuarioDesdeBD(
 		"user-id-1", "hash:secreto", true, false, 5, time.Now().Add(15*time.Minute),
@@ -463,19 +485,17 @@ func TestLogin_IntentoEnCuentaBloqueada(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	svc := login.NuevoServicioLogin(uow)
+	svc := login.NuevoServicioLogin(uow, nil, nil)
 	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{
 		Email: "test@correo.com", Password: "incorrecta",
 	})
 	if !errors.Is(err, login.ErrCuentaBloqueada) {
 		t.Errorf("esperaba ErrCuentaBloqueada, got %v", err)
 	}
-	// el contador NO debe haberse incrementado
 	if creds.IntentosFallidos() != intentosAntes {
-		t.Errorf("el contador no debería incrementarse en cuenta bloqueada: antes=%d, después=%d",
+		t.Errorf("contador no debería incrementarse: antes=%d, después=%d",
 			intentosAntes, creds.IntentosFallidos())
 	}
-	// credenciales NO deben haberse actualizado
 	if credRepo.actualizado {
 		t.Error("no debería actualizarse credenciales si la cuenta ya está bloqueada")
 	}
@@ -484,8 +504,7 @@ func TestLogin_IntentoEnCuentaBloqueada(t *testing.T) {
 // Escenario 15: Fallo al actualizar credenciales → rollback
 func TestLogin_FalloAlActualizarCredenciales(t *testing.T) {
 	credRepo := &mockCredencialesRepo{
-		credenciales: credencialesValidas(),
-		// el primer Actualizar (resetear intentos) falla
+		credenciales:  credencialesValidas(),
 		errActualizar: errors.New("fallo bd al actualizar"),
 	}
 	uow := uowValido(
@@ -494,7 +513,7 @@ func TestLogin_FalloAlActualizarCredenciales(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	svc := login.NuevoServicioLogin(uow)
+	svc := login.NuevoServicioLogin(uow, nil, nil)
 	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{
 		Email: "test@correo.com", Password: "secreto",
 	})
@@ -506,18 +525,75 @@ func TestLogin_FalloAlActualizarCredenciales(t *testing.T) {
 // Escenario 16: Context cancelado → rollback
 func TestLogin_ContextCancelado(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // cancelar inmediatamente
+	cancel()
 	uow := uowValido(
 		&mockSesionRepo{},
 		&mockCredencialesRepo{credenciales: credencialesValidas()},
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	svc := login.NuevoServicioLogin(uow)
+	svc := login.NuevoServicioLogin(uow, nil, nil)
 	_, err := svc.Ejecutar(ctx, login.ComandoLogin{
 		Email: "test@correo.com", Password: "secreto",
 	})
 	if err == nil {
 		t.Error("esperaba error con context cancelado")
+	}
+}
+
+// Escenario IP bloqueada impide login
+func TestLogin_IPBloqueada(t *testing.T) {
+	ahora := time.Now()
+	intento := seguridad_domain.NuevoIntentoPorIPDesdeBD(
+		"id-1", "10.0.0.1", 20, ahora.Add(-5*time.Minute), ahora.Add(30*time.Minute),
+	)
+	repo := &mockIntentoIPBloqueoRepo{intento: intento}
+	bloqueoSvc := bloqueo_ip.NuevoServicioBloqueoIP(repo, &mockGeneradorIDBloqueo{}, bloqueo_ip.ConfigBloqueoIP{
+		MaxIntentos: 20,
+		Ventana:     15 * time.Minute,
+		Duracion:    30 * time.Minute,
+	})
+	uow := uowValido(
+		&mockSesionRepo{},
+		&mockCredencialesRepo{credenciales: credencialesValidas()},
+		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
+		&mockTokenServicio{},
+	)
+	svc := login.NuevoServicioLogin(uow, bloqueoSvc, nil)
+	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{
+		Email: "test@correo.com", Password: "secreto", IPOrigen: "10.0.0.1",
+	})
+	if !errors.Is(err, bloqueo_ip.ErrIPBloqueada) {
+		t.Errorf("esperaba ErrIPBloqueada, got %v", err)
+	}
+}
+
+// Escenario IP con intentos pero login exitoso → contador NO se resetea
+func TestLogin_IPConIntentosNoSeReset(t *testing.T) {
+	ahora := time.Now()
+	intento := seguridad_domain.NuevoIntentoPorIPDesdeBD(
+		"id-1", "10.0.0.1", 5, ahora, time.Time{},
+	)
+	repo := &mockIntentoIPBloqueoRepo{intento: intento}
+	bloqueoSvc := bloqueo_ip.NuevoServicioBloqueoIP(repo, &mockGeneradorIDBloqueo{}, bloqueo_ip.ConfigBloqueoIP{
+		MaxIntentos: 20,
+		Ventana:     15 * time.Minute,
+		Duracion:    30 * time.Minute,
+	})
+	uow := uowValido(
+		&mockSesionRepo{},
+		&mockCredencialesRepo{credenciales: credencialesValidas()},
+		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
+		&mockTokenServicio{},
+	)
+	svc := login.NuevoServicioLogin(uow, bloqueoSvc, nil)
+	_, err := svc.Ejecutar(context.Background(), login.ComandoLogin{
+		Email: "test@correo.com", Password: "secreto", IPOrigen: "10.0.0.1",
+	})
+	if err != nil {
+		t.Fatalf("error inesperado: %v", err)
+	}
+	if intento.Contador() != 5 {
+		t.Errorf("esperaba contador IP=5 sin reset, got %d", intento.Contador())
 	}
 }

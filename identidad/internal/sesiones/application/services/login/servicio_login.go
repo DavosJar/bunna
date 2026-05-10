@@ -6,6 +6,8 @@ import (
 	"net/mail"
 	"time"
 
+	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/bloqueo_ip"
+	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/rate_limiter"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 	usuario_domain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 )
@@ -20,24 +22,61 @@ var (
 	ErrErrorGenerandoTokens  = errors.New("error al generar tokens")
 )
 
+// ServicioLogin implementa el caso de uso de inicio de sesión.
+// Integra verificación de rate limiting y bloqueo por IP antes de procesar credenciales.
 type ServicioLogin struct {
-	uow sesiones_domain.UnitOfWork
+	uow            sesiones_domain.UnitOfWork
+	bloqueoIP      *bloqueo_ip.ServicioBloqueoIP
+	rateLimiter    *rate_limiter.ServicioRateLimit
 }
 
-func NuevoServicioLogin(uow sesiones_domain.UnitOfWork) *ServicioLogin {
-	return &ServicioLogin{uow: uow}
+// NuevoServicioLogin crea una nueva instancia de ServicioLogin.
+// bloqueoIP y rateLimiter son opcionales — si son nil se omite la verificación.
+func NuevoServicioLogin(
+	uow sesiones_domain.UnitOfWork,
+	bloqueoIP *bloqueo_ip.ServicioBloqueoIP,
+	rateLimiter *rate_limiter.ServicioRateLimit,
+) *ServicioLogin {
+	return &ServicioLogin{
+		uow:         uow,
+		bloqueoIP:   bloqueoIP,
+		rateLimiter: rateLimiter,
+	}
 }
 
+// Ejecutar procesa el intento de login con el siguiente flujo:
+//  1. Validar comando (email y password).
+//  2. Verificar rate limiting por IP (preventivo).
+//  3. Verificar bloqueo por IP.
+//  4. Transacción: buscar usuario → credenciales → verificar password → crear sesión.
+//  5. Si falla por password incorrecto: registrar intento fallido por IP.
 func (s *ServicioLogin) Ejecutar(ctx context.Context, cmd ComandoLogin) (*RespuestaLogin, error) {
+	// 1. Validar comando fuera de transacción
 	if err := validarComando(cmd); err != nil {
 		return nil, err
 	}
 
+	// 2. Rate limiting preventivo (antes de cualquier procesamiento)
+	if s.rateLimiter != nil && cmd.IPOrigen != "" {
+		if err := s.rateLimiter.Verificar(ctx, cmd.IPOrigen); err != nil {
+			return nil, err
+		}
+	}
+
+	// 3. Verificar bloqueo por IP
+	if s.bloqueoIP != nil && cmd.IPOrigen != "" {
+		if err := s.bloqueoIP.Verificar(ctx, cmd.IPOrigen); err != nil {
+			return nil, err
+		}
+	}
+
 	var respuesta *RespuestaLogin
+	var passwordIncorrecto bool
 
 	err := s.uow.Transaccional(ctx, func(tx sesiones_domain.UnitOfWork) error {
 		ahora := time.Now()
 
+		// Resolver email → usuarioID
 		usuarios, err := tx.UsuarioRepositorio().Listar(ctx,
 			usuario_domain.EspecificacionUsuario{
 				ListaLiltros: []usuario_domain.CriterioFiltro{
@@ -69,6 +108,7 @@ func (s *ServicioLogin) Ejecutar(ctx context.Context, cmd ComandoLogin) (*Respue
 			if _, err := tx.CredencialesRepositorio().Actualizar(ctx, credenciales); err != nil {
 				return err
 			}
+			passwordIncorrecto = true
 			return ErrCredencialesInvalidas
 		}
 
@@ -123,6 +163,11 @@ func (s *ServicioLogin) Ejecutar(ctx context.Context, cmd ComandoLogin) (*Respue
 		}
 		return nil
 	})
+
+	// 5. Registrar intento fallido por IP si el password fue incorrecto
+	if passwordIncorrecto && s.bloqueoIP != nil && cmd.IPOrigen != "" {
+		_ = s.bloqueoIP.RegistrarIntentoFallido(ctx, cmd.IPOrigen)
+	}
 
 	if err != nil {
 		return nil, err

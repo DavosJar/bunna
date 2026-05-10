@@ -77,36 +77,29 @@ SesionRepositorio (interfaz en dominio)
 
 ## Escenarios de TDD para el Dominio de Sesiones
 
-### Creación de sesión
-1. **Happy path**: Crear sesión con datos válidos → sesión creada en estado ACTIVA, con fechas correctas, tokens asignados, no expirada.
-2. **Happy path**: Crear sesión desde persistencia con `NuevaSesionDesdeBD` → reconstruye el estado exacto, no emite eventos, no valida.
-3. **Edge: usuarioID vacío**: Crear sesión con `usuarioID = ""` → error `ErrUsuarioIDRequerido`.
-4. **Edge: refreshTokenHash vacío**: Crear sesión con `refreshTokenHash = ""` → error `ErrRefreshTokenHashRequerido`.
-5. **Edge: accessTokenHash vacío**: Crear sesión con `accessTokenHash = ""` → error `ErrAccessTokenHashRequerido`.
-6. **Edge: expiración en el pasado**: Crear sesión con `fechaExpiracion` anterior a `fechaCreacion` → error del dominio (sesión inválida porque nunca podría estar activa).
-7. **Edge: IP de origen vacía**: Debe permitirse (por ahora es metadato opcional).
-
-### Verificación de vigencia
-8. **Happy path**: Sesión activa con `fechaExpiracionAccess` en el futuro → `EstaActiva(ahora)` retorna `true`.
-9. **Sad path**: Sesión con `fechaExpiracionAccess` en el pasado → `EstaActiva(ahora)` retorna `false`. El estado NO cambia automáticamente (el servicio lo cambia).
-10. **Sad path**: Sesión en estado REVOCADA → `EstaActiva(ahora)` retorna `false` aunque la fecha no haya expirado.
-
-### Cambio de estado
-11. **Happy path**: Marcar sesión como expirada → cambia a estado EXPIRADA, `EstaActiva()` retorna `false`.
-12. **Happy path**: Marcar sesión como revocada → cambia a estado REVOCADA, `EstaActiva()` retorna `false`.
-13. **Edge: marcar como expirada cuando ya está revocada** → no debe cambiar (error de transición de estado o no-op).
-14. **Edge: marcar como revocada cuando ya está expirada** → debe permitirse (por seguridad, revocar algo ya expirado no debería romper nada, pero el estado final debe ser REVOCADA si se requiere registro de revocación). Decisión: se permite, cambia a REVOCADA.
-
-### Refresh token
-15. **Happy path**: Refresh token no expirado → `RefreshTokenValido(ahora)` retorna `true`.
-16. **Sad path**: Refresh token expirado → `RefreshTokenValido(ahora)` retorna `false`.
-17. **Edge**: Sesión revocada pero refresh token no expirado → `RefreshTokenValido()` debe retornar `false` porque la sesión no está activa.
-18. **Edge**: Refresh token con fecha zero → interpretar como que expiró o nunca se generó, retornar `false`.
-
-### Value Object TokenPair
-19. **Happy path**: Crear TokenPair con todos los valores → getters retornan los valores correctos.
-20. **Edge**: Access token string vacío → error.
-21. **Edge**: Refresh token string vacío → error.
+| # | Caso | Given | When | Then |
+|---|------|-------|------|------|
+| 1 | Creación exitosa de sesión | Datos válidos: usuarioID, tokens, fechas | `NuevaSesion(...)` | Sesión creada en estado ACTIVA, fechas correctas, tokens asignados, `EstaActiva()` retorna true |
+| 2 | Reconstrucción desde persistencia | Todos los campos del estado persistido | `NuevaSesionDesdeBD(...)` | Entidad con el mismo estado, sin validaciones, sin eventos |
+| 3 | usuarioID vacío | `usuarioID = ""` | `NuevaSesion(...)` | Error `ErrUsuarioIDRequerido` |
+| 4 | refreshTokenHash vacío | `refreshTokenHash = ""` | `NuevaSesion(...)` | Error `ErrRefreshTokenHashRequerido` |
+| 5 | accessTokenHash vacío | `accessTokenHash = ""` | `NuevaSesion(...)` | Error `ErrAccessTokenHashRequerido` |
+| 6 | Expiración en el pasado | `fechaExpiracionAccess` anterior a `fechaCreacion` | `NuevaSesion(...)` | Error del dominio: sesión inválida |
+| 7 | IP de origen vacía | `ipOrigen = ""` | `NuevaSesion(...)` | Se permite, IP opcional |
+| 8 | Sesión activa vigente | Sesión ACTIVA, `fechaExpiracionAccess` en el futuro | `sesion.EstaActiva(ahora)` | `true` |
+| 9 | Sesión con fecha expirada | Sesión ACTIVA, `fechaExpiracionAccess` en el pasado | `sesion.EstaActiva(ahora)` | `false`. Estado NO cambia automáticamente |
+| 10 | Sesión revocada | Sesión en estado REVOCADA, fecha no expirada | `sesion.EstaActiva(ahora)` | `false` |
+| 11 | Marcar como expirada | Sesión ACTIVA | `sesion.MarcarExpirada()` | Estado → EXPIRADA, `EstaActiva()` → false |
+| 12 | Marcar como revocada | Sesión ACTIVA | `sesion.Revocar()` | Estado → REVOCADA, `EstaActiva()` → false |
+| 13 | Marcar expirada cuando ya está revocada | Sesión REVOCADA | `sesion.MarcarExpirada()` | No-op o error de transición |
+| 14 | Marcar revocada cuando ya está expirada | Sesión EXPIRADA | `sesion.Revocar()` | Se permite, estado → REVOCADA |
+| 15 | Refresh token vigente | Sesión ACTIVA, `fechaExpiracionRefresh` en el futuro | `sesion.RefreshTokenValido(ahora)` | `true` |
+| 16 | Refresh token expirado | `fechaExpiracionRefresh` en el pasado | `sesion.RefreshTokenValido(ahora)` | `false` |
+| 17 | Refresh token en sesión revocada | Sesión REVOCADA, refresh token no expirado | `sesion.RefreshTokenValido(ahora)` | `false` (sesión no activa) |
+| 18 | Refresh token con fecha zero | `fechaExpiracionRefresh` zero | `sesion.RefreshTokenValido(ahora)` | `false` |
+| 19 | TokenPair con valores válidos | Access token, refresh token, expiraciones | `NuevoTokenPair(...)` | Getters retornan los valores correctos |
+| 20 | TokenPair con access token vacío | `accessToken = ""` | `NuevoTokenPair(...)` | Error |
+| 21 | TokenPair con refresh token vacío | `refreshToken = ""` | `NuevoTokenPair(...)` | Error |
 
 ## Actividades de la Etapa 1
 
@@ -214,36 +207,27 @@ type TokenClaims struct {
 
 ## Escenarios de TDD para Login
 
-### Happy path
-1. **Login exitoso**: Credenciales válidas, password correcto → retorna DTO con tokens, sesión creada en BD, intentos fallidos resetean a 0.
-2. **Login exitoso después de reintentos**: Usuario con 3 intentos fallidos previos, ahora password correcto → login OK, intentos resetean a 0.
-
-### Validaciones
-3. **Email vacío**: Comando con email vacío → error de validación.
-4. **Email mal formado**: Comando con formato inválido → error de validación.
-5. **Password vacío**: Comando con password vacío → error de validación.
-
-### Sad path: Estado de cuenta
-6. **Credenciales no existen**: Email no registrado → error genérico "credenciales inválidas" (no revelar si el email existe o no).
-7. **Cuenta bloqueada**: Credenciales con `bloqueadoHasta > ahora` → error específico "cuenta temporalmente bloqueada".
-8. **Bloqueo expirado**: Credenciales con `bloqueadoHasta < ahora` → debe permitir login (el bloqueo ya venció), pero ¿los intentos se resetean? Decisión: NO se resetean automáticamente hasta que haya un intento exitoso. El servicio debe evaluar si el bloqueo expiró y tratar el intento actual normalmente.
-9. **Cuenta inactiva**: Credenciales con `activo = false` → error "cuenta inactiva".
-10. **Correo no verificado**: Credenciales con `correoVerificado = false` → ¿se permite login? Decisión: depende de la política de negocio. Inicialmente configurable, por defecto SÍ se permite login pero el servicio debe poder consultar esta política.
-
-### Sad path: Password
-11. **Password incorrecto**: Password no coincide → intento fallido incrementado, error genérico "credenciales inválidas".
-12. **Password incorrecto y alcanza bloqueo**: 5to intento fallido consecutivo → se bloquea la cuenta por 15 minutos, error "cuenta temporalmente bloqueada".
-13. **Password incorrecto con cuenta ya bloqueada**: Intentar login estando bloqueado → error "cuenta temporalmente bloqueada", NO se incrementa el contador (no penalizar intentos durante bloqueo).
-
-### Edge: Transaccionalidad
-14. **Fallo al crear sesión después de validar password**: Simular error en repositorio de sesión → rollback: el intento fallido NO debe persistirse, el password correcto NO debe quedar sin sesión.
-15. **Fallo al actualizar credenciales después de crear sesión**: Simular error → rollback: sesión no creada, intentos no modificados.
-16. **Context timeout**: Context cancelado durante la transacción → rollback completo, error de timeout.
-
-### Edge: Tokens
-17. **TokenServicio falla al generar access token**: Error desde infraestructura → rollback, error de generación de tokens.
-18. **TokenServicio falla al generar refresh token**: Error desde infraestructura → rollback, error de generación de tokens.
-19. **Hash de refresh token colisiona**: Caso extremo donde el hash de un refresh token nuevo coincide con uno existente. Decisión: por ahora no se maneja (los hashes criptográficos tienen colisión despreciable), pero se documenta como riesgo futuro.
+| # | Caso | Given | When | Then |
+|---|------|-------|------|------|
+| 1 | Login exitoso | Credenciales válidas, password correcto | `ServicioLogin.Ejecutar(email, password)` | DTO con tokens, sesión creada en BD, intentos fallidos → 0 |
+| 2 | Login después de reintentos | 3 intentos fallidos previos, ahora password correcto | `ServicioLogin.Ejecutar(email, password)` | Login OK, intentos → 0 |
+| 3 | Email vacío | `email = ""`, password válido | `ServicioLogin.Ejecutar(email, password)` | Error de validación |
+| 4 | Email mal formado | `email = "invalido"` | `ServicioLogin.Ejecutar(email, password)` | Error de validación |
+| 5 | Password vacío | `password = ""`, email válido | `ServicioLogin.Ejecutar(email, password)` | Error de validación |
+| 6 | Credenciales no existen | Email no registrado | `ServicioLogin.Ejecutar(email, password)` | Error genérico "credenciales inválidas" (no revelar existencia) |
+| 7 | Cuenta bloqueada | `bloqueadoHasta > ahora` | `ServicioLogin.Ejecutar(email, password)` | Error "cuenta temporalmente bloqueada" |
+| 8 | Bloqueo expirado | `bloqueadoHasta < ahora` (bloqueo ya venció) | `ServicioLogin.Ejecutar(email, password)` | Se permite login. Intentos NO se resetean automáticamente |
+| 9 | Cuenta inactiva | `activo = false` | `ServicioLogin.Ejecutar(email, password)` | Error "cuenta inactiva" |
+| 10 | Correo no verificado | `correoVerificado = false`, política permite login | `ServicioLogin.Ejecutar(email, password)` | Login permitido (configurable) |
+| 11 | Password incorrecto | Password no coincide | `ServicioLogin.Ejecutar(email, password)` | Intento fallido incrementado, error "credenciales inválidas" |
+| 12 | Password incorrecto alcanza bloqueo | 5to intento fallido consecutivo | `ServicioLogin.Ejecutar(email, password)` | Cuenta bloqueada 15 min, error "cuenta temporalmente bloqueada" |
+| 13 | Password incorrecto con cuenta ya bloqueada | Cuenta bloqueada, nuevo intento | `ServicioLogin.Ejecutar(email, password)` | Error "cuenta bloqueada". Contador NO se incrementa |
+| 14 | Fallo al crear sesión | Password correcto, repositorio de sesión falla | `ServicioLogin.Ejecutar(email, password)` | Rollback: intentos no persisten, sesión no creada |
+| 15 | Fallo al actualizar credenciales | Sesión creada, repositorio de credenciales falla | `ServicioLogin.Ejecutar(email, password)` | Rollback: sesión no creada, intentos no modificados |
+| 16 | Context timeout | Context cancelado durante transacción | `ServicioLogin.Ejecutar(ctx, email, password)` | Rollback completo, error de timeout |
+| 17 | TokenServicio falla access token | Password correcto, `GenerarAccessToken` falla | `ServicioLogin.Ejecutar(email, password)` | Rollback, error de generación |
+| 18 | TokenServicio falla refresh token | Access token generado, `GenerarRefreshToken` falla | `ServicioLogin.Ejecutar(email, password)` | Rollback, error de generación |
+| 19 | Hash de refresh token colisiona | Hash nuevo coincide con uno existente en BD | `ServicioLogin.Ejecutar(email, password)` | No se maneja (colisión despreciable). Documentado como riesgo futuro |
 
 ## Actividades de la Etapa 2
 
@@ -333,34 +317,23 @@ internal/sesiones/application/services/refresh/
 
 ## Escenarios de TDD para Refresh
 
-### Happy path
-1. **Refresh exitoso**: Refresh token válido, sesión activa → nuevo par de tokens, sesión actualizada, contador incrementado en 1.
-2. **Refresh exitoso múltiples veces**: Refrescar 3 veces seguidas → cada vez nuevo par, contador = 3.
-
-### Validaciones
-3. **Refresh token vacío**: Comando con token vacío → error de validación.
-
-### Sad path: Token inválido
-4. **Refresh token expirado**: Token firmado pero con fecha expirada → error "token inválido o expirado".
-5. **Refresh token mal formado**: Token que no puede ser parseado → error "token inválido o expirado".
-6. **Refresh token con firma inválida**: Token alterado → error "token inválido o expirado".
-
-### Sad path: Sesión inválida
-7. **Refresh token válido pero sesión REVOCADA**: Token firmado correctamente, sesión existe pero fue revocada → error "sesión no válida".
-8. **Refresh token válido pero sesión EXPIRADA**: Token firmado, sesión expiró → error "sesión no válida".
-9. **Sesión no encontrada por hash**: Token válido pero su hash no corresponde a ninguna sesión (caso de rotación previa) → error "token inválido", y considerar detección de robo.
-
-### Sad path: Límites
-10. **Exceder límite de refrescos**: Si se configura un máximo y se alcanza → error "límite de refrescos alcanzado, inicie sesión nuevamente".
-11. **Refresh token válido pero fecha de sesión expiró**: El token en sí no expiró pero la sesión como conjunto tiene una expiración absoluta (ej: 7 días desde creación) → error "sesión expirada".
-
-### Edge: Detección de robo
-12. **Reutilización de refresh token rotado (detección de robo)**: El token JWT es válido (firma correcta, no expirado), se extrae usuarioID y sesionID de los claims, pero al buscar el hash del token presentado en BD no se encuentra ninguna sesión (el hash fue reemplazado durante la rotación anterior). Con el usuarioID de los claims se invalidan todas las sesiones activas de ese usuario. Error genérico "token inválido".
-13. **Usuario sin sesiones activas después de detección de robo**: La invalidación masiva deja 0 sesiones activas → correcto.
-
-### Edge: Transaccionalidad
-14. **Fallo al persistir sesión actualizada**: Error en BD después de generar nuevos tokens → rollback, tokens no válidos, sesión en estado anterior.
-15. **Fallo en generación de tokens**: TokenServicio falla → rollback, sesión intacta.
+| # | Caso | Given | When | Then |
+|---|------|-------|------|------|
+| 1 | Refresh exitoso | Refresh token válido, sesión ACTIVA | `ServicioRefresh.Ejecutar(refreshToken)` | Nuevo par de tokens, sesión actualizada, contador +1 |
+| 2 | Múltiples refrescos | Sesión activa, 3 refrescos exitosos previos | `ServicioRefresh.Ejecutar(refreshToken)` | Cada vez nuevo par, contador = 3 |
+| 3 | Refresh token vacío | `refreshToken = ""` | `ServicioRefresh.Ejecutar(refreshToken)` | Error de validación |
+| 4 | Token expirado | JWT con fecha expirada | `ServicioRefresh.Ejecutar(refreshToken)` | Error "token inválido o expirado" |
+| 5 | Token mal formado | JWT no parseable | `ServicioRefresh.Ejecutar(refreshToken)` | Error "token inválido o expirado" |
+| 6 | Firma inválida | JWT alterado | `ServicioRefresh.Ejecutar(refreshToken)` | Error "token inválido o expirado" |
+| 7 | Sesión revocada | JWT válido, sesión en estado REVOCADA | `ServicioRefresh.Ejecutar(refreshToken)` | Error "sesión no válida" |
+| 8 | Sesión expirada | JWT válido, sesión en estado EXPIRADA | `ServicioRefresh.Ejecutar(refreshToken)` | Error "sesión no válida" |
+| 9 | Sesión no encontrada por hash | JWT válido, hash del token no existe en BD (rotación previa) | `ServicioRefresh.Ejecutar(refreshToken)` | Error "token inválido". Detección de robo |
+| 10 | Excede límite de refrescos | Sesión alcanzó `MAX_REFRESCOS` configurado | `ServicioRefresh.Ejecutar(refreshToken)` | Error "límite de refrescos alcanzado, inicie sesión nuevamente" |
+| 11 | Sesión expiró absolutamente | JWT válido, pero sesión superó timeout absoluto (ej: 7d) | `ServicioRefresh.Ejecutar(refreshToken)` | Error "sesión expirada" |
+| 12 | Reutilización de token rotado | JWT válido, hash no existe en BD (fue reemplazado en rotación anterior). Se extrae usuarioID de claims | `ServicioRefresh.Ejecutar(refreshToken)` | Se invalidan TODAS las sesiones activas del usuario. Error "token inválido" |
+| 13 | Sin sesiones activas post-detección | Detección de robo ejecutada, todas las sesiones invalidadas | `ServicioRefresh.Ejecutar(refreshToken)` | 0 sesiones activas restantes. Correcto |
+| 14 | Fallo al persistir sesión actualizada | Nuevos tokens generados, repositorio falla al actualizar | `ServicioRefresh.Ejecutar(refreshToken)` | Rollback: sesión en estado anterior, tokens nuevos descartados |
+| 15 | Fallo en generación de tokens | `TokenServicio.GenerarAccessToken` falla | `ServicioRefresh.Ejecutar(refreshToken)` | Rollback: sesión intacta |
 
 ## Actividades de la Etapa 3
 
@@ -436,20 +409,17 @@ internal/sesiones/application/services/logout/
 
 ## Escenarios de TDD para Logout
 
-### Happy path
-1. **Logout sesión específica**: Sesión activa, se revoca → estado REVOCADA, followers ya no pueden usarla.
-2. **Logout de todas las sesiones**: Usuario con 3 sesiones activas → las 3 pasan a REVOCADAS.
-3. **Logout y luego intentar refresh**: Sesión revocada, se intenta refresh → error "sesión no válida".
-
-### Sad path
-4. **Logout de sesión ya expirada**: Sesión EXPIRADA, se solicita logout → se permite (cambio a REVOCADA o no-op). Decisión: no-op, no hay necesidad de cambiar estado.
-5. **Logout de sesión ya revocada**: Sesión ya REVOCADA → no-op, no hay error.
-6. **Logout de sesión que no pertenece al usuario**: SesionID de otro usuario → error "no autorizado".
-7. **Sesión no encontrada**: SesionID inexistente → error "sesión no encontrada".
-
-### Edge: Timeout (validación en aplicación)
-8. **Sesión con timeout de inactividad**: Sesión con `ultimaActividad` + `timeoutInactividad < ahora` → la sesión debe marcarse como EXPIRADA al detectarse.
-9. **Timeout configurable**: El tiempo de inactividad es un parámetro de configuración (no hardcodeado).
+| # | Caso | Given | When | Then |
+|---|------|-------|------|------|
+| 1 | Logout sesión específica | Sesión ACTIVA, usuario autenticado | `ServicioLogout.Ejecutar(sesionID, usuarioID)` | Sesión → REVOCADA. Refresh posterior falla |
+| 2 | Logout todas las sesiones | Usuario con 3 sesiones activas | `ServicioLogout.CerrarTodas(usuarioID)` | Las 3 sesiones → REVOCADAS |
+| 3 | Logout y luego intentar refresh | Sesión recién revocada | `ServicioRefresh.Ejecutar(refreshToken)` | Error "sesión no válida" |
+| 4 | Logout de sesión ya expirada | Sesión EXPIRADA | `ServicioLogout.Ejecutar(sesionID, usuarioID)` | No-op. Estado no cambia |
+| 5 | Logout de sesión ya revocada | Sesión REVOCADA | `ServicioLogout.Ejecutar(sesionID, usuarioID)` | No-op. Sin error |
+| 6 | Logout de sesión de otro usuario | SesionID pertenece a otro usuario | `ServicioLogout.Ejecutar(sesionID, usuarioID)` | Error "no autorizado" |
+| 7 | Sesión no encontrada | SesionID inexistente | `ServicioLogout.Ejecutar(sesionID, usuarioID)` | Error "sesión no encontrada" |
+| 8 | Timeout de inactividad | `ultimaActividad` + `timeoutInactividad < ahora` | Validación en aplicación | Sesión marcada como EXPIRADA |
+| 9 | Timeout configurable | `timeoutInactividad` es parámetro configurable | Validación en aplicación | Se usa el valor configurado, no hardcodeado |
 
 ## Actividades de la Etapa 4
 
@@ -524,24 +494,21 @@ O alternativamente como parte del servicio de login existente (ver consideracion
 
 ## Escenarios de TDD para Seguridad
 
-### IP Blocking
-1. **IP no bloqueada**: IP sin intentos fallidos → permitir login.
-2. **IP bloqueada por exceder umbral**: 20 intentos fallidos desde misma IP en ventana de 15 min → bloqueada por 30 min.
-3. **IP bloqueada pero con intentos exitosos parciales**: 15 intentos fallidos desde IP, login exitoso desde misma IP → ¿se resetea el contador de IP? Decisión: NO, el contador de IP solo se resetea cuando expira la ventana de tiempo.
-4. **IP bloqueada no impide login de usuario legítimo**: Usuario legítimo desde IP bloqueada → debe fallar (esa es la gracia del bloqueo por IP). El usuario debe usar otra red o esperar.
-5. **Bloqueo expirado**: IP bloqueada, pasa el tiempo de bloqueo → permitir login nuevamente.
-6. **Limpieza de registros antiguos**: Los intentos fallidos por IP deben limpiarse (TTL o job).
-
-### Rate Limiting
-7. **Dentro del límite**: 5 requests en un minuto con límite de 10/min → permitir.
-8. **Límite excedido**: 11 requests en un minuto → error "demasiados intentos, intente más tarde".
-9. **Ventana de tiempo deslizante**: Request en minuto 0, luego 10 requests en minuto 1 → límite evaluado correctamente con ventana deslizante (no fija).
-10. **Reset después de ventana**: 11 requests, esperar 1 minuto, nuevo request → permitir.
-
-### Timeouts (configurables)
-11. **Timeout de sesía excedido**: Sesión con más de 7 días de creada → debe ser inválida (el servicio de refresh debe rechazar).
-12. **Timeout de inactividad excedido**: Sesión sin actividad por más de 30 min → debe marcarse como expirada al siguiente uso.
-13. **Timeout de refresh token excedido**: Refresh token con más de 24 horas → inválido, forzar re-login.
+| # | Caso | Given | When | Then |
+|---|------|-------|------|------|
+| 1 | IP no bloqueada | IP sin intentos fallidos registrados | `ServicioBloqueoIP.Verificar(ip)` | Permitir |
+| 2 | IP bloqueada por umbral | 20 intentos fallidos desde misma IP en 15 min | Verificación de IP | IP bloqueada por 30 min |
+| 3 | IP con intentos pero sin bloqueo | 15 intentos fallidos desde IP, login exitoso desde misma IP | Login exitoso | Contador de IP NO se resetea. Solo expira la ventana |
+| 4 | IP bloqueada impide login | IP bloqueada, usuario legítimo intenta login | `ServicioLogin.Ejecutar(email, password)` | Error. Usuario debe cambiar de red o esperar |
+| 5 | Bloqueo de IP expirado | IP bloqueada, tiempo de bloqueo transcurrido | `ServicioBloqueoIP.Verificar(ip)` | Permitir |
+| 6 | Limpieza de registros antiguos | Registros de IP con ventana expirada | Job de limpieza o TTL | Registros eliminados |
+| 7 | Rate limit: dentro del límite | 5 requests desde IP en 1 min, límite 10/min | Nuevo request | Permitir |
+| 8 | Rate limit: límite excedido | 11 requests desde IP en 1 min | Nuevo request | Error "demasiados intentos, intente más tarde" |
+| 9 | Ventana deslizante | Request en t=0, luego 10 requests en t=1 | Evaluar rate limit en t=1 | Ventana deslizante evalúa correctamente (no fija) |
+| 10 | Reset después de ventana | 11 requests, esperar 1 minuto | Nuevo request | Permitir |
+| 11 | Timeout absoluto de sesión | Sesión con más de 7 días de creada | `ServicioRefresh.Ejecutar(refreshToken)` | Sesión inválida, forzar re-login |
+| 12 | Timeout de inactividad | Sesión sin actividad por más de 30 min | Siguiente operación | Sesión marcada como EXPIRADA |
+| 13 | Timeout de refresh token | Refresh token con más de 24h desde emisión | `ServicioRefresh.Ejecutar(refreshToken)` | Token inválido, forzar re-login |
 
 ## Actividades de la Etapa 5
 

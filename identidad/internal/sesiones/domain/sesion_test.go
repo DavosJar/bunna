@@ -7,7 +7,6 @@ import (
 	domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 )
 
-// helpers para no repetir datos válidos en cada test
 func sesionValida(t *testing.T) *domain.Sesion {
 	t.Helper()
 	ahora := time.Now()
@@ -126,7 +125,6 @@ func TestEstaActiva_FechaExpirada(t *testing.T) {
 	if s.EstaActiva(futuro) {
 		t.Error("esperaba EstaActiva=false cuando el access token expiró")
 	}
-	// El estado interno sigue siendo ACTIVA (no cambia solo)
 	if s.Estado() != domain.EstadoActiva {
 		t.Error("el estado no debe cambiar automáticamente")
 	}
@@ -141,8 +139,8 @@ func TestEstaActiva_SesionRevocada(t *testing.T) {
 	}
 }
 
-// --- Escenario 11: MarcarExpirada ---
-func TestMarcarExpirada_DesdActiva(t *testing.T) {
+// --- Escenario 11: MarcarExpirada desde activa ---
+func TestMarcarExpirada_DesdeActiva(t *testing.T) {
 	s := sesionValida(t)
 	err := s.MarcarExpirada()
 	if err != nil {
@@ -215,7 +213,7 @@ func TestRefreshTokenValido_FechaZero(t *testing.T) {
 	s := domain.NuevaSesionDesdeBD(
 		"id", "user", "acc", "ref",
 		domain.EstadoActiva, "",
-		ahora, ahora, ahora.Add(time.Hour), time.Time{}, // fecha zero
+		ahora, ahora, ahora.Add(time.Hour), time.Time{},
 		ahora, 0,
 	)
 	if s.RefreshTokenValido(ahora) {
@@ -256,7 +254,7 @@ func TestNuevoTokenPair_RefreshTokenVacio(t *testing.T) {
 	}
 }
 
-// RegistrarActividad actualiza ultimaActividad
+// --- RegistrarActividad ---
 func TestRegistrarActividad(t *testing.T) {
 	s := sesionValida(t)
 	antes := s.UltimaActividad()
@@ -268,7 +266,7 @@ func TestRegistrarActividad(t *testing.T) {
 	}
 }
 
-// TimeoutExcedido cuando sí excede
+// --- TimeoutExcedido cuando sí excede ---
 func TestTimeoutExcedido_Excedido(t *testing.T) {
 	s := sesionValida(t)
 	futuro := time.Now().Add(2 * time.Hour)
@@ -277,7 +275,7 @@ func TestTimeoutExcedido_Excedido(t *testing.T) {
 	}
 }
 
-// TimeoutExcedido cuando NO excede
+// --- TimeoutExcedido cuando NO excede ---
 func TestTimeoutExcedido_NoExcedido(t *testing.T) {
 	s := sesionValida(t)
 	if s.TimeoutExcedido(time.Now(), 30*time.Minute) {
@@ -285,11 +283,14 @@ func TestTimeoutExcedido_NoExcedido(t *testing.T) {
 	}
 }
 
-// RotarTokens actualiza hashes e incrementa contador
+// --- RotarTokens exitoso ---
 func TestRotarTokens(t *testing.T) {
 	s := sesionValida(t)
 	ahora := time.Now()
-	s.RotarTokens("nuevo-acc", "nuevo-ref", ahora.Add(15*time.Minute), ahora.Add(24*time.Hour), ahora)
+	err := s.RotarTokens("nuevo-acc", "nuevo-ref", ahora.Add(15*time.Minute), ahora.Add(24*time.Hour), ahora)
+	if err != nil {
+		t.Fatalf("error inesperado al rotar: %v", err)
+	}
 	if s.AccessTokenHash() != "nuevo-acc" {
 		t.Errorf("esperaba nuevo-acc, got %v", s.AccessTokenHash())
 	}
@@ -301,7 +302,7 @@ func TestRotarTokens(t *testing.T) {
 	}
 }
 
-// TokenPair expiraciones
+// --- TokenPair expiraciones ---
 func TestNuevoTokenPair_Expiraciones(t *testing.T) {
 	ahora := time.Now()
 	expAccess := ahora.Add(15 * time.Minute)
@@ -312,5 +313,44 @@ func TestNuevoTokenPair_Expiraciones(t *testing.T) {
 	}
 	if !tp.ExpiracionRefresh().Equal(expRefresh) {
 		t.Error("ExpiracionRefresh incorrecta")
+	}
+}
+
+// --- Tests del tester ---
+
+func TestNuevaSesion_IDVacio(t *testing.T) {
+	ahora := time.Now()
+	_, err := domain.NuevaSesion("", "user", "acc", "ref", "", ahora, ahora.Add(time.Minute), ahora.Add(time.Hour))
+	if err != domain.ErrIDRequerido {
+		t.Errorf("esperaba ErrIDRequerido, got %v", err)
+	}
+}
+
+func TestRotarTokens_SesionRevocada(t *testing.T) {
+	s := sesionValida(t)
+	s.Revocar()
+	ahora := time.Now()
+	err := s.RotarTokens("nuevo-acc", "nuevo-ref", ahora.Add(15*time.Minute), ahora.Add(24*time.Hour), ahora)
+	if err != domain.ErrTransicionEstadoInvalida {
+		t.Errorf("esperaba ErrTransicionEstadoInvalida, got %v", err)
+	}
+}
+
+func TestRotarTokens_SesionExpirada(t *testing.T) {
+	s := sesionValida(t)
+	_ = s.MarcarExpirada()
+	ahora := time.Now()
+	err := s.RotarTokens("nuevo-acc", "nuevo-ref", ahora.Add(15*time.Minute), ahora.Add(24*time.Hour), ahora)
+	if err != domain.ErrTransicionEstadoInvalida {
+		t.Errorf("esperaba ErrTransicionEstadoInvalida, got %v", err)
+	}
+}
+
+func TestMarcarExpirada_DesdeExpirada(t *testing.T) {
+	s := sesionValida(t)
+	_ = s.MarcarExpirada()
+	err := s.MarcarExpirada()
+	if err != domain.ErrTransicionEstadoInvalida {
+		t.Errorf("esperaba ErrTransicionEstadoInvalida, got %v", err)
 	}
 }

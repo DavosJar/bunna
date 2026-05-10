@@ -11,22 +11,20 @@ const (
 )
 
 type Sesion struct {
-	id                    string
-	usuarioID             string
-	accessTokenHash       string
-	refreshTokenHash      string
-	estado                EstadoSesion
-	ipOrigen              string
-	fechaCreacion         time.Time
-	fechaActualizacion    time.Time
+	id                     string
+	usuarioID              string
+	accessTokenHash        string
+	refreshTokenHash       string
+	estado                 EstadoSesion
+	ipOrigen               string
+	fechaCreacion          time.Time
+	fechaActualizacion     time.Time
 	fechaExpiracionAccess  time.Time
 	fechaExpiracionRefresh time.Time
-	ultimaActividad       time.Time
-	contadorRefrescos     int
+	ultimaActividad        time.Time
+	contadorRefrescos      int
 }
 
-// NuevaSesion crea una sesión nueva con validaciones.
-// Los tokens recibidos son HASHES, no tokens en plano.
 func NuevaSesion(
 	id string,
 	usuarioID string,
@@ -37,6 +35,9 @@ func NuevaSesion(
 	fechaExpiracionAccess time.Time,
 	fechaExpiracionRefresh time.Time,
 ) (*Sesion, error) {
+	if id == "" {
+		return nil, ErrIDRequerido
+	}
 	if usuarioID == "" {
 		return nil, ErrUsuarioIDRequerido
 	}
@@ -51,22 +52,21 @@ func NuevaSesion(
 	}
 
 	return &Sesion{
-		id:                    id,
-		usuarioID:             usuarioID,
-		accessTokenHash:       accessTokenHash,
-		refreshTokenHash:      refreshTokenHash,
-		estado:                EstadoActiva,
-		ipOrigen:              ipOrigen,
-		fechaCreacion:         fechaCreacion,
-		fechaActualizacion:    fechaCreacion,
+		id:                     id,
+		usuarioID:              usuarioID,
+		accessTokenHash:        accessTokenHash,
+		refreshTokenHash:       refreshTokenHash,
+		estado:                 EstadoActiva,
+		ipOrigen:               ipOrigen,
+		fechaCreacion:          fechaCreacion,
+		fechaActualizacion:     fechaCreacion,
 		fechaExpiracionAccess:  fechaExpiracionAccess,
 		fechaExpiracionRefresh: fechaExpiracionRefresh,
-		ultimaActividad:       fechaCreacion,
-		contadorRefrescos:     0,
+		ultimaActividad:        fechaCreacion,
+		contadorRefrescos:      0,
 	}, nil
 }
 
-// NuevaSesionDesdeBD reconstruye la entidad desde persistencia sin validaciones.
 func NuevaSesionDesdeBD(
 	id string,
 	usuarioID string,
@@ -82,25 +82,23 @@ func NuevaSesionDesdeBD(
 	contadorRefrescos int,
 ) *Sesion {
 	return &Sesion{
-		id:                    id,
-		usuarioID:             usuarioID,
-		accessTokenHash:       accessTokenHash,
-		refreshTokenHash:      refreshTokenHash,
-		estado:                estado,
-		ipOrigen:              ipOrigen,
-		fechaCreacion:         fechaCreacion,
-		fechaActualizacion:    fechaActualizacion,
+		id:                     id,
+		usuarioID:              usuarioID,
+		accessTokenHash:        accessTokenHash,
+		refreshTokenHash:       refreshTokenHash,
+		estado:                 estado,
+		ipOrigen:               ipOrigen,
+		fechaCreacion:          fechaCreacion,
+		fechaActualizacion:     fechaActualizacion,
 		fechaExpiracionAccess:  fechaExpiracionAccess,
 		fechaExpiracionRefresh: fechaExpiracionRefresh,
-		ultimaActividad:       ultimaActividad,
-		contadorRefrescos:     contadorRefrescos,
+		ultimaActividad:        ultimaActividad,
+		contadorRefrescos:      contadorRefrescos,
 	}
 }
 
 // --- Comportamiento ---
 
-// EstaActiva retorna true solo si el estado es ACTIVA y el access token no ha expirado.
-// La referencia de tiempo viene de afuera: el dominio no llama a time.Now().
 func (s *Sesion) EstaActiva(ahora time.Time) bool {
 	if s.estado != EstadoActiva {
 		return false
@@ -108,7 +106,6 @@ func (s *Sesion) EstaActiva(ahora time.Time) bool {
 	return ahora.Before(s.fechaExpiracionAccess)
 }
 
-// RefreshTokenValido retorna true si la sesión está ACTIVA y el refresh no ha expirado.
 func (s *Sesion) RefreshTokenValido(ahora time.Time) bool {
 	if s.estado != EstadoActiva {
 		return false
@@ -119,40 +116,40 @@ func (s *Sesion) RefreshTokenValido(ahora time.Time) bool {
 	return ahora.Before(s.fechaExpiracionRefresh)
 }
 
-// MarcarExpirada transiciona a EXPIRADA.
-// No está permitido si ya está REVOCADA.
+// MarcarExpirada: no permitido desde REVOCADA ni desde EXPIRADA.
 func (s *Sesion) MarcarExpirada() error {
-	if s.estado == EstadoRevocada {
+	if s.estado == EstadoRevocada || s.estado == EstadoExpirada {
 		return ErrTransicionEstadoInvalida
 	}
 	s.estado = EstadoExpirada
 	return nil
 }
 
-// Revocar transiciona a REVOCADA desde cualquier estado.
+// Revocar: permitido desde cualquier estado (idempotente si ya está revocada).
 func (s *Sesion) Revocar() {
 	s.estado = EstadoRevocada
 }
 
-// RegistrarActividad actualiza la última actividad de la sesión.
 func (s *Sesion) RegistrarActividad(ahora time.Time) {
 	s.ultimaActividad = ahora
 	s.fechaActualizacion = ahora
 }
 
-// TimeoutExcedido retorna true si el tiempo sin actividad supera el timeout configurado.
 func (s *Sesion) TimeoutExcedido(ahora time.Time, timeout time.Duration) bool {
 	return ahora.After(s.ultimaActividad.Add(timeout))
 }
 
-// RotarTokens reemplaza los hashes y actualiza expiraciones. Incrementa el contador.
+// RotarTokens: ahora retorna error si la sesión no está ACTIVA.
 func (s *Sesion) RotarTokens(
 	nuevoAccessHash string,
 	nuevoRefreshHash string,
 	nuevaExpiracionAccess time.Time,
 	nuevaExpiracionRefresh time.Time,
 	ahora time.Time,
-) {
+) error {
+	if s.estado != EstadoActiva {
+		return ErrTransicionEstadoInvalida
+	}
 	s.accessTokenHash = nuevoAccessHash
 	s.refreshTokenHash = nuevoRefreshHash
 	s.fechaExpiracionAccess = nuevaExpiracionAccess
@@ -160,6 +157,7 @@ func (s *Sesion) RotarTokens(
 	s.contadorRefrescos++
 	s.fechaActualizacion = ahora
 	s.ultimaActividad = ahora
+	return nil
 }
 
 // --- Getters ---

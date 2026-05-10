@@ -317,15 +317,6 @@ func TestNuevoTokenPair_Expiraciones(t *testing.T) {
 }
 
 // --- Tests del tester ---
-
-func TestNuevaSesion_IDVacio(t *testing.T) {
-	ahora := time.Now()
-	_, err := domain.NuevaSesion("", "user", "acc", "ref", "", ahora, ahora.Add(time.Minute), ahora.Add(time.Hour))
-	if err != domain.ErrIDRequerido {
-		t.Errorf("esperaba ErrIDRequerido, got %v", err)
-	}
-}
-
 func TestRotarTokens_SesionRevocada(t *testing.T) {
 	s := sesionValida(t)
 	s.Revocar()

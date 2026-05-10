@@ -4,7 +4,6 @@ import "errors"
 
 var (
 	// Sesion - constructor
-	ErrIDRequerido               = errors.New("el ID de sesión es requerido")
 	ErrUsuarioIDRequerido        = errors.New("el usuarioID es requerido")
 	ErrAccessTokenHashRequerido  = errors.New("el hash del access token es requerido")
 	ErrRefreshTokenHashRequerido = errors.New("el hash del refresh token es requerido")

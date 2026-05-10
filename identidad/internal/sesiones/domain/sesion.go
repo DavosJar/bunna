@@ -35,9 +35,6 @@ func NuevaSesion(
 	fechaExpiracionAccess time.Time,
 	fechaExpiracionRefresh time.Time,
 ) (*Sesion, error) {
-	if id == "" {
-		return nil, ErrIDRequerido
-	}
 	if usuarioID == "" {
 		return nil, ErrUsuarioIDRequerido
 	}

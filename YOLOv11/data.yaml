@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 2
+names: ['deficiencia_nitrogeno', 'hoja_sana']
+
+roboflow:
+  workspace: cesars-workspace-lzja3
+  project: cesars-workspace-lzja3
+  version: dataset
+  license: Private
+  url: https://app.roboflow.com/cesars-workspace-lzja3/cesars-workspace-lzja3/dataset

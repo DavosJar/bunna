@@ -31,21 +31,21 @@ func (r *credencialesRepositorio) Crear(ctx context.Context, c *domain.Credencia
 }
 
 func (r *credencialesRepositorio) Actualizar(ctx context.Context, c *domain.CredencialesUsuario) (*domain.CredencialesUsuario, error) {
-	model, err := CredencialesFromDomain(c)
-	if err != nil {
-		return nil, fmt.Errorf("error al convertir credenciales a modelo: %w", err)
-	}
-
-	// Actualizar explícitamente los campos relevantes
-	result := r.db.WithContext(ctx).Model(&CredencialesModel{}).
-		Where("usuario_id = ?", c.UsuarioID()).
-		Updates(map[string]interface{}{
-			"password_hash":     model.PasswordHash,
-			"activo":            model.Activo,
-			"correo_verificado": model.CorreoVerificado,
-			"intentos_fallidos": model.IntentosFallidos,
-			"bloqueado_hasta":   model.BloqueadoHasta,
-		})
+	result := r.db.WithContext(ctx).Exec(
+		`UPDATE credenciales_usuarios SET
+			password_hash = ?,
+			activo = ?,
+			correo_verificado = ?,
+			intentos_fallidos = ?,
+			bloqueado_hasta = ?
+		WHERE usuario_id = ?`,
+		c.PasswordHash(),
+		c.Activo(),
+		c.CorreoVerificado(),
+		c.IntentosFallidos(),
+		c.BloqueadoHasta(),
+		c.UsuarioID(),
+	)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -53,10 +53,8 @@ func (r *credencialesRepositorio) Actualizar(ctx context.Context, c *domain.Cred
 	if result.RowsAffected == 0 {
 		return nil, fmt.Errorf("credenciales con usuarioID %s no encontradas", c.UsuarioID())
 	}
-	// Retornar las credenciales actualizadas desde BD
 	return r.ObtenerPorUsuarioID(ctx, c.UsuarioID())
 }
-
 func (r *credencialesRepositorio) ObtenerPorUsuarioID(ctx context.Context, usuarioID string) (*domain.CredencialesUsuario, error) {
 	var model CredencialesModel
 	result := r.db.WithContext(ctx).First(&model, "usuario_id = ?", usuarioID)

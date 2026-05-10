@@ -56,6 +56,10 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"").Error; err != nil {
 		t.Fatalf("Failed to create uuid-ossp extension: %v", err)
 	}
+	
+	if err := db.AutoMigrate(&CredencialesModel{}); err != nil {
+		t.Fatalf("Failed to migrate database: %v", err)
+	}
 
 	return db
 }
@@ -198,7 +202,7 @@ func TestActualizarMultipleFields(t *testing.T) {
 	if !updated2.CorreoVerificado() {
 		t.Error("CorreoVerificado should still be true")
 	}
-	if !updated2.Activo() {
+	if updated2.Activo() {
 		t.Error("Activo should now be false")
 	}
 	if updated2.IntentosFallidos() != 3 {

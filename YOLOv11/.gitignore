@@ -1,0 +1,27 @@
+# Entorno virtual
+yolo-env/
+.venv/
+venv/
+env/
+
+# Pesos entrenados (pesados)
+*.pt
+*.onnx
+*.torchscript
+
+# Resultados de runs (se regeneran)
+runs/
+
+# Imagenes del dataset (si son tuyas y pesadas)
+train/images/
+valid/images/
+
+# Archivos del sistema
+.DS_Store
+__pycache__/
+*.pyc
+*.pyo
+
+# Zips y temporales
+*.zip
+*.tar.gz

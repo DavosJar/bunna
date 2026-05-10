@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/davosjar/bunna/services/identidad/internal/domain/usuario"
+	"github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 	"github.com/google/uuid"
 )
 

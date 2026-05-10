@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/persistence/postgres"
+	seguridad_postgres "github.com/davosjar/bunna/services/identidad/internal/seguridad/infrastructure/persistence/postgres"
+	sesiones_postgres "github.com/davosjar/bunna/services/identidad/internal/sesiones/infrastructure/persistence/postgres"
+	usuarios_postgres "github.com/davosjar/bunna/services/identidad/internal/usuarios/infrastructure/persistence/postgres"
 	postgresdriver "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
+// InitDB inicializa la conexión a PostgreSQL y ejecuta las migraciones automáticas.
 func InitDB(dsn string) (*gorm.DB, error) {
 	db, err := gorm.Open(postgresdriver.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -24,11 +27,28 @@ func InitDB(dsn string) (*gorm.DB, error) {
 	return db, nil
 }
 
+// RunMigrations ejecuta todas las migraciones automáticas de GORM.
+// El orden importa: usuarios antes que credenciales (FK), sesiones al final.
 func RunMigrations(db *gorm.DB) error {
-	// Enable uuid-ossp extension for PostgreSQL 18
 	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"").Error; err != nil {
 		return fmt.Errorf("failed to create uuid-ossp extension: %w", err)
 	}
 
-	return db.AutoMigrate(&postgres.UsuarioModel{})
+	if err := db.AutoMigrate(&usuarios_postgres.UsuarioModel{}); err != nil {
+		return fmt.Errorf("failed to migrate usuario: %w", err)
+	}
+
+	if err := db.AutoMigrate(&seguridad_postgres.CredencialesModel{}); err != nil {
+		return fmt.Errorf("failed to migrate credenciales: %w", err)
+	}
+
+	if err := db.AutoMigrate(&sesiones_postgres.SesionModel{}); err != nil {
+		return fmt.Errorf("failed to migrate sesiones: %w", err)
+	}
+
+	if err := db.AutoMigrate(&seguridad_postgres.IntentoIPModel{}); err != nil {
+		return fmt.Errorf("failed to migrate intentos_por_ip: %w", err)
+	}
+
+	return nil
 }

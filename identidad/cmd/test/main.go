@@ -6,8 +6,10 @@ import (
 	"log"
 
 	"github.com/davosjar/bunna/services/identidad/internal/config"
-	"github.com/davosjar/bunna/services/identidad/internal/domain/usuario"
 	"github.com/davosjar/bunna/services/identidad/internal/registry"
+	"github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
+	"github.com/davosjar/bunna/services/identidad/internal/usuarios/application/services/registro"
+	"github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 	"github.com/google/uuid"
 )
 
@@ -50,7 +52,7 @@ func main() {
 	fmt.Println("✓ Tabla usuarios limpiada y migrada")
 
 	// Crear registry e inyectar repositorio
-	reg := registry.NewRegistry(db)
+	reg := registry.NewRegistry(db, cfg)
 	repo := reg.UsuarioRepository()
 	ctx := context.Background()
 
@@ -103,7 +105,11 @@ func main() {
 	for i, datos := range usuariosData {
 		// Crear usuario (se crea siempre en NO_VERIFICADO según NuevoUsuario)
 		// Generar UUID para el usuario
-		usuarioID := uuid.New().String()
+		v7uuid, err := uuid.NewV7()
+		if err != nil {
+			log.Fatalf("❌ Error generar UUID V7: %v", err)
+		}
+		usuarioID := v7uuid.String()
 		u, err := usuario.NuevoUsuario(usuarioID, datos.correo, datos.nombre, datos.apellido, datos.telefono)
 		if err != nil {
 			log.Fatalf("❌ Error crear usuario %d: %v", i+1, err)
@@ -323,4 +329,154 @@ func main() {
 	fmt.Printf("✅ Búsqueda 5 (BLOQUEADO, múltiples ordenaciones): %d\n", len(busqueda5))
 	fmt.Printf("✅ Búsqueda 6 (INACTIVO + @demo.com, ordenados por nombre): %d\n", len(busqueda6))
 	fmt.Println("\n✓ Pruebas de búsquedas compuestas completadas exitosamente")
+
+	// ============================================================================
+	// === SECCIÓN 4: PRUEBA DE REGISTRO CON SERVICIO DE APLICACIÓN ===
+	// ============================================================================
+	fmt.Println("\n═════════════════════════════════════════════════════════════════")
+	fmt.Println("=== PRUEBA DE REGISTRO DE NUEVOS USUARIOS ===")
+	fmt.Println("═════════════════════════════════════════════════════════════════")
+
+	// Crear servicio de registro
+	servicioRegistro := registro.NuevoServicioRegistro(
+		reg.UsuarioUnitOfWork(),
+	)
+
+	// Casos de prueba de registro
+	casosRegistro := []struct {
+		nombre      string
+		comando     *registro.ComandoRegistro
+		esperaError bool
+	}{
+		{
+			nombre: "Registro exitoso",
+			comando: &registro.ComandoRegistro{
+				Correo:   "juan.nuevo@example.com",
+				Password: "Password123!",
+				Nombre:   "Juan Nuevo",
+				Apellido: "Pérez",
+				Telefono: "6031234567",
+			},
+			esperaError: false,
+		},
+		{
+			nombre: "Email inválido",
+			comando: &registro.ComandoRegistro{
+				Correo:   "notanemail",
+				Password: "Password123!",
+				Nombre:   "María",
+				Apellido: "López",
+				Telefono: "6032345678",
+			},
+			esperaError: true,
+		},
+		{
+			nombre: "Email vacío",
+			comando: &registro.ComandoRegistro{
+				Correo:   "",
+				Password: "Password123!",
+				Nombre:   "Carlos",
+				Apellido: "García",
+				Telefono: "6033456789",
+			},
+			esperaError: true,
+		},
+		{
+			nombre: "Password vacío",
+			comando: &registro.ComandoRegistro{
+				Correo:   "carlos.nuevo@test.com",
+				Password: "",
+				Nombre:   "Carlos",
+				Apellido: "García",
+				Telefono: "6033456789",
+			},
+			esperaError: true,
+		},
+		{
+			nombre: "Nombre vacío",
+			comando: &registro.ComandoRegistro{
+				Correo:   "ana.nueva@demo.com",
+				Password: "Password123!",
+				Nombre:   "",
+				Apellido: "Martínez",
+				Telefono: "6034567890",
+			},
+			esperaError: true,
+		},
+		{
+			nombre: "Registro exitoso 2",
+			comando: &registro.ComandoRegistro{
+				Correo:   "pedro.nuevo@example.com",
+				Password: "SecurePass456",
+				Nombre:   "Pedro",
+				Apellido: "Rodríguez",
+				Telefono: "6035678901",
+			},
+			esperaError: false,
+		},
+	}
+
+	fmt.Println("\n📋 Ejecutando casos de prueba de registro:")
+	exitosRegistro := 0
+	fallosRegistro := 0
+
+	for i, caso := range casosRegistro {
+		respuesta, err := servicioRegistro.Ejecutar(ctx, caso.comando)
+
+		if caso.esperaError {
+			if err != nil {
+				fmt.Printf("[%d] ❌ %s\n", i+1, caso.nombre)
+				fmt.Printf("     Error esperado: %v\n", err)
+				fallosRegistro++
+			} else {
+				fmt.Printf("[%d] ⚠️  %s\n", i+1, caso.nombre)
+				fmt.Printf("     Se esperaba error pero se registró exitosamente\n")
+				fallosRegistro++
+			}
+		} else {
+			if err != nil {
+				fmt.Printf("[%d] ❌ %s\n", i+1, caso.nombre)
+				fmt.Printf("     Error inesperado: %v\n", err)
+				fallosRegistro++
+			} else {
+				fmt.Printf("[%d] ✅ %s\n", i+1, caso.nombre)
+				fmt.Printf("     Usuario ID: %s\n", respuesta.UsuarioID)
+				fmt.Printf("     Correo: %s\n", respuesta.Correo)
+				fmt.Printf("     Estado: %s\n", respuesta.Estado)
+				fmt.Printf("     Timestamp: %v\n", respuesta.Timestamp)
+				exitosRegistro++
+			}
+		}
+	}
+
+	fmt.Println("\n═════════════════════════════════════════════════════════════════")
+	fmt.Println("=== RESUMEN DE REGISTRO ===")
+	fmt.Println("═════════════════════════════════════════════════════════════════")
+	fmt.Printf("✅ Registros exitosos: %d\n", exitosRegistro)
+	fmt.Printf("❌ Casos de error manejados correctamente: %d\n", fallosRegistro)
+	fmt.Printf("📊 Total de pruebas: %d\n", len(casosRegistro))
+
+	if exitosRegistro > 0 {
+		// Verificar que las credenciales se crearon correctamente
+		fmt.Println("\n🔍 Verificación de credenciales creadas:")
+
+		especCredenciales := domain.EspecificacionCredenciales{
+			ListaFiltros: []domain.CriterioFiltro{
+				{Campo: "activo", Operador: "=", Valor: true},
+			},
+		}
+		paginacion := domain.Paginacion{
+			Pagina:       1,
+			TamanoPagina: 100,
+		}
+
+		credencialesCreadas, err := reg.CredencialesRepository().Find(ctx, especCredenciales, paginacion)
+		if err != nil {
+			fmt.Printf("❌ Error al buscar credenciales: %v\n", err)
+		} else {
+			fmt.Printf("✅ Total de credenciales activas: %d\n", len(credencialesCreadas))
+		}
+	}
+
+	fmt.Println("\n✓ Pruebas de registro completadas")
 }

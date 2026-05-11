@@ -23,6 +23,15 @@ YOLOv11/*.torchscript
 runs/
 YOLOv11/runs/
 
+# Uploads temporales
+YOLOv11/uploads/
+
+# Cache de etiquetas YOLO
+*.cache
+
+# Cache de Vite
+frontend/.vite/
+
 # Imagenes 
 train/images/
 valid/images/

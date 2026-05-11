@@ -9,13 +9,23 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { register } = useAuth();
+  const { register, loading, error } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    register({ nombre: `${nombre} ${apellido}`, email });
-    navigate('/dashboard');
+    if (password.length < 8) {
+      return;
+    }
+    const result = await register({
+      nombre,
+      apellido,
+      correo: email,
+      password,
+    });
+    if (result.success) {
+      navigate('/dashboard');
+    }
   };
 
   return (
@@ -55,6 +65,17 @@ export default function RegisterPage() {
             Regístrate como caficultor para diagnosticar tus plantas.
           </p>
 
+          {error && (
+            <div className="auth-error" id="register-error">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} id="register-form">
             <div className="form-row">
               <div className="form-group">
@@ -68,6 +89,8 @@ export default function RegisterPage() {
                   placeholder="Juan"
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
+                  required
+                  disabled={loading}
                 />
               </div>
               <div className="form-group">
@@ -81,6 +104,8 @@ export default function RegisterPage() {
                   placeholder="Pérez"
                   value={apellido}
                   onChange={(e) => setApellido(e.target.value)}
+                  required
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -97,6 +122,8 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                required
+                disabled={loading}
               />
             </div>
 
@@ -113,6 +140,9 @@ export default function RegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password"
+                  minLength={8}
+                  required
+                  disabled={loading}
                 />
                 <button
                   type="button"
@@ -155,9 +185,23 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <button type="submit" className="btn-primary" id="register-submit">
-              Crear cuenta
-              <span className="btn-primary__arrow">→</span>
+            <button
+              type="submit"
+              className={`btn-primary ${loading ? 'btn-primary--loading' : ''}`}
+              id="register-submit"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <div className="btn-spinner" />
+                  Creando cuenta...
+                </>
+              ) : (
+                <>
+                  Crear cuenta
+                  <span className="btn-primary__arrow">→</span>
+                </>
+              )}
             </button>
           </form>
 

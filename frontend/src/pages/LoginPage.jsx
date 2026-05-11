@@ -7,13 +7,15 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  const { login, loading, error } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    login(email);
-    navigate('/dashboard');
+    const result = await login(email, password);
+    if (result.success) {
+      navigate('/dashboard');
+    }
   };
 
   return (
@@ -49,6 +51,17 @@ export default function LoginPage() {
             Accede con tu correo y contraseña.
           </p>
 
+          {error && (
+            <div className="auth-error" id="login-error">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} id="login-form">
             <div className="form-group">
               <label className="form-label" htmlFor="login-email">
@@ -63,6 +76,8 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
+                  required
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -81,6 +96,8 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
+                  required
+                  disabled={loading}
                 />
                 <button
                   type="button"
@@ -103,9 +120,23 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <button type="submit" className="btn-primary" id="login-submit">
-              Entrar
-              <span className="btn-primary__arrow">→</span>
+            <button
+              type="submit"
+              className={`btn-primary ${loading ? 'btn-primary--loading' : ''}`}
+              id="login-submit"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <div className="btn-spinner" />
+                  Entrando...
+                </>
+              ) : (
+                <>
+                  Entrar
+                  <span className="btn-primary__arrow">→</span>
+                </>
+              )}
             </button>
           </form>
 

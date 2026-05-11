@@ -16,6 +16,9 @@ type Config struct {
 	DBName     string
 	DBSSLMode  string
 
+	Port        string
+	CORSOrigins string
+
 	BcryptCost int
 
 	JWTSecret            string
@@ -88,6 +91,9 @@ func LoadConfig() (*Config, error) {
 		DBPassword: getEnv("DB_PASSWORD", "identidad_pass_dev"),
 		DBName:     getEnv("DB_NAME", "identidad_db"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
+
+		Port:        getEnv("PORT", "8080"),
+		CORSOrigins: getEnv("CORS_ORIGINS", "*"),
 
 		BcryptCost: bcryptCost,
 

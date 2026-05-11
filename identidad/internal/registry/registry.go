@@ -15,6 +15,7 @@ import (
 	sesiones_postgres "github.com/davosjar/bunna/services/identidad/internal/sesiones/infrastructure/persistence/postgres"
 	sesiones_jwt "github.com/davosjar/bunna/services/identidad/internal/sesiones/infrastructure/security/jwt"
 	shared_idgenerator "github.com/davosjar/bunna/services/identidad/internal/shared/infrastructure/idgenerator"
+	"github.com/davosjar/bunna/services/identidad/internal/usuarios/application/services/registro"
 	usuario_domain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 	usuarios_postgres "github.com/davosjar/bunna/services/identidad/internal/usuarios/infrastructure/persistence/postgres"
 	"gorm.io/gorm"
@@ -40,23 +41,24 @@ type Registry struct {
 	ServicioRefresh *refresh.ServicioRefresh
 	ServicioLogout  *logout.ServicioLogout
 
+	// Servicios de aplicación — registro
+	servicioRegistro *registro.ServicioRegistro
+
 	// Servicios de aplicación — seguridad perimetral
-	ServicioBloqueoIP  *bloqueo_ip.ServicioBloqueoIP
-	ServicioRateLimit  *rate_limiter.ServicioRateLimit
+	ServicioBloqueoIP *bloqueo_ip.ServicioBloqueoIP
+	ServicioRateLimit *rate_limiter.ServicioRateLimit
 }
 
 // NewRegistry construye y conecta todas las dependencias de la aplicación.
 func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
-	// Generador de IDs compartido
 	generadorID := shared_idgenerator.NewUUIDv7Generator()
 
-	// Repositorios base
 	usuarioRepo := usuarios_postgres.NewUsuarioRepositorio(db)
 	credencialesRepo := seguridad_postgres.NewCredencialesRepositorio(db)
 	intentoIPRepo := seguridad_postgres.NewIntentoIPRepositorio(db)
+	rateLimitRepo := seguridad_postgres.NewRateLimitRepositorio(db)
 	sesionRepo := sesiones_postgres.NewSesionRepositorio(db)
 
-	// Servicios de infraestructura
 	encriptacion := bcrypt.NewBcryptEncriptacion(cfg.BcryptCost)
 	tokenSvc := sesiones_jwt.NewJWTTokenServicio(sesiones_jwt.ConfigJWT{
 		Secret:            cfg.JWTSecret,
@@ -64,7 +66,6 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		ExpiracionRefresh: cfg.JWTRefreshExpiracion,
 	})
 
-	// UnitOfWork de usuarios
 	usuarioUoW := usuarios_postgres.NewUnitOfWork(
 		db,
 		usuarioRepo,
@@ -73,7 +74,6 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		generadorID,
 	)
 
-	// UnitOfWork de sesiones
 	sesionUoW := sesiones_postgres.NewSesionUnitOfWork(
 		db,
 		sesionRepo,
@@ -84,7 +84,6 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		generadorID,
 	)
 
-	// Servicios de seguridad perimetral
 	bloqueoIPSvc := bloqueo_ip.NuevoServicioBloqueoIP(
 		intentoIPRepo,
 		generadorID,
@@ -95,7 +94,7 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		},
 	)
 	rateLimitSvc := rate_limiter.NuevoServicioRateLimit(
-		intentoIPRepo,
+		rateLimitRepo,
 		generadorID,
 		rate_limiter.ConfigRateLimit{
 			MaxRequests: cfg.RateLimitMaxRequests,
@@ -103,13 +102,13 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		},
 	)
 
-	// Servicios de aplicación de sesiones
 	loginSvc := login.NuevoServicioLogin(sesionUoW, bloqueoIPSvc, rateLimitSvc)
 	refreshSvc := refresh.NuevoServicioRefresh(sesionUoW, refresh.ConfigRefresh{
 		MaxRefrescos:    cfg.SesionMaxRefrescos,
 		TimeoutAbsoluto: cfg.SesionTimeoutAbsoluto,
 	})
 	logoutSvc := logout.NuevoServicioLogout(sesionUoW)
+	registroSvc := registro.NuevoServicioRegistro(usuarioUoW)
 
 	return &Registry{
 		usuarioRepository:      usuarioRepo,
@@ -122,14 +121,17 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		ServicioLogin:          loginSvc,
 		ServicioRefresh:        refreshSvc,
 		ServicioLogout:         logoutSvc,
+		servicioRegistro:       registroSvc,
 		ServicioBloqueoIP:      bloqueoIPSvc,
 		ServicioRateLimit:      rateLimitSvc,
 	}
 }
 
-// Getters para acceso desde handlers
+// Getters
 
-func (r *Registry) UsuarioRepository() usuario_domain.UsuarioRepositorio         { return r.usuarioRepository }
+func (r *Registry) UsuarioRepository() usuario_domain.UsuarioRepositorio             { return r.usuarioRepository }
 func (r *Registry) CredencialesRepository() seguridad_domain.CredencialesRepositorio { return r.credencialesRepository }
-func (r *Registry) EncriptacionServicio() seguridad_domain.EncriptacionServicio   { return r.encriptacionServicio }
-func (r *Registry) UsuarioUnitOfWork() usuario_domain.UnitOfWork                  { return r.usuarioUnitOfWork }
+func (r *Registry) EncriptacionServicio() seguridad_domain.EncriptacionServicio       { return r.encriptacionServicio }
+func (r *Registry) UsuarioUnitOfWork() usuario_domain.UnitOfWork                      { return r.usuarioUnitOfWork }
+func (r *Registry) TokenServicio() sesiones_domain.TokenServicio                      { return r.tokenServicio }
+func (r *Registry) GetServicioRegistro() *registro.ServicioRegistro                   { return r.servicioRegistro }

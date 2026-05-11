@@ -2,10 +2,10 @@ package main
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/davosjar/bunna/services/identidad/internal/config"
-	"github.com/davosjar/bunna/services/identidad/internal/handler"
+	"github.com/davosjar/bunna/services/identidad/internal/presentation/facades"
+	"github.com/davosjar/bunna/services/identidad/internal/presentation/router"
 	"github.com/davosjar/bunna/services/identidad/internal/registry"
 )
 
@@ -21,11 +21,17 @@ func main() {
 	}
 
 	reg := registry.NewRegistry(db, cfg)
-	h := handler.NewHandler(reg)
-	h.RegisterRoutes()
 
-	log.Println("Server starting on :8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	// Capa de presentación
+	authFacade := facades.NewAuthFacade(reg.GetServicioRegistro(), reg.ServicioLogin)
+
+	r := router.New(authFacade, router.Config{
+		Version:     "1.0.0",
+		CORSOrigins: []string{cfg.CORSOrigins},
+	})
+
+	log.Printf("Server starting on :%s", cfg.Port)
+	if err := r.Run(":" + cfg.Port); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
 }

@@ -108,7 +108,12 @@ func (r *usuarioRepositorio) Listar(ctx context.Context, spec usuario.Especifica
 
 		switch filtro.Operador {
 		case "=":
-			query = query.Where(columnaDB+" = ?", filtro.Valor)
+			if columnaDB == "correo" {
+				// Case-insensitive: LOWER en ambos lados para emails
+				query = query.Where("LOWER(correo) = LOWER(?)", filtro.Valor)
+			} else {
+				query = query.Where(columnaDB+" = ?", filtro.Valor)
+			}
 		case "!=":
 			query = query.Where(columnaDB+" != ?", filtro.Valor)
 		case "LIKE":

@@ -50,5 +50,13 @@ func RunMigrations(db *gorm.DB) error {
 		return fmt.Errorf("failed to migrate intentos_por_ip: %w", err)
 	}
 
+	if err := db.AutoMigrate(&seguridad_postgres.RateLimitIPModel{}); err != nil {
+		return fmt.Errorf("failed to migrate rate_limit_ip: %w", err)
+	}
+
+	// Índice único para emails (case-insensitive via LOWER).
+	// CREATE UNIQUE INDEX IF NOT EXISTS es soportado desde PostgreSQL 9.5+.
+	db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_correo_unique ON usuarios (correo)")
+
 	return nil
 }

@@ -1,6 +1,7 @@
 .PHONY: docker-up docker-down docker-logs docker-shell docker-clean build-test test
 
 include .env
+export
 
 docker-up:
 	docker-compose up -d

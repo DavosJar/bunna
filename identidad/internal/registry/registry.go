@@ -54,6 +54,7 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 	usuarioRepo := usuarios_postgres.NewUsuarioRepositorio(db)
 	credencialesRepo := seguridad_postgres.NewCredencialesRepositorio(db)
 	intentoIPRepo := seguridad_postgres.NewIntentoIPRepositorio(db)
+	rateLimitRepo := seguridad_postgres.NewRateLimitRepositorio(db)
 	sesionRepo := sesiones_postgres.NewSesionRepositorio(db)
 
 	// Servicios de infraestructura
@@ -95,7 +96,7 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		},
 	)
 	rateLimitSvc := rate_limiter.NuevoServicioRateLimit(
-		intentoIPRepo,
+		rateLimitRepo,
 		generadorID,
 		rate_limiter.ConfigRateLimit{
 			MaxRequests: cfg.RateLimitMaxRequests,

@@ -225,3 +225,82 @@ func TestLoginHandler_ErrorFacade_Retorna401(t *testing.T) {
 		t.Errorf("esperaba 401, got %d", w.Code)
 	}
 }
+
+// ── OpenAPI / Swagger ─────────────────────────────────────────────────────────
+
+// AC-PRES-002: GET /openapi.json retorna JSON válido
+func TestOpenAPI_RetornaJSONValido(t *testing.T) {
+	router, _ := setupRouter(&mockAuthFacade{})
+	w := doRequest(router, http.MethodGet, "/openapi.json", "")
+
+	if w.Code != http.StatusOK {
+		t.Errorf("esperaba 200, got %d", w.Code)
+	}
+
+	contentType := w.Header().Get("Content-Type")
+	if !strings.Contains(contentType, "application/openapi+json") || strings.Contains(contentType, "application/json") {
+		t.Errorf("esperaba Content-Type application/json, got %s", contentType)
+	}
+
+	var openapi map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &openapi); err != nil {
+		t.Fatalf("respuesta no es JSON válido: %v", err)
+	}
+
+	if openapi["openapi"] == nil {
+		t.Error("esperaba campo 'openapi' en especificación")
+	}
+	if openapi["info"] == nil {
+		t.Error("esperaba campo 'info' en especificación")
+	}
+	if openapi["paths"] == nil {
+		t.Error("esperaba campo 'paths' en especificación")
+	}
+}
+
+// AC-PRES-002: openapi.json contiene versión 3.x
+func TestOpenAPI_ContieneVersion3(t *testing.T) {
+	router, _ := setupRouter(&mockAuthFacade{})
+	w := doRequest(router, http.MethodGet, "/openapi.json", "")
+
+	var openapi map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &openapi)
+
+	version, ok := openapi["openapi"].(string)
+	if !ok || !strings.HasPrefix(version, "3.") {
+		t.Errorf("esperaba versión OpenAPI 3.x, got %v", openapi["openapi"])
+	}
+}
+
+// AC-PRES-002: openapi.json contiene los endpoints documentados
+func TestOpenAPI_ContieneEndpoints(t *testing.T) {
+	router, _ := setupRouter(&mockAuthFacade{})
+	w := doRequest(router, http.MethodGet, "/openapi.json", "")
+
+	var openapi map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &openapi)
+
+	paths, ok := openapi["paths"].(map[string]interface{})
+	if !ok {
+		t.Fatal("esperaba campo 'paths' como objeto")
+	}
+	if paths["/health"] == nil {
+		t.Error("esperaba path /health en openapi.json")
+	}
+	if paths["/api/v1/auth/register"] == nil {
+		t.Error("esperaba path /api/v1/auth/register en openapi.json")
+	}
+	if paths["/api/v1/auth/login"] == nil {
+		t.Error("esperaba path /api/v1/auth/login en openapi.json")
+	}
+}
+
+// AC-PRES-001: GET /docs retorna 200
+func TestSwaggerUI_Retorna200(t *testing.T) {
+	router, _ := setupRouter(&mockAuthFacade{})
+	w := doRequest(router, http.MethodGet, "/docs", "")
+
+	if w.Code != http.StatusOK {
+		t.Errorf("esperaba 200 en /docs, got %d", w.Code)
+	}
+}

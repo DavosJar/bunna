@@ -1,6 +1,7 @@
-package registro
+package registro_test
 
 import (
+	"github.com/davosjar/bunna/services/identidad/internal/usuarios/application/services/registro"
 	"context"
 	"testing"
 
@@ -65,10 +66,10 @@ func TestServicioRegistroExitoso(t *testing.T) {
 	cfg, _ := config.LoadConfig()
 	reg := registry.NewRegistry(db, cfg)
 
-	servicio := NuevoServicioRegistro(reg.UsuarioUnitOfWork())
+	servicio := registro.NuevoServicioRegistro(reg.UsuarioUnitOfWork())
 
 	ctx := context.Background()
-	comando := &ComandoRegistro{
+	comando := &registro.ComandoRegistro{
 		Correo:   "test@example.com",
 		Password: "password123",
 		Nombre:   "Juan",
@@ -135,10 +136,10 @@ func TestServicioRegistroValidacionCorreoVacio(t *testing.T) {
 
 	cfg, _ := config.LoadConfig()
 	reg := registry.NewRegistry(db, cfg)
-	servicio := NuevoServicioRegistro(reg.UsuarioUnitOfWork())
+	servicio := registro.NuevoServicioRegistro(reg.UsuarioUnitOfWork())
 
 	ctx := context.Background()
-	comando := &ComandoRegistro{
+	comando := &registro.ComandoRegistro{
 		Correo:   "", // Vacío
 		Password: "password123",
 		Nombre:   "Juan",
@@ -164,10 +165,10 @@ func TestServicioRegistroValidacionPasswordVacio(t *testing.T) {
 
 	cfg, _ := config.LoadConfig()
 	reg := registry.NewRegistry(db, cfg)
-	servicio := NuevoServicioRegistro(reg.UsuarioUnitOfWork())
+	servicio := registro.NuevoServicioRegistro(reg.UsuarioUnitOfWork())
 
 	ctx := context.Background()
-	comando := &ComandoRegistro{
+	comando := &registro.ComandoRegistro{
 		Correo:   "test@example.com",
 		Password: "", // Vacío
 		Nombre:   "Juan",
@@ -193,10 +194,10 @@ func TestServicioRegistroValidacionNombreVacio(t *testing.T) {
 
 	cfg, _ := config.LoadConfig()
 	reg := registry.NewRegistry(db, cfg)
-	servicio := NuevoServicioRegistro(reg.UsuarioUnitOfWork())
+	servicio := registro.NuevoServicioRegistro(reg.UsuarioUnitOfWork())
 
 	ctx := context.Background()
-	comando := &ComandoRegistro{
+	comando := &registro.ComandoRegistro{
 		Correo:   "test@example.com",
 		Password: "password123",
 		Nombre:   "", // Vacío
@@ -222,12 +223,12 @@ func TestServicioRegistroMultiplesUsuarios(t *testing.T) {
 
 	cfg, _ := config.LoadConfig()
 	reg := registry.NewRegistry(db, cfg)
-	servicio := NuevoServicioRegistro(reg.UsuarioUnitOfWork())
+	servicio := registro.NuevoServicioRegistro(reg.UsuarioUnitOfWork())
 
 	ctx := context.Background()
 
 	// Crear 3 usuarios
-	usuarios := []*ComandoRegistro{
+	usuarios := []*registro.ComandoRegistro{
 		{
 			Correo:   "user1@example.com",
 			Password: "pass1",
@@ -251,7 +252,7 @@ func TestServicioRegistroMultiplesUsuarios(t *testing.T) {
 		},
 	}
 
-	var usuariosCreados []*DtoRespuestaRegistro
+	var usuariosCreados []*registro.DtoRespuestaRegistro
 	for _, cmd := range usuarios {
 		respuesta, err := servicio.Ejecutar(ctx, cmd)
 		if err != nil {
@@ -285,10 +286,10 @@ func TestServicioRegistroValidacionEmailInvalido(t *testing.T) {
 
 	cfg, _ := config.LoadConfig()
 	reg := registry.NewRegistry(db, cfg)
-	servicio := NuevoServicioRegistro(reg.UsuarioUnitOfWork())
+	servicio := registro.NuevoServicioRegistro(reg.UsuarioUnitOfWork())
 
 	ctx := context.Background()
-	comando := &ComandoRegistro{
+	comando := &registro.ComandoRegistro{
 		Correo:   "notanemail", // Email inválido
 		Password: "password123",
 		Nombre:   "Juan",
@@ -317,10 +318,10 @@ func TestServicioRegistroValidacionEmailSinArroba(t *testing.T) {
 
 	cfg, _ := config.LoadConfig()
 	reg := registry.NewRegistry(db, cfg)
-	servicio := NuevoServicioRegistro(reg.UsuarioUnitOfWork())
+	servicio := registro.NuevoServicioRegistro(reg.UsuarioUnitOfWork())
 
 	ctx := context.Background()
-	comando := &ComandoRegistro{
+	comando := &registro.ComandoRegistro{
 		Correo:   "user.com", // Email sin @
 		Password: "password123",
 		Nombre:   "Juan",
@@ -349,10 +350,10 @@ func TestRegistroPasswordHasheadoCorrectamente(t *testing.T) {
 
 	cfg, _ := config.LoadConfig()
 	reg := registry.NewRegistry(db, cfg)
-	servicio := NuevoServicioRegistro(reg.UsuarioUnitOfWork())
+	servicio := registro.NuevoServicioRegistro(reg.UsuarioUnitOfWork())
 
 	ctx := context.Background()
-	comando := &ComandoRegistro{
+	comando := &registro.ComandoRegistro{
 		Correo:   "test@example.com",
 		Password: "MySecurePassword123!",
 		Nombre:   "Juan",
@@ -411,12 +412,12 @@ func TestServicioRegistroRollbackSiCredencialesFalla(t *testing.T) {
 
 	cfg, _ := config.LoadConfig()
 	reg := registry.NewRegistry(db, cfg)
-	servicio := NuevoServicioRegistro(reg.UsuarioUnitOfWork())
+	servicio := registro.NuevoServicioRegistro(reg.UsuarioUnitOfWork())
 
 	ctx := context.Background()
 
 	// Crear un usuario exitosamente primero
-	comando1 := &ComandoRegistro{
+	comando1 := &registro.ComandoRegistro{
 		Correo:   "test1@example.com",
 		Password: "password123",
 		Nombre:   "Usuario",
@@ -446,7 +447,7 @@ func TestServicioRegistroRollbackSiCredencialesFalla(t *testing.T) {
 
 	// Ahora intentar crear un usuario con credenciales duplicadas
 	// Primero creamos un usuario con el ID especificado
-	comando2 := &ComandoRegistro{
+	comando2 := &registro.ComandoRegistro{
 		Correo:   "test2@example.com",
 		Password: "password456",
 		Nombre:   "Usuario",
@@ -495,13 +496,13 @@ func TestServicioRegistroTransaccionAtomicaConContextTimeout(t *testing.T) {
 
 	cfg, _ := config.LoadConfig()
 	reg := registry.NewRegistry(db, cfg)
-	servicio := NuevoServicioRegistro(reg.UsuarioUnitOfWork())
+	servicio := registro.NuevoServicioRegistro(reg.UsuarioUnitOfWork())
 
 	// Crear un context con timeout muy corto
 	ctx, cancel := context.WithTimeout(context.Background(), 0)
 	defer cancel()
 
-	comando := &ComandoRegistro{
+	comando := &registro.ComandoRegistro{
 		Correo:   "test@example.com",
 		Password: "password123",
 		Nombre:   "Juan",
@@ -565,10 +566,10 @@ func TestServicioRegistroConGeneradorIDInyectado(t *testing.T) {
 		mockGenerador,
 	)
 
-	servicio := NuevoServicioRegistro(unitOfWork)
+	servicio := registro.NuevoServicioRegistro(unitOfWork)
 
 	ctx := context.Background()
-	comando := &ComandoRegistro{
+	comando := &registro.ComandoRegistro{
 		Correo:   "test@example.com",
 		Password: "password123",
 		Nombre:   "Juan",

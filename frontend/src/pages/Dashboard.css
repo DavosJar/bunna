@@ -391,6 +391,11 @@
   color: #991b1b;
 }
 
+.results-badge--unknown {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
 .results-badge__dot {
   width: 8px;
   height: 8px;
@@ -406,6 +411,10 @@
 }
 .results-badge--low .results-badge__dot {
   background: #ef4444;
+}
+
+.results-badge--unknown .results-badge__dot {
+  background: #9ca3af;
 }
 
 /* Level Gauge */
@@ -448,6 +457,10 @@
 }
 .results-gauge__fill--low {
   background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.results-gauge__fill--unknown {
+  background: linear-gradient(90deg, #d1d5db, #9ca3af);
 }
 
 /* Stats Grid */
@@ -504,6 +517,173 @@
   line-height: 1.6;
 }
 
+/* ===== YOLO Processed Image ===== */
+.results-image {
+  margin-bottom: var(--space-6);
+  animation: scaleIn 0.3s ease-out;
+}
+
+.results-image__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-gray-400);
+  margin-bottom: var(--space-2);
+}
+
+.results-image__img {
+  width: 100%;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-gray-200);
+  object-fit: contain;
+  max-height: 350px;
+  background: var(--color-gray-50);
+}
+
+/* ===== Detection Chips ===== */
+.results-detections {
+  margin-bottom: var(--space-6);
+}
+
+.results-detections__title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-gray-400);
+  margin-bottom: var(--space-3);
+}
+
+.results-detections__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.detection-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: transform var(--transition-fast);
+}
+
+.detection-chip:hover {
+  transform: scale(1.05);
+}
+
+.detection-chip--sana {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.detection-chip--deficiente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.detection-chip__name {
+  font-weight: 600;
+}
+
+.detection-chip__conf {
+  font-size: 0.72rem;
+  opacity: 0.8;
+}
+
+/* ===== Clickable Image Hint ===== */
+.results-image__img--clickable {
+  cursor: zoom-in;
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.results-image__img--clickable:hover {
+  transform: scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== Lightbox ===== */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: lightboxIn 0.25s ease-out;
+}
+
+@keyframes lightboxIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.lightbox__close {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 1.15rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast);
+  z-index: 10;
+}
+
+.lightbox__close:hover {
+  background: rgba(239, 68, 68, 0.7);
+}
+
+.lightbox__zoom-info {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.35rem 1rem;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.lightbox__container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+.lightbox__img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+  transition: transform 0.1s ease-out;
+  pointer-events: none;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 900px) {
   .upload-section {
@@ -520,5 +700,10 @@
 
   .navbar__user-info {
     display: none;
+  }
+
+  .lightbox__img {
+    max-width: 98vw;
+    max-height: 85vh;
   }
 }

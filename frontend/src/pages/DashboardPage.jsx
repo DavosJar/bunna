@@ -1,38 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { diagnosticar } from '../services/yoloApi';
 import './Dashboard.css';
-
-/* Mock results data */
-const MOCK_RESULTS = [
-  {
-    level: 'high',
-    label: 'Alto',
-    percentage: 82,
-    confidence: '94.2%',
-    detections: 12,
-    recommendation:
-      'El nivel de nitrógeno es óptimo. Mantén el plan de fertilización actual y realiza un nuevo análisis en 30 días para monitorear la evolución.',
-  },
-  {
-    level: 'medium',
-    label: 'Medio',
-    percentage: 54,
-    confidence: '87.5%',
-    detections: 8,
-    recommendation:
-      'Se recomienda aplicar urea (46-0-0) a razón de 150g por planta. Repite el análisis en 15 días para evaluar la respuesta del cultivo.',
-  },
-  {
-    level: 'low',
-    label: 'Bajo',
-    percentage: 28,
-    confidence: '91.8%',
-    detections: 15,
-    recommendation:
-      'Nivel crítico de nitrógeno detectado. Aplica fertilizante nitrogenado de forma urgente (200g/planta de urea). Consulta con un agrónomo para un plan de recuperación.',
-  },
-];
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
@@ -40,9 +10,59 @@ export default function DashboardPage() {
   const fileInputRef = useRef(null);
 
   const [imagePreview, setImagePreview] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const panStart = useRef({ x: 0, y: 0 });
+  const panOffset = useRef({ x: 0, y: 0 });
+
+  const openLightbox = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => setLightboxOpen(false);
+
+  const handleWheel = useCallback((e) => {
+    e.preventDefault();
+    setZoom((z) => Math.min(Math.max(z + (e.deltaY > 0 ? -0.15 : 0.15), 0.5), 5));
+  }, []);
+
+  const handlePointerDown = useCallback((e) => {
+    if (e.button !== 0) return;
+    setIsPanning(true);
+    panStart.current = { x: e.clientX, y: e.clientY };
+    panOffset.current = { ...pan };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }, [pan]);
+
+  const handlePointerMove = useCallback((e) => {
+    if (!isPanning) return;
+    setPan({
+      x: panOffset.current.x + (e.clientX - panStart.current.x),
+      y: panOffset.current.y + (e.clientY - panStart.current.y),
+    });
+  }, [isPanning]);
+
+  const handlePointerUp = useCallback(() => setIsPanning(false), []);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') closeLightbox(); };
+    if (lightboxOpen) {
+      document.addEventListener('keydown', onKey);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [lightboxOpen]);
 
   const handleLogout = () => {
     logout();
@@ -52,6 +72,7 @@ export default function DashboardPage() {
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onload = (ev) => {
         setImagePreview(ev.target.result);
@@ -77,6 +98,7 @@ export default function DashboardPage() {
     setDragActive(false);
     const file = e.dataTransfer.files?.[0];
     if (file && file.type.startsWith('image/')) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onload = (ev) => {
         setImagePreview(ev.target.result);
@@ -86,18 +108,36 @@ export default function DashboardPage() {
     }
   };
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
+    if (!imageFile) return;
+
     setAnalyzing(true);
-    // Simulate API call with random result
-    setTimeout(() => {
-      const randomResult = MOCK_RESULTS[Math.floor(Math.random() * MOCK_RESULTS.length)];
-      setResults(randomResult);
+    try {
+      const data = await diagnosticar(imageFile);
+      setResults(data);
+    } catch (err) {
+      console.error('Error al analizar imagen:', err);
+      setResults({
+        feedback: {
+          level: 'unknown',
+          label: 'Error',
+          percentage: 0,
+          recommendation:
+            'Ocurrió un error al analizar la imagen. Verifica que el servidor YOLO esté corriendo en el puerto 8000 e intenta de nuevo.',
+        },
+        num_detections: 0,
+        detections: [],
+        avg_confidence: 0,
+        image: null,
+      });
+    } finally {
       setAnalyzing(false);
-    }, 2000);
+    }
   };
 
   const handleRemoveImage = () => {
     setImagePreview(null);
+    setImageFile(null);
     setResults(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -107,6 +147,11 @@ export default function DashboardPage() {
   const initials = user?.nombre
     ? user.nombre.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
     : '??';
+
+  const feedback = results?.feedback;
+  const confidenceStr = results?.avg_confidence
+    ? `${(results.avg_confidence * 100).toFixed(1)}%`
+    : '-';
 
   return (
     <div className="dashboard">
@@ -245,53 +290,118 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="results-content">
-                {/* Badge */}
-                <div className={`results-badge results-badge--${results.level}`}>
-                  <span className="results-badge__dot" />
-                  Nitrógeno {results.label}
-                </div>
-
-                {/* Gauge */}
-                <div className="results-gauge">
-                  <div className="results-gauge__label">
-                    <span>Nivel de nitrógeno</span>
-                    <span className="results-gauge__value">{results.percentage}%</span>
-                  </div>
-                  <div className="results-gauge__bar">
-                    <div
-                      className={`results-gauge__fill results-gauge__fill--${results.level}`}
-                      style={{ width: `${results.percentage}%` }}
+                {/* Imagen procesada por YOLO */}
+                {results.image && (
+                  <div className="results-image">
+                    <p className="results-image__label">Imagen procesada por YOLO</p>
+                    <img
+                      src={results.image}
+                      alt="Detección YOLO"
+                      className="results-image__img results-image__img--clickable"
+                      onClick={openLightbox}
+                      title="Clic para ampliar"
                     />
                   </div>
-                </div>
+                )}
+
+                {/* Badge */}
+                {feedback && (
+                  <div className={`results-badge results-badge--${feedback.level}`}>
+                    <span className="results-badge__dot" />
+                    Nitrógeno {feedback.label}
+                  </div>
+                )}
+
+                {/* Gauge */}
+                {feedback && (
+                  <div className="results-gauge">
+                    <div className="results-gauge__label">
+                      <span>Nivel de nitrógeno</span>
+                      <span className="results-gauge__value">{feedback.percentage}%</span>
+                    </div>
+                    <div className="results-gauge__bar">
+                      <div
+                        className={`results-gauge__fill results-gauge__fill--${feedback.level}`}
+                        style={{ width: `${feedback.percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Stats */}
                 <div className="results-stats">
                   <div className="results-stat">
                     <div className="results-stat__label">Confianza</div>
-                    <div className="results-stat__value">{results.confidence}</div>
+                    <div className="results-stat__value">{confidenceStr}</div>
                   </div>
                   <div className="results-stat">
                     <div className="results-stat__label">Detecciones</div>
-                    <div className="results-stat__value">{results.detections}</div>
+                    <div className="results-stat__value">{results.num_detections}</div>
                   </div>
                 </div>
 
-                {/* Recommendation */}
-                <div className="results-rec">
-                  <div className="results-rec__title">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                    </svg>
-                    Recomendación
+                {/* Detections Detail */}
+                {results.detections && results.detections.length > 0 && (
+                  <div className="results-detections">
+                    <p className="results-detections__title">Detalle de detecciones</p>
+                    <div className="results-detections__list">
+                      {results.detections.map((det, i) => (
+                        <div key={i} className={`detection-chip detection-chip--${det.class_name === 'hoja_sana' ? 'sana' : 'deficiente'}`}>
+                          <span className="detection-chip__name">
+                            {det.class_name === 'hoja_sana' ? '🌿 Sana' : '⚠️ Deficiencia'}
+                          </span>
+                          <span className="detection-chip__conf">
+                            {(det.confidence * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <p className="results-rec__text">{results.recommendation}</p>
-                </div>
+                )}
+
+                {/* Recommendation */}
+                {feedback && (
+                  <div className="results-rec">
+                    <div className="results-rec__title">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                      </svg>
+                      Recomendación
+                    </div>
+                    <p className="results-rec__text">{feedback.recommendation}</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
       </main>
+      {/* Lightbox */}
+      {lightboxOpen && results?.image && (
+        <div className="lightbox" onClick={closeLightbox}>
+          <button className="lightbox__close" onClick={closeLightbox} aria-label="Cerrar">✕</button>
+          <div className="lightbox__zoom-info">{Math.round(zoom * 100)}%</div>
+          <div
+            className="lightbox__container"
+            onClick={(e) => e.stopPropagation()}
+            onWheel={handleWheel}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
+          >
+            <img
+              src={results.image}
+              alt="Detección YOLO ampliada"
+              className="lightbox__img"
+              draggable={false}
+              style={{
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

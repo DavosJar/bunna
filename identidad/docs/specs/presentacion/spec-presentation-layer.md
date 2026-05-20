@@ -222,8 +222,8 @@ type Link struct {
 - `internal/registry/registry.go` — Registry central. Los handlers obtendrán facades desde aquí.
 - `internal/config/env.go` — Se agregarán variables de entorno para CORS, puerto, etc.
 - `shared/presentation/api_response.go` — Struct genérico ApiResponse. Ver `architecture-context.md`.
-- `docs/adr/architecture-context.md` — Define el flujo de capas y restricciones.
-- `docs/adr/specs/login_spec.md` — Define los casos de uso de login y registro que los handlers expondrán.
+- `../../adr/architecture-context.md` — Define el flujo de capas y restricciones.
+- `../sesiones/login_spec.md` — Define los casos de uso de login y registro que los handlers expondrán.
 
 ### Dependencias de Infraestructura
 
@@ -246,8 +246,8 @@ type Link struct {
 
 ## 11. Especificaciones Relacionadas / Lectura Adicional
 
-- `docs/adr/architecture-context.md` — Arquitectura de capas de presentación.
-- `docs/adr/feature-template.md` — Template de features del proyecto.
-- `docs/adr/specs/login_spec.md` — Especificación del caso de uso login.
+- `../../adr/architecture-context.md` — Arquitectura de capas de presentación.
+- `../../adr/feature-template.md` — Template de features del proyecto.
+- `../sesiones/login_spec.md` — Especificación del caso de uso login.
 - [Documentación de Huma v2](https://huma.rocks/) — Framework de API REST.
 - [Documentación de Gin](https://gin-gonic.com/) — Framework HTTP.

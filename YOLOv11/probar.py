@@ -6,7 +6,7 @@ model = YOLO("runs/detect/train/weights/best.pt")
 
 # 2. Ejecutamos la deteccion en una imagen nueva
 # Cambia '3.jpg' por el nombre de una imagen que tengas
-results = model.predict(source="1.jpg", save=True, conf=0.20)
+results = model.predict(source="3.jpg", save=True, conf=0.20, name="results", exist_ok=True)
 
 # 3. Construimos un diagnostico estructurado en JSON
 result = results[0]

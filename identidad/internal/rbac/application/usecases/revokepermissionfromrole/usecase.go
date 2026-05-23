@@ -1,0 +1,56 @@
+package revokepermissionfromrole
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
+)
+
+type RevocarPermisoDeRolCasoDeUso struct {
+	rolRepo        rbac.RolRepositorio
+	rolPermisoRepo rbac.RolPermisoRepositorio
+	authSvc        rbac.AuthorizationService
+}
+
+func NewRevocarPermisoDeRolCasoDeUso(
+	rolRepo rbac.RolRepositorio,
+	rolPermisoRepo rbac.RolPermisoRepositorio,
+	authSvc rbac.AuthorizationService,
+) *RevocarPermisoDeRolCasoDeUso {
+	return &RevocarPermisoDeRolCasoDeUso{
+		rolRepo:        rolRepo,
+		rolPermisoRepo: rolPermisoRepo,
+		authSvc:        authSvc,
+	}
+}
+
+func (uc *RevocarPermisoDeRolCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoRevocarPermisoDeRol) (*RespuestaRevocarPermisoDeRol, error) {
+	ok, err := uc.authSvc.TienePermiso(ctx, cmd.EjecutorID, cmd.TenantID, rbac.PermisoRolPermisoRevocar)
+	if err != nil {
+		return nil, fmt.Errorf("error al verificar permiso: %w", err)
+	}
+	if !ok {
+		return nil, rbac.ErrPermisoDenegado
+	}
+
+	rol, err := uc.rolRepo.ObtenerPorID(ctx, cmd.RolID)
+	if err != nil {
+		return nil, fmt.Errorf("rol no encontrado: %w", err)
+	}
+
+	if rol.EsSistema {
+		return nil, rbac.ErrRolInmutable
+	}
+
+	if err := uc.rolPermisoRepo.LimpiarPermisosDeRol(ctx, cmd.RolID); err != nil {
+		return nil, fmt.Errorf("error al revocar permiso del rol: %w", err)
+	}
+
+	return &RespuestaRevocarPermisoDeRol{
+		RolID:         cmd.RolID,
+		PermisoCodigo: cmd.PermisoCodigo,
+		RevocadoEn:   time.Now().Format("2006-01-02T15:04:05Z"),
+	}, nil
+}

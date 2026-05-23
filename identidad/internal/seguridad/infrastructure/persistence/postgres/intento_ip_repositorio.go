@@ -6,6 +6,7 @@ import (
 	"time"
 
 	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
+	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	"gorm.io/gorm"
 )
 
@@ -61,6 +62,81 @@ func (r *intentoIPRepositorio) Actualizar(ctx context.Context, i *seguridad_doma
 		return nil, result.Error
 	}
 	return r.ObtenerPorIP(ctx, i.IP())
+}
+
+// Listar retorna registros de intentos por IP filtrados y paginados.
+func (r *intentoIPRepositorio) Listar(ctx context.Context, spec seguridad_domain.EspecificacionIntentoIP, pag shareddomain.Paginacion) ([]*seguridad_domain.IntentoPorIP, error) {
+	query := r.db.WithContext(ctx).Model(&IntentoIPModel{})
+
+	mapeoColumnas := map[string]string{
+		"ip":             "ip",
+		"contador":       "contador",
+		"ventanaInicio":  "ventana_inicio",
+		"bloqueadoHasta": "bloqueado_hasta",
+	}
+
+	for _, filtro := range spec.ListaFiltros {
+		if !seguridad_domain.ColumnasPermitidasIntentoIP[filtro.Campo] {
+			continue
+		}
+
+		columnaDB, ok := mapeoColumnas[filtro.Campo]
+		if !ok {
+			continue
+		}
+
+		switch filtro.Operador {
+		case "=":
+			query = query.Where(columnaDB+" = ?", filtro.Valor)
+		case "!=":
+			query = query.Where(columnaDB+" != ?", filtro.Valor)
+		case ">":
+			query = query.Where(columnaDB+" > ?", filtro.Valor)
+		case "<":
+			query = query.Where(columnaDB+" < ?", filtro.Valor)
+		case ">=":
+			query = query.Where(columnaDB+" >= ?", filtro.Valor)
+		case "<=":
+			query = query.Where(columnaDB+" <= ?", filtro.Valor)
+		}
+	}
+
+	for _, ord := range pag.Ordenaciones {
+		if !seguridad_domain.ColumnasPermitidasIntentoIP[ord.Campo] {
+			continue
+		}
+
+		columnaDB, ok := mapeoColumnas[ord.Campo]
+		if !ok {
+			continue
+		}
+
+		orden := "ASC"
+		if ord.Tipo == shareddomain.DESC {
+			orden = "DESC"
+		}
+		query = query.Order(columnaDB + " " + orden)
+	}
+
+	offset := (pag.Pagina - 1) * pag.TamanoPagina
+	if pag.Pagina < 1 {
+		offset = 0
+	}
+	if pag.TamanoPagina < 1 {
+		pag.TamanoPagina = 10
+	}
+
+	var models []IntentoIPModel
+	result := query.Offset(offset).Limit(pag.TamanoPagina).Find(&models)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	intentos := make([]*seguridad_domain.IntentoPorIP, len(models))
+	for i, m := range models {
+		intentos[i] = m.ToDomain()
+	}
+	return intentos, nil
 }
 
 // EliminarExpirados elimina registros cuya ventana de tiempo ya expiró.

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
+	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	"gorm.io/gorm"
 )
 
@@ -99,6 +100,88 @@ func (r *sesionRepositorio) ListarActivasPorUsuarioID(ctx context.Context, usuar
 	if result.Error != nil {
 		return nil, result.Error
 	}
+	sesiones := make([]*sesiones_domain.Sesion, len(models))
+	for i, m := range models {
+		sesiones[i] = m.ToDomain()
+	}
+	return sesiones, nil
+}
+
+// Listar retorna sesiones filtradas y paginadas según la especificación.
+func (r *sesionRepositorio) Listar(ctx context.Context, spec sesiones_domain.EspecificacionSesion, pag shareddomain.Paginacion) ([]*sesiones_domain.Sesion, error) {
+	query := r.db.WithContext(ctx).Model(&SesionModel{})
+
+	mapeoColumnas := map[string]string{
+		"usuarioID":              "usuario_id",
+		"estado":                 "estado",
+		"ipOrigen":               "ip_origen",
+		"fechaCreacion":          "fecha_creacion",
+		"fechaActualizacion":     "fecha_actualizacion",
+		"fechaExpiracionAccess":  "fecha_expiracion_access",
+		"fechaExpiracionRefresh": "fecha_expiracion_refresh",
+		"ultimaActividad":        "ultima_actividad",
+		"contadorRefrescos":      "contador_refrescos",
+	}
+
+	for _, filtro := range spec.ListaFiltros {
+		if !sesiones_domain.ColumnasPermitidas[filtro.Campo] {
+			continue
+		}
+
+		columnaDB, ok := mapeoColumnas[filtro.Campo]
+		if !ok {
+			continue
+		}
+
+		switch filtro.Operador {
+		case "=":
+			query = query.Where(columnaDB+" = ?", filtro.Valor)
+		case "!=":
+			query = query.Where(columnaDB+" != ?", filtro.Valor)
+		case "LIKE":
+			query = query.Where(columnaDB+" LIKE ?", filtro.Valor)
+		case ">":
+			query = query.Where(columnaDB+" > ?", filtro.Valor)
+		case "<":
+			query = query.Where(columnaDB+" < ?", filtro.Valor)
+		case ">=":
+			query = query.Where(columnaDB+" >= ?", filtro.Valor)
+		case "<=":
+			query = query.Where(columnaDB+" <= ?", filtro.Valor)
+		}
+	}
+
+	for _, ord := range pag.Ordenaciones {
+		if !sesiones_domain.ColumnasPermitidas[ord.Campo] {
+			continue
+		}
+
+		columnaDB, ok := mapeoColumnas[ord.Campo]
+		if !ok {
+			continue
+		}
+
+		orden := "ASC"
+		if ord.Tipo == shareddomain.DESC {
+			orden = "DESC"
+		}
+		query = query.Order(columnaDB + " " + orden)
+	}
+
+	offset := (pag.Pagina - 1) * pag.TamanoPagina
+	if pag.Pagina < 1 {
+		offset = 0
+	}
+	if pag.TamanoPagina < 1 {
+		pag.TamanoPagina = 10
+	}
+
+	var models []SesionModel
+	result := query.Offset(offset).Limit(pag.TamanoPagina).Find(&models)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
 	sesiones := make([]*sesiones_domain.Sesion, len(models))
 	for i, m := range models {
 		sesiones[i] = m.ToDomain()

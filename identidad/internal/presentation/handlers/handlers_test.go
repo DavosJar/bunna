@@ -33,6 +33,18 @@ func (m *mockAuthFacade) Login(ctx context.Context, cmd facades.ComandoLogin) (*
 	return m.loginResp, m.loginErr
 }
 
+func (m *mockAuthFacade) Refresh(ctx context.Context, cmd facades.ComandoRefresh) (*facades.RespuestaRefresh, error) {
+	return nil, nil
+}
+
+func (m *mockAuthFacade) Logout(ctx context.Context, cmd facades.ComandoLogout) (*facades.RespuestaLogout, error) {
+	return nil, nil
+}
+
+func (m *mockAuthFacade) LogoutAll(ctx context.Context, cmd facades.ComandoLogoutAll) (*facades.RespuestaLogout, error) {
+	return nil, nil
+}
+
 // ── Helper ────────────────────────────────────────────────────────────────────
 
 func setupRouter(facade facades.AuthFacade) (*gin.Engine, huma.API) {

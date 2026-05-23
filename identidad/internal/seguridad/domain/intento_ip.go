@@ -45,6 +45,11 @@ func (i *IntentoPorIP) Bloquear(hasta time.Time) {
 	i.bloqueadoHasta = hasta
 }
 
+// Desbloquear elimina el bloqueo de esta IP.
+func (i *IntentoPorIP) Desbloquear() {
+	i.bloqueadoHasta = time.Time{}
+}
+
 // EstaBloqueada retorna true si la IP está bloqueada en el momento dado.
 func (i *IntentoPorIP) EstaBloqueada(ahora time.Time) bool {
 	return ahora.Before(i.bloqueadoHasta)

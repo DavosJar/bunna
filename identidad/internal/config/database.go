@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"log"
 
+	rbac_postgres "github.com/davosjar/bunna/services/identidad/internal/rbac/infrastructure/persistence/postgres"
+	recuperacion_postgres "github.com/davosjar/bunna/services/identidad/internal/recuperacion/infrastructure/persistence/postgres"
 	seguridad_postgres "github.com/davosjar/bunna/services/identidad/internal/seguridad/infrastructure/persistence/postgres"
 	sesiones_postgres "github.com/davosjar/bunna/services/identidad/internal/sesiones/infrastructure/persistence/postgres"
+	tenant_postgres "github.com/davosjar/bunna/services/identidad/internal/tenants/infrastructure/persistence/postgres"
 	usuarios_postgres "github.com/davosjar/bunna/services/identidad/internal/usuarios/infrastructure/persistence/postgres"
+	verificacion_postgres "github.com/davosjar/bunna/services/identidad/internal/verificacion/infrastructure/persistence/postgres"
 	postgresdriver "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -54,8 +58,38 @@ func RunMigrations(db *gorm.DB) error {
 		return fmt.Errorf("failed to migrate rate_limit_ip: %w", err)
 	}
 
+	if err := db.AutoMigrate(&rbac_postgres.RolModel{}); err != nil {
+		return fmt.Errorf("failed to migrate roles: %w", err)
+	}
+	if err := db.AutoMigrate(&rbac_postgres.PermisoModel{}); err != nil {
+		return fmt.Errorf("failed to migrate permisos: %w", err)
+	}
+	if err := db.AutoMigrate(&rbac_postgres.RolPermisoModel{}); err != nil {
+		return fmt.Errorf("failed to migrate rol_permisos: %w", err)
+	}
+	if err := db.AutoMigrate(&rbac_postgres.UsuarioRolModel{}); err != nil {
+		return fmt.Errorf("failed to migrate usuario_roles: %w", err)
+	}
+	if err := db.AutoMigrate(&rbac_postgres.UsuarioTenantRolModel{}); err != nil {
+		return fmt.Errorf("failed to migrate usuario_tenant_roles: %w", err)
+	}
+
+	if err := db.AutoMigrate(&tenant_postgres.TenantModel{}); err != nil {
+		return fmt.Errorf("failed to migrate tenants: %w", err)
+	}
+	if err := db.AutoMigrate(&tenant_postgres.MembresiaModel{}); err != nil {
+		return fmt.Errorf("failed to migrate usuario_tenants: %w", err)
+	}
+
+	if err := db.AutoMigrate(&verificacion_postgres.VerificacionUsuarioModel{}); err != nil {
+		return fmt.Errorf("failed to migrate verificacion columns: %w", err)
+	}
+
+	if err := db.AutoMigrate(&recuperacion_postgres.TokenRecuperacionModel{}); err != nil {
+		return fmt.Errorf("failed to migrate tokens_recuperacion: %w", err)
+	}
+
 	// Índice único para emails (case-insensitive via LOWER).
-	// CREATE UNIQUE INDEX IF NOT EXISTS es soportado desde PostgreSQL 9.5+.
 	db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_correo_unique ON usuarios (correo)")
 
 	return nil

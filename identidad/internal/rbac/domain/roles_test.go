@@ -29,8 +29,9 @@ func TestSysAdminTieneTodosLosPermisos(t *testing.T) {
 	if sysAdmin == nil {
 		t.Fatal("Rol sys_admin no encontrado")
 	}
-	if len(sysAdmin.Permisos) != 8 {
-		t.Errorf("sys_admin debe tener 8 permisos, got %d", len(sysAdmin.Permisos))
+	expectedPermisos := len(TodosLosPermisos)
+	if len(sysAdmin.Permisos) != expectedPermisos {
+		t.Errorf("sys_admin debe tener %d permisos, got %d", expectedPermisos, len(sysAdmin.Permisos))
 	}
 }
 

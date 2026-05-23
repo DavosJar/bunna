@@ -42,4 +42,37 @@ type RespuestaLogin struct {
 type AuthFacade interface {
 	Registrar(ctx context.Context, cmd ComandoRegistro) (*RespuestaRegistro, error)
 	Login(ctx context.Context, cmd ComandoLogin) (*RespuestaLogin, error)
+	Refresh(ctx context.Context, cmd ComandoRefresh) (*RespuestaRefresh, error)
+	Logout(ctx context.Context, cmd ComandoLogout) (*RespuestaLogout, error)
+	LogoutAll(ctx context.Context, cmd ComandoLogoutAll) (*RespuestaLogout, error)
+}
+
+// ComandoRefresh contiene el token de refresco.
+type ComandoRefresh struct {
+	RefreshToken string
+}
+
+// RespuestaRefresh contiene los tokens renovados.
+type RespuestaRefresh struct {
+	AccessToken  string
+	RefreshToken string
+	ExpiresIn    int64
+	TokenType    string
+	UsuarioID    string
+}
+
+// RespuestaLogout contiene la cantidad de sesiones revocadas.
+type RespuestaLogout struct {
+	SesionesRevocadas int
+}
+
+// ComandoLogout contiene los datos para cerrar una sesión.
+type ComandoLogout struct {
+	SesionID  string
+	UsuarioID string
+}
+
+// ComandoLogoutAll contiene el usuarioID para cerrar todas las sesiones.
+type ComandoLogoutAll struct {
+	UsuarioID string
 }

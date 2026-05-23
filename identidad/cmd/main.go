@@ -21,11 +21,9 @@ func main() {
 	}
 
 	reg := registry.NewRegistry(db, cfg)
+	allFacades := facades.NewAllFacades(reg)
 
-	// Capa de presentación
-	authFacade := facades.NewAuthFacade(reg.GetServicioRegistro(), reg.ServicioLogin)
-
-	r := router.New(authFacade, router.Config{
+	r := router.New(allFacades, router.Config{
 		Version:     "1.0.0",
 		CORSOrigins: []string{cfg.CORSOrigins},
 	})

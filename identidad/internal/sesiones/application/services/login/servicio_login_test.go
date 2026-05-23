@@ -12,6 +12,7 @@ import (
 	"github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/login"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
+	"github.com/stretchr/testify/mock"
 	usuario_domain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 )
 
@@ -87,6 +88,7 @@ func (m *mockCredencialesRepo) Find(ctx context.Context, spec seguridad_domain.E
 
 // mockSesionRepo
 type mockSesionRepo struct {
+	mock.Mock
 	err error
 }
 
@@ -107,6 +109,13 @@ func (m *mockSesionRepo) ObtenerPorRefreshTokenHash(ctx context.Context, hash st
 }
 func (m *mockSesionRepo) ListarActivasPorUsuarioID(ctx context.Context, usuarioID string, ahora time.Time) ([]*sesiones_domain.Sesion, error) {
 	return nil, nil
+}
+func (m *mockSesionRepo) Listar(ctx context.Context, spec sesiones_domain.EspecificacionSesion, pag shared_domain.Paginacion) ([]*sesiones_domain.Sesion, error) {
+	args := m.Called(ctx, spec, pag)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*sesiones_domain.Sesion), args.Error(1)
 }
 func (m *mockSesionRepo) InvalidarTodasPorUsuarioID(ctx context.Context, usuarioID string) error {
 	return nil
@@ -158,6 +167,7 @@ func (m *mockGeneradorID) NextID(ctx context.Context) (string, error) {
 
 // mockIntentoIPBloqueoRepo
 type mockIntentoIPBloqueoRepo struct {
+	mock.Mock
 	intento    *seguridad_domain.IntentoPorIP
 	errObtener error
 }
@@ -170,6 +180,13 @@ func (m *mockIntentoIPBloqueoRepo) Crear(ctx context.Context, i *seguridad_domai
 }
 func (m *mockIntentoIPBloqueoRepo) Actualizar(ctx context.Context, i *seguridad_domain.IntentoPorIP) (*seguridad_domain.IntentoPorIP, error) {
 	return i, nil
+}
+func (m *mockIntentoIPBloqueoRepo) Listar(ctx context.Context, spec seguridad_domain.EspecificacionIntentoIP, pag shared_domain.Paginacion) ([]*seguridad_domain.IntentoPorIP, error) {
+	args := m.Called(ctx, spec, pag)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*seguridad_domain.IntentoPorIP), args.Error(1)
 }
 func (m *mockIntentoIPBloqueoRepo) EliminarExpirados(ctx context.Context, ahora time.Time, ventana time.Duration) error {
 	return nil

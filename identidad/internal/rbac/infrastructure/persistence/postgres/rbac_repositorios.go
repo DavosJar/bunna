@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
+	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	"gorm.io/gorm"
 )
 
@@ -38,11 +39,65 @@ func (r *rolRepositorio) ObtenerPorID(ctx context.Context, id string) (*rbac.Rol
 	return toRolDB(&m), nil
 }
 
-func (r *rolRepositorio) Listar(ctx context.Context) ([]*rbac.RolDB, error) {
-	var models []RolModel
-	if err := r.db.WithContext(ctx).Find(&models).Error; err != nil {
-		return nil, err
+func (r *rolRepositorio) Listar(ctx context.Context, spec rbac.EspecificacionRol, pag shareddomain.Paginacion) ([]*rbac.RolDB, error) {
+	query := r.db.WithContext(ctx).Model(&RolModel{})
+
+	mapeoColumnas := map[string]string{
+		"nombre":    "nombre",
+		"esSistema": "es_sistema",
 	}
+
+	for _, filtro := range spec.ListaFiltros {
+		if !rbac.ColumnasPermitidasRol[filtro.Campo] {
+			continue
+		}
+
+		columnaDB, ok := mapeoColumnas[filtro.Campo]
+		if !ok {
+			continue
+		}
+
+		switch filtro.Operador {
+		case "=":
+			query = query.Where(columnaDB+" = ?", filtro.Valor)
+		case "!=":
+			query = query.Where(columnaDB+" != ?", filtro.Valor)
+		case "LIKE":
+			query = query.Where(columnaDB+" LIKE ?", filtro.Valor)
+		}
+	}
+
+	for _, ord := range pag.Ordenaciones {
+		if !rbac.ColumnasPermitidasRol[ord.Campo] {
+			continue
+		}
+
+		columnaDB, ok := mapeoColumnas[ord.Campo]
+		if !ok {
+			continue
+		}
+
+		orden := "ASC"
+		if ord.Tipo == shareddomain.DESC {
+			orden = "DESC"
+		}
+		query = query.Order(columnaDB + " " + orden)
+	}
+
+	offset := (pag.Pagina - 1) * pag.TamanoPagina
+	if pag.Pagina < 1 {
+		offset = 0
+	}
+	if pag.TamanoPagina < 1 {
+		pag.TamanoPagina = 10
+	}
+
+	var models []RolModel
+	result := query.Offset(offset).Limit(pag.TamanoPagina).Find(&models)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
 	roles := make([]*rbac.RolDB, len(models))
 	for i, m := range models {
 		roles[i] = toRolDB(&m)

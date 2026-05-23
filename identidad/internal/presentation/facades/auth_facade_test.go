@@ -31,6 +31,11 @@ func (m *mockEjecutorLogin) Ejecutar(ctx context.Context, cmd svc_login.ComandoL
 	return m.respuesta, m.err
 }
 
+// newAuthFacadeMock es un helper para tests que crea una AuthFacade con servicios nulos.
+func newAuthFacadeMock(reg svc_registro.EjecutorRegistro, login svc_login.EjecutorLogin) facades.AuthFacade {
+	return facades.NewAuthFacade(reg, login, nil, nil)
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 func respuestaRegistroValida() *svc_registro.DtoRespuestaRegistro {
@@ -76,7 +81,7 @@ func (m *mockCapturadorLogin) Ejecutar(ctx context.Context, cmd svc_login.Comand
 // ── Tests Registrar ───────────────────────────────────────────────────────────
 
 func TestAuthFacade_Registrar_Exitoso(t *testing.T) {
-	facade := facades.NewAuthFacade(
+	facade := newAuthFacadeMock(
 		&mockEjecutorRegistro{respuesta: respuestaRegistroValida()},
 		&mockEjecutorLogin{},
 	)
@@ -105,7 +110,7 @@ func TestAuthFacade_Registrar_Exitoso(t *testing.T) {
 
 func TestAuthFacade_Registrar_TraduccionComando(t *testing.T) {
 	captura := &mockCapturadorRegistro{}
-	facade := facades.NewAuthFacade(captura, &mockEjecutorLogin{})
+	facade := newAuthFacadeMock(captura, &mockEjecutorLogin{})
 
 	_, err := facade.Registrar(context.Background(), facades.ComandoRegistro{
 		Nombre:   "Ana",
@@ -131,7 +136,7 @@ func TestAuthFacade_Registrar_TraduccionComando(t *testing.T) {
 
 func TestAuthFacade_Registrar_PropagaError(t *testing.T) {
 	errEsperado := errors.New("correo ya registrado")
-	facade := facades.NewAuthFacade(
+	facade := newAuthFacadeMock(
 		&mockEjecutorRegistro{err: errEsperado},
 		&mockEjecutorLogin{},
 	)
@@ -155,7 +160,7 @@ func TestAuthFacade_Registrar_ContextoCancelado(t *testing.T) {
 	cancel()
 
 	errEsperado := errors.New("context cancelado")
-	facade := facades.NewAuthFacade(
+	facade := newAuthFacadeMock(
 		&mockEjecutorRegistro{err: errEsperado},
 		&mockEjecutorLogin{},
 	)
@@ -174,7 +179,7 @@ func TestAuthFacade_Registrar_ContextoCancelado(t *testing.T) {
 // ── Tests Login ───────────────────────────────────────────────────────────────
 
 func TestAuthFacade_Login_Exitoso(t *testing.T) {
-	facade := facades.NewAuthFacade(
+	facade := newAuthFacadeMock(
 		&mockEjecutorRegistro{},
 		&mockEjecutorLogin{respuesta: respuestaLoginValida()},
 	)
@@ -210,7 +215,7 @@ func TestAuthFacade_Login_Exitoso(t *testing.T) {
 
 func TestAuthFacade_Login_PropagaError(t *testing.T) {
 	errEsperado := errors.New("credenciales inválidas")
-	facade := facades.NewAuthFacade(
+	facade := newAuthFacadeMock(
 		&mockEjecutorRegistro{},
 		&mockEjecutorLogin{err: errEsperado},
 	)
@@ -230,7 +235,7 @@ func TestAuthFacade_Login_PropagaError(t *testing.T) {
 
 func TestAuthFacade_Login_ExpiresInEnSegundos(t *testing.T) {
 	expiracion := time.Now().Add(900 * time.Second)
-	facade := facades.NewAuthFacade(
+	facade := newAuthFacadeMock(
 		&mockEjecutorRegistro{},
 		&mockEjecutorLogin{respuesta: &svc_login.RespuestaLogin{
 			AccessToken:       "token",
@@ -257,7 +262,7 @@ func TestAuthFacade_Login_ExpiresInEnSegundos(t *testing.T) {
 
 func TestAuthFacade_Login_TraduccionIPOrigen(t *testing.T) {
 	captura := &mockCapturadorLogin{}
-	facade := facades.NewAuthFacade(&mockEjecutorRegistro{}, captura)
+	facade := newAuthFacadeMock(&mockEjecutorRegistro{}, captura)
 
 	_, err := facade.Login(context.Background(), facades.ComandoLogin{
 		Email:    "test@correo.com",

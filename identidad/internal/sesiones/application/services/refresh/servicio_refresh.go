@@ -127,7 +127,7 @@ func (s *ServicioRefresh) Ejecutar(ctx context.Context, cmd ComandoRefresh) (*Re
 		}
 
 		// Generar nuevo par de tokens
-		nuevoAccessToken, expiracionAccess, err := tx.TokenServicio().GenerarAccessToken(claims.UsuarioID, sesion.ID())
+		nuevoAccessToken, expiracionAccess, err := tx.TokenServicio().GenerarAccessToken(claims.UsuarioID, sesion.ID(), nil)
 		if err != nil {
 			return ErrErrorGenerandoTokens
 		}

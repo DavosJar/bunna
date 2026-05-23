@@ -117,7 +117,7 @@ func (s *ServicioLogin) Ejecutar(ctx context.Context, cmd ComandoLogin) (*Respue
 			return err
 		}
 
-		accessToken, expiracionAccess, err := tx.TokenServicio().GenerarAccessToken(usuarioID, sesionID)
+		accessToken, expiracionAccess, err := tx.TokenServicio().GenerarAccessToken(usuarioID, sesionID, nil)
 		if err != nil {
 			return ErrErrorGenerandoTokens
 		}

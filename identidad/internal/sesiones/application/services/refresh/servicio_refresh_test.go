@@ -8,6 +8,7 @@ import (
 
 	"github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/refresh"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
+	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
 	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	usuario_domain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
@@ -41,7 +42,7 @@ type mockTokenServicio struct {
 	failRefresh   bool
 }
 
-func (m *mockTokenServicio) GenerarAccessToken(usuarioID, sesionID string) (string, time.Time, error) {
+func (m *mockTokenServicio) GenerarAccessToken(usuarioID, sesionID string, claims *rbac.UsuarioClaims) (string, time.Time, error) {
 	if m.failAccess {
 		return "", time.Time{}, errors.New("fallo access token")
 	}

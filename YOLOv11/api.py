@@ -123,6 +123,8 @@ async def diagnostico(archivo: UploadFile = File(...)):
         save=True,
         conf=CONF_THRESHOLD,
         project=str(PREDICT_DIR),
+        name="results",
+        exist_ok=True,
     )
 
     result = results[0]
@@ -165,6 +167,8 @@ async def diagnostico_desde_archivo(image_name: str):
         save=True,
         conf=CONF_THRESHOLD,
         project=str(PREDICT_DIR),
+        name="results",
+        exist_ok=True,
     )
 
     result = results[0]

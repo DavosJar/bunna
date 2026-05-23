@@ -1,11 +1,5 @@
 package usuario
 
-import (
-	"regexp"
-)
-
-var regexEmail = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
-
 // CorreoElectronico es un Value Object que encapsula la dirección
 // de correo y su estado de verificación.
 type CorreoElectronico struct {
@@ -14,13 +8,11 @@ type CorreoElectronico struct {
 }
 
 // NuevoCorreoElectronico crea un VO con estado inicial PENDIENTE_VERIFICACION.
-// Retorna error si la dirección está vacía o tiene formato inválido.
+// La validación de formato de email se realiza en la capa de aplicación.
+// El dominio solo garantiza que la dirección no esté vacía.
 func NuevoCorreoElectronico(direccion string) (*CorreoElectronico, error) {
 	if direccion == "" {
 		return nil, ErrCorreoRequerido
-	}
-	if !regexEmail.MatchString(direccion) {
-		return nil, ErrCorreoFormatoInvalido
 	}
 	return &CorreoElectronico{
 		direccion: direccion,

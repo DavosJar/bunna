@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"testing"
+
+	"github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 )
 
 type mockRepositorio struct {
@@ -44,7 +46,7 @@ func (m *mockRepositorio) ObtenerPorID(ctx context.Context, id string) (*Usuario
 	return nil, errors.New("usuario no encontrado")
 }
 
-func (m *mockRepositorio) Listar(ctx context.Context, especificacion EspecificacionUsuario, paginacion Paginacion) ([]*Usuario, error) {
+func (m *mockRepositorio) Listar(ctx context.Context, especificacion EspecificacionUsuario, paginacion domain.Paginacion) ([]*Usuario, error) {
 	resultado := m.filtrar(especificacion)
 	resultado = m.ordenar(resultado, paginacion.Ordenaciones)
 	return m.paginar(resultado, paginacion), nil
@@ -64,7 +66,7 @@ func (m *mockRepositorio) filtrar(especificacion EspecificacionUsuario) []*Usuar
 	return resultado
 }
 
-func cumpleFiltros(u *Usuario, filtros []CriterioFiltro) bool {
+func cumpleFiltros(u *Usuario, filtros []domain.CriterioFiltro) bool {
 	for _, f := range filtros {
 		switch f.Campo {
 		case "nombre":
@@ -121,7 +123,7 @@ func ptrString(s string) *string {
 	return &s
 }
 
-func (m *mockRepositorio) ordenar(usuarios []*Usuario, ordenaciones []Ordenacion) []*Usuario {
+func (m *mockRepositorio) ordenar(usuarios []*Usuario, ordenaciones []domain.Ordenacion) []*Usuario {
 	if len(ordenaciones) == 0 {
 		return usuarios
 	}
@@ -132,11 +134,11 @@ func (m *mockRepositorio) ordenar(usuarios []*Usuario, ordenaciones []Ordenacion
 	for _, ord := range ordenaciones {
 		switch ord.Campo {
 		case "nombre":
-			sortByString(resultado, func(u *Usuario) string { return u.Nombre() }, ord.Tipo == DESC)
+			sortByString(resultado, func(u *Usuario) string { return u.Nombre() }, ord.Tipo == domain.DESC)
 		case "apellido":
-			sortByString(resultado, func(u *Usuario) string { return u.Apellido() }, ord.Tipo == DESC)
+			sortByString(resultado, func(u *Usuario) string { return u.Apellido() }, ord.Tipo == domain.DESC)
 		case "correo":
-			sortByString(resultado, func(u *Usuario) string { return u.Correo() }, ord.Tipo == DESC)
+			sortByString(resultado, func(u *Usuario) string { return u.Correo() }, ord.Tipo == domain.DESC)
 		}
 	}
 	return resultado
@@ -158,7 +160,7 @@ func sortByString(usuarios []*Usuario, getter func(*Usuario) string, desc bool) 
 	}
 }
 
-func (m *mockRepositorio) paginar(usuarios []*Usuario, paginacion Paginacion) []*Usuario {
+func (m *mockRepositorio) paginar(usuarios []*Usuario, paginacion domain.Paginacion) []*Usuario {
 	if paginacion.TamanoPagina <= 0 {
 		return usuarios
 	}
@@ -177,15 +179,15 @@ func (m *mockRepositorio) paginar(usuarios []*Usuario, paginacion Paginacion) []
 }
 
 func crearUsuariosPrueba() []*Usuario {
-	u1, _ := NuevoUsuario("", "Ana", "García", "ana@test.com", "+34111111111")
-	u2, _ := NuevoUsuario("", "Carlos", "López", "carlos@test.com", "+34222222222")
-	u3, _ := NuevoUsuario("", "Beatriz", "Martínez", "beatriz@test.com", "+34333333333")
-	u4, _ := NuevoUsuario("", "David", "García", "david@test.com", "+34444444444")
-	u5, _ := NuevoUsuario("", "Elena", "Sánchez", "elena@test.com", "+34555555555")
+	u1, _ := NuevoUsuario("", "ana@test.com", "Ana", "García", "+34111111111")
+	u2, _ := NuevoUsuario("", "carlos@test.com", "Carlos", "López", "+34222222222")
+	u3, _ := NuevoUsuario("", "beatriz@test.com", "Beatriz", "Martínez", "+34333333333")
+	u4, _ := NuevoUsuario("", "david@test.com", "David", "García", "+34444444444")
+	u5, _ := NuevoUsuario("", "elena@test.com", "Elena", "Sánchez", "+34555555555")
 	u1.CambiarEstado(ACTIVO)
 	u2.CambiarEstado(ACTIVO)
-	u3.CambiarEstado(INACTIVO)
-	u4.CambiarEstado(ACTIVO)
+	u3.CambiarEstado(ACTIVO)
+	u4.CambiarEstado(INACTIVO)
 	u5.CambiarEstado(BLOQUEADO)
 	return []*Usuario{u1, u2, u3, u4, u5}
 }
@@ -194,7 +196,7 @@ func TestListarSinFiltros(t *testing.T) {
 	mock := &mockRepositorio{usuarios: crearUsuariosPrueba()}
 	repo := UsuarioRepositorio(mock)
 
-	resultado, err := repo.Listar(context.Background(), EspecificacionUsuario{}, Paginacion{Pagina: 1, TamanoPagina: 10})
+	resultado, err := repo.Listar(context.Background(), EspecificacionUsuario{}, domain.Paginacion{Pagina: 1, TamanoPagina: 10})
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -209,12 +211,12 @@ func TestListarConFiltroIgualdad(t *testing.T) {
 	repo := UsuarioRepositorio(mock)
 
 	especificacion := EspecificacionUsuario{
-		ListaLiltros: []CriterioFiltro{
+		ListaLiltros: []domain.CriterioFiltro{
 			{Campo: "nombre", Operador: "=", Valor: "Ana"},
 		},
 	}
 
-	resultado, err := repo.Listar(context.Background(), especificacion, Paginacion{Pagina: 1, TamanoPagina: 10})
+	resultado, err := repo.Listar(context.Background(), especificacion, domain.Paginacion{Pagina: 1, TamanoPagina: 10})
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -232,12 +234,12 @@ func TestListarConFiltroEstado(t *testing.T) {
 	repo := UsuarioRepositorio(mock)
 
 	especificacion := EspecificacionUsuario{
-		ListaLiltros: []CriterioFiltro{
+		ListaLiltros: []domain.CriterioFiltro{
 			{Campo: "estado", Operador: "=", Valor: "ACTIVO"},
 		},
 	}
 
-	resultado, err := repo.Listar(context.Background(), especificacion, Paginacion{Pagina: 1, TamanoPagina: 10})
+	resultado, err := repo.Listar(context.Background(), especificacion, domain.Paginacion{Pagina: 1, TamanoPagina: 10})
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -252,12 +254,12 @@ func TestListarConFiltroLike(t *testing.T) {
 	repo := UsuarioRepositorio(mock)
 
 	especificacion := EspecificacionUsuario{
-		ListaLiltros: []CriterioFiltro{
+		ListaLiltros: []domain.CriterioFiltro{
 			{Campo: "correo", Operador: "LIKE", Valor: "test"},
 		},
 	}
 
-	resultado, err := repo.Listar(context.Background(), especificacion, Paginacion{Pagina: 1, TamanoPagina: 10})
+	resultado, err := repo.Listar(context.Background(), especificacion, domain.Paginacion{Pagina: 1, TamanoPagina: 10})
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -272,12 +274,12 @@ func TestListarConFiltroApellido(t *testing.T) {
 	repo := UsuarioRepositorio(mock)
 
 	especificacion := EspecificacionUsuario{
-		ListaLiltros: []CriterioFiltro{
+		ListaLiltros: []domain.CriterioFiltro{
 			{Campo: "apellido", Operador: "=", Valor: "García"},
 		},
 	}
 
-	resultado, err := repo.Listar(context.Background(), especificacion, Paginacion{Pagina: 1, TamanoPagina: 10})
+	resultado, err := repo.Listar(context.Background(), especificacion, domain.Paginacion{Pagina: 1, TamanoPagina: 10})
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -292,13 +294,13 @@ func TestListarConMultipleFiltros(t *testing.T) {
 	repo := UsuarioRepositorio(mock)
 
 	especificacion := EspecificacionUsuario{
-		ListaLiltros: []CriterioFiltro{
+		ListaLiltros: []domain.CriterioFiltro{
 			{Campo: "estado", Operador: "=", Valor: "ACTIVO"},
 			{Campo: "apellido", Operador: "=", Valor: "García"},
 		},
 	}
 
-	resultado, err := repo.Listar(context.Background(), especificacion, Paginacion{Pagina: 1, TamanoPagina: 10})
+	resultado, err := repo.Listar(context.Background(), especificacion, domain.Paginacion{Pagina: 1, TamanoPagina: 10})
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -312,7 +314,7 @@ func TestListarConPaginacionPrimeraPagina(t *testing.T) {
 	mock := &mockRepositorio{usuarios: crearUsuariosPrueba()}
 	repo := UsuarioRepositorio(mock)
 
-	resultado, err := repo.Listar(context.Background(), EspecificacionUsuario{}, Paginacion{Pagina: 1, TamanoPagina: 2})
+	resultado, err := repo.Listar(context.Background(), EspecificacionUsuario{}, domain.Paginacion{Pagina: 1, TamanoPagina: 2})
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -326,7 +328,7 @@ func TestListarConPaginacionSegundaPagina(t *testing.T) {
 	mock := &mockRepositorio{usuarios: crearUsuariosPrueba()}
 	repo := UsuarioRepositorio(mock)
 
-	resultado, err := repo.Listar(context.Background(), EspecificacionUsuario{}, Paginacion{Pagina: 2, TamanoPagina: 2})
+	resultado, err := repo.Listar(context.Background(), EspecificacionUsuario{}, domain.Paginacion{Pagina: 2, TamanoPagina: 2})
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -340,7 +342,7 @@ func TestListarConPaginacionUltimaPaginaParcial(t *testing.T) {
 	mock := &mockRepositorio{usuarios: crearUsuariosPrueba()}
 	repo := UsuarioRepositorio(mock)
 
-	resultado, err := repo.Listar(context.Background(), EspecificacionUsuario{}, Paginacion{Pagina: 3, TamanoPagina: 2})
+	resultado, err := repo.Listar(context.Background(), EspecificacionUsuario{}, domain.Paginacion{Pagina: 3, TamanoPagina: 2})
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -354,7 +356,7 @@ func TestListarConPaginacionPaginaVacia(t *testing.T) {
 	mock := &mockRepositorio{usuarios: crearUsuariosPrueba()}
 	repo := UsuarioRepositorio(mock)
 
-	resultado, err := repo.Listar(context.Background(), EspecificacionUsuario{}, Paginacion{Pagina: 10, TamanoPagina: 2})
+	resultado, err := repo.Listar(context.Background(), EspecificacionUsuario{}, domain.Paginacion{Pagina: 10, TamanoPagina: 2})
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -368,10 +370,10 @@ func TestListarConOrdenacionASC(t *testing.T) {
 	mock := &mockRepositorio{usuarios: crearUsuariosPrueba()}
 	repo := UsuarioRepositorio(mock)
 
-	paginacion := Paginacion{
+	paginacion := domain.Paginacion{
 		Pagina:       1,
 		TamanoPagina: 10,
-		Ordenaciones: []Ordenacion{{Campo: "nombre", Tipo: ASC}},
+		Ordenaciones: []domain.Ordenacion{{Campo: "nombre", Tipo: domain.ASC}},
 	}
 
 	resultado, err := repo.Listar(context.Background(), EspecificacionUsuario{}, paginacion)
@@ -395,10 +397,10 @@ func TestListarConOrdenacionDESC(t *testing.T) {
 	mock := &mockRepositorio{usuarios: crearUsuariosPrueba()}
 	repo := UsuarioRepositorio(mock)
 
-	paginacion := Paginacion{
+	paginacion := domain.Paginacion{
 		Pagina:       1,
 		TamanoPagina: 10,
-		Ordenaciones: []Ordenacion{{Campo: "nombre", Tipo: DESC}},
+		Ordenaciones: []domain.Ordenacion{{Campo: "nombre", Tipo: domain.DESC}},
 	}
 
 	resultado, err := repo.Listar(context.Background(), EspecificacionUsuario{}, paginacion)
@@ -423,11 +425,11 @@ func TestListarConFiltroYPaginacion(t *testing.T) {
 	repo := UsuarioRepositorio(mock)
 
 	especificacion := EspecificacionUsuario{
-		ListaLiltros: []CriterioFiltro{
+		ListaLiltros: []domain.CriterioFiltro{
 			{Campo: "estado", Operador: "=", Valor: "ACTIVO"},
 		},
 	}
-	paginacion := Paginacion{Pagina: 1, TamanoPagina: 2}
+	paginacion := domain.Paginacion{Pagina: 1, TamanoPagina: 2}
 
 	resultado, err := repo.Listar(context.Background(), especificacion, paginacion)
 
@@ -444,14 +446,14 @@ func TestListarConFiltroOrdenacionYPaginacion(t *testing.T) {
 	repo := UsuarioRepositorio(mock)
 
 	especificacion := EspecificacionUsuario{
-		ListaLiltros: []CriterioFiltro{
+		ListaLiltros: []domain.CriterioFiltro{
 			{Campo: "estado", Operador: "=", Valor: "ACTIVO"},
 		},
 	}
-	paginacion := Paginacion{
+	paginacion := domain.Paginacion{
 		Pagina:       1,
 		TamanoPagina: 10,
-		Ordenaciones: []Ordenacion{{Campo: "nombre", Tipo: ASC}},
+		Ordenaciones: []domain.Ordenacion{{Campo: "nombre", Tipo: domain.ASC}},
 	}
 
 	resultado, err := repo.Listar(context.Background(), especificacion, paginacion)
@@ -463,7 +465,7 @@ func TestListarConFiltroOrdenacionYPaginacion(t *testing.T) {
 		t.Errorf("Expected 3 usuarios activos, got %d", len(resultado))
 	}
 
-	nombres := []string{"Ana", "Carlos", "David"}
+	nombres := []string{"Ana", "Beatriz", "Carlos"}
 	for i, esperado := range nombres {
 		if resultado[i].Nombre() != esperado {
 			t.Errorf("Position %d: expected '%s', got '%s'", i, esperado, resultado[i].Nombre())
@@ -476,12 +478,12 @@ func TestListarConFiltroNoEncontrado(t *testing.T) {
 	repo := UsuarioRepositorio(mock)
 
 	especificacion := EspecificacionUsuario{
-		ListaLiltros: []CriterioFiltro{
+		ListaLiltros: []domain.CriterioFiltro{
 			{Campo: "nombre", Operador: "=", Valor: "NoExiste"},
 		},
 	}
 
-	resultado, err := repo.Listar(context.Background(), especificacion, Paginacion{Pagina: 1, TamanoPagina: 10})
+	resultado, err := repo.Listar(context.Background(), especificacion, domain.Paginacion{Pagina: 1, TamanoPagina: 10})
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -496,12 +498,12 @@ func TestListarConOperadorDesigualdad(t *testing.T) {
 	repo := UsuarioRepositorio(mock)
 
 	especificacion := EspecificacionUsuario{
-		ListaLiltros: []CriterioFiltro{
+		ListaLiltros: []domain.CriterioFiltro{
 			{Campo: "estado", Operador: "!=", Valor: "ACTIVO"},
 		},
 	}
 
-	resultado, err := repo.Listar(context.Background(), especificacion, Paginacion{Pagina: 1, TamanoPagina: 10})
+	resultado, err := repo.Listar(context.Background(), especificacion, domain.Paginacion{Pagina: 1, TamanoPagina: 10})
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)

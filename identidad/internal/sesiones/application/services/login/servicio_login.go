@@ -8,6 +8,7 @@ import (
 
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/bloqueo_ip"
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/rate_limiter"
+	"github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 	usuario_domain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 )
@@ -79,11 +80,11 @@ func (s *ServicioLogin) Ejecutar(ctx context.Context, cmd ComandoLogin) (*Respue
 		// Resolver email → usuarioID
 		usuarios, err := tx.UsuarioRepositorio().Listar(ctx,
 			usuario_domain.EspecificacionUsuario{
-				ListaLiltros: []usuario_domain.CriterioFiltro{
+				ListaLiltros: []domain.CriterioFiltro{
 					{Campo: "correo", Operador: "=", Valor: cmd.Email},
 				},
 			},
-			usuario_domain.Paginacion{Pagina: 1, TamanoPagina: 1},
+			domain.Paginacion{Pagina: 1, TamanoPagina: 1},
 		)
 		if err != nil || len(usuarios) == 0 {
 			return ErrCredencialesInvalidas

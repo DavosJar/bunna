@@ -55,7 +55,7 @@ func (m *mockUsuarioRepo) Eliminar(ctx context.Context, id string) error { retur
 func (m *mockUsuarioRepo) ObtenerPorID(ctx context.Context, id string) (*usuario_domain.Usuario, error) {
 	return nil, nil
 }
-func (m *mockUsuarioRepo) Listar(ctx context.Context, spec usuario_domain.EspecificacionUsuario, pag usuario_domain.Paginacion) ([]*usuario_domain.Usuario, error) {
+func (m *mockUsuarioRepo) Listar(ctx context.Context, spec usuario_domain.EspecificacionUsuario, pag shared_domain.Paginacion) ([]*usuario_domain.Usuario, error) {
 	return m.usuarios, m.err
 }
 
@@ -81,7 +81,7 @@ func (m *mockCredencialesRepo) ObtenerPorUsuarioID(ctx context.Context, id strin
 	return m.credenciales, m.err
 }
 func (m *mockCredencialesRepo) Eliminar(ctx context.Context, id string) error { return nil }
-func (m *mockCredencialesRepo) Find(ctx context.Context, spec seguridad_domain.EspecificacionCredenciales, pag seguridad_domain.Paginacion) ([]*seguridad_domain.CredencialesUsuario, error) {
+func (m *mockCredencialesRepo) Find(ctx context.Context, spec seguridad_domain.EspecificacionCredenciales, pag shared_domain.Paginacion) ([]*seguridad_domain.CredencialesUsuario, error) {
 	return nil, nil
 }
 

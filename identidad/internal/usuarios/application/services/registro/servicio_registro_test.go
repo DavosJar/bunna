@@ -7,6 +7,7 @@ import (
 
 	"github.com/davosjar/bunna/services/identidad/internal/config"
 	"github.com/davosjar/bunna/services/identidad/internal/registry"
+	"github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 	usuarios_postgres "github.com/davosjar/bunna/services/identidad/internal/usuarios/infrastructure/persistence/postgres"
 	"gorm.io/gorm"
@@ -439,7 +440,7 @@ func TestServicioRegistroRollbackSiCredencialesFalla(t *testing.T) {
 	}
 
 	// Contar usuarios
-	usuariosAntes, err := reg.UsuarioRepository().Listar(ctx, usuario.EspecificacionUsuario{}, usuario.Paginacion{Pagina: 1, TamanoPagina: 100})
+	usuariosAntes, err := reg.UsuarioRepository().Listar(ctx, usuario.EspecificacionUsuario{}, domain.Paginacion{Pagina: 1, TamanoPagina: 100})
 	if err != nil {
 		t.Fatalf("Error listando usuarios: %v", err)
 	}
@@ -459,7 +460,7 @@ func TestServicioRegistroRollbackSiCredencialesFalla(t *testing.T) {
 
 	// Si la transacción no es atómica, podría haber un usuario sin credenciales
 	// Verificamos que la cantidad de usuarios es la esperada
-	usuariosDespues, err := reg.UsuarioRepository().Listar(ctx, usuario.EspecificacionUsuario{}, usuario.Paginacion{Pagina: 1, TamanoPagina: 100})
+	usuariosDespues, err := reg.UsuarioRepository().Listar(ctx, usuario.EspecificacionUsuario{}, domain.Paginacion{Pagina: 1, TamanoPagina: 100})
 	if err != nil {
 		t.Fatalf("Error listando usuarios: %v", err)
 	}
@@ -522,7 +523,7 @@ func TestServicioRegistroTransaccionAtomicaConContextTimeout(t *testing.T) {
 	}
 
 	// Verificar que no se creó ningún usuario (rollback funcionó)
-	usuariosPorCorreo, err := reg.UsuarioRepository().Listar(ctx, usuario.EspecificacionUsuario{}, usuario.Paginacion{Pagina: 1, TamanoPagina: 100})
+	usuariosPorCorreo, err := reg.UsuarioRepository().Listar(ctx, usuario.EspecificacionUsuario{}, domain.Paginacion{Pagina: 1, TamanoPagina: 100})
 	if err == nil && len(usuariosPorCorreo) > 0 {
 		t.Errorf("Debería haber 0 usuarios después del rollback, pero hay %d", len(usuariosPorCorreo))
 	}

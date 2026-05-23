@@ -27,10 +27,13 @@ func TestNuevoCorreoElectronicoVacio(t *testing.T) {
 	}
 }
 
-func TestNuevoCorreoElectronicoFormatoInvalido(t *testing.T) {
-	_, err := NuevoCorreoElectronico("invalido")
-	if err != ErrCorreoFormatoInvalido {
-		t.Errorf("Expected ErrCorreoFormatoInvalido, got %v", err)
+func TestNuevoCorreoElectronicoSinValidarFormato(t *testing.T) {
+	vo, err := NuevoCorreoElectronico("invalido")
+	if err != nil {
+		t.Fatalf("El dominio no valida formato, esperaba nil error, got %v", err)
+	}
+	if vo.Direccion() != "invalido" {
+		t.Errorf("Expected 'invalido', got '%s'", vo.Direccion())
 	}
 }
 

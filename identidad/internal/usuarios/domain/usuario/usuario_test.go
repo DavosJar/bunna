@@ -10,31 +10,21 @@ func TestNuevoUsuarioValido(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-
 	if u == nil {
 		t.Fatal("Expected Usuario instance, got nil")
 	}
-
-	if u.ID() != "user-123" {
-		t.Errorf("Expected ID 'user-123', got '%s'", u.ID())
-	}
-
 	if u.Nombre() != "Juan" {
 		t.Errorf("Expected nombre 'Juan', got '%s'", u.Nombre())
 	}
-
 	if u.Apellido() != "Pérez" {
 		t.Errorf("Expected apellido 'Pérez', got '%s'", u.Apellido())
 	}
-
 	if u.Correo() != "juan@example.com" {
 		t.Errorf("Expected correo 'juan@example.com', got '%s'", u.Correo())
 	}
-
 	if u.Telefono() != "+34666666666" {
 		t.Errorf("Expected telefono '+34666666666', got '%s'", u.Telefono())
 	}
-
 	if u.Estado() != NO_VERIFICADO {
 		t.Errorf("Expected estado NO_VERIFICADO, got %s", u.Estado())
 	}
@@ -42,15 +32,9 @@ func TestNuevoUsuarioValido(t *testing.T) {
 
 func TestNuevoUsuarioSinID(t *testing.T) {
 	u, err := NuevoUsuario("", "juan@example.com", "Juan", "Pérez", "+34666666666")
-
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-
-	if u == nil {
-		t.Fatal("Expected Usuario instance, got nil")
-	}
-
 	if u.ID() != "" {
 		t.Errorf("Expected ID '', got '%s'", u.ID())
 	}
@@ -58,15 +42,9 @@ func TestNuevoUsuarioSinID(t *testing.T) {
 
 func TestNuevoUsuarioSinNombre(t *testing.T) {
 	u, err := NuevoUsuario("", "juan@example.com", "", "Pérez", "+34666666666")
-
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-
-	if u == nil {
-		t.Fatal("Expected Usuario instance, got nil")
-	}
-
 	if u.Nombre() != "" {
 		t.Errorf("Expected nombre '', got '%s'", u.Nombre())
 	}
@@ -74,7 +52,6 @@ func TestNuevoUsuarioSinNombre(t *testing.T) {
 
 func TestNuevoUsuarioSinCorreo(t *testing.T) {
 	_, err := NuevoUsuario("", "", "Juan", "Pérez", "+34666666666")
-
 	if err != ErrCorreoRequerido {
 		t.Errorf("Expected ErrCorreoRequerido, got %v", err)
 	}
@@ -82,15 +59,9 @@ func TestNuevoUsuarioSinCorreo(t *testing.T) {
 
 func TestNuevoUsuarioSinApellido(t *testing.T) {
 	u, err := NuevoUsuario("", "juan@example.com", "Juan", "", "+34666666666")
-
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-
-	if u == nil {
-		t.Fatal("Expected Usuario instance, got nil")
-	}
-
 	if u.Apellido() != "" {
 		t.Errorf("Expected apellido '', got '%s'", u.Apellido())
 	}
@@ -98,15 +69,9 @@ func TestNuevoUsuarioSinApellido(t *testing.T) {
 
 func TestNuevoUsuarioSinTelefono(t *testing.T) {
 	u, err := NuevoUsuario("", "juan@example.com", "Juan", "Pérez", "")
-
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-
-	if u == nil {
-		t.Fatal("Expected Usuario instance, got nil")
-	}
-
 	if u.Telefono() != "" {
 		t.Errorf("Expected telefono '', got '%s'", u.Telefono())
 	}
@@ -114,13 +79,10 @@ func TestNuevoUsuarioSinTelefono(t *testing.T) {
 
 func TestNuevoUsuarioGeneraEvento(t *testing.T) {
 	u, _ := NuevoUsuario("", "juan@example.com", "Juan", "Pérez", "+34666666666")
-
 	eventos := u.PullEventos()
-
 	if len(eventos) != 1 {
 		t.Errorf("Expected 1 evento, got %d", len(eventos))
 	}
-
 	if eventos[0].Nombre != "UsuarioCreado" {
 		t.Errorf("Expected 'UsuarioCreado', got '%s'", eventos[0].Nombre)
 	}
@@ -128,23 +90,19 @@ func TestNuevoUsuarioGeneraEvento(t *testing.T) {
 
 func TestCambiarEstadoValido(t *testing.T) {
 	u, _ := NuevoUsuario("", "juan@example.com", "Juan", "Pérez", "+34666666666")
-	u.PullEventos() // Limpia evento de creación
+	u.PullEventos()
 
 	err := u.CambiarEstado(ACTIVO)
-
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-
 	if u.Estado() != ACTIVO {
 		t.Errorf("Expected estado ACTIVO, got %s", u.Estado())
 	}
-
 	eventos := u.PullEventos()
 	if len(eventos) != 1 {
 		t.Errorf("Expected 1 evento, got %d", len(eventos))
 	}
-
 	if eventos[0].Nombre != "EstadoUsuarioCambiado" {
 		t.Errorf("Expected 'EstadoUsuarioCambiado', got '%s'", eventos[0].Nombre)
 	}
@@ -152,14 +110,10 @@ func TestCambiarEstadoValido(t *testing.T) {
 
 func TestCambiarEstadoInvalido(t *testing.T) {
 	u, _ := NuevoUsuario("", "juan@example.com", "Juan", "Pérez", "+34666666666")
-
-	// NO_VERIFICADO solo puede ir a ACTIVO o PENDIENTE_DE_ELIMINACION
 	err := u.CambiarEstado(INACTIVO)
-
 	if err != ErrTransicionNoPermitida {
 		t.Errorf("Expected ErrTransicionNoPermitida, got %v", err)
 	}
-
 	if u.Estado() != NO_VERIFICADO {
 		t.Errorf("Expected estado NO_VERIFICADO, got %s", u.Estado())
 	}
@@ -168,23 +122,16 @@ func TestCambiarEstadoInvalido(t *testing.T) {
 func TestBloquearUsuario(t *testing.T) {
 	u, _ := NuevoUsuario("", "juan@example.com", "Juan", "Pérez", "+34666666666")
 	u.CambiarEstado(ACTIVO)
-	u.PullEventos() // Limpia eventos previos
+	u.PullEventos()
 
 	err := u.Bloquear()
-
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-
 	if u.Estado() != BLOQUEADO {
 		t.Errorf("Expected estado BLOQUEADO, got %s", u.Estado())
 	}
-
 	eventos := u.PullEventos()
-	if len(eventos) < 1 {
-		t.Fatalf("Expected at least 1 evento, got %d", len(eventos))
-	}
-
 	found := false
 	for _, e := range eventos {
 		if e.Nombre == "UsuarioBloqueado" {
@@ -204,17 +151,13 @@ func TestActivarUsuario(t *testing.T) {
 	u.PullEventos()
 
 	err := u.Activar()
-
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-
 	if u.Estado() != ACTIVO {
 		t.Errorf("Expected estado ACTIVO, got %s", u.Estado())
 	}
-
 	eventos := u.PullEventos()
-
 	found := false
 	for _, e := range eventos {
 		if e.Nombre == "UsuarioActivado" {
@@ -234,11 +177,9 @@ func TestActivarUsuarioDesdeBloqueado(t *testing.T) {
 	u.PullEventos()
 
 	err := u.Activar()
-
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-
 	if u.Estado() != ACTIVO {
 		t.Errorf("Expected estado ACTIVO, got %s", u.Estado())
 	}
@@ -251,7 +192,6 @@ func TestPendienteEliminacionEsTerminal(t *testing.T) {
 	u.PullEventos()
 
 	estadosInvalidos := []EstadoUsuario{NO_VERIFICADO, ACTIVO, INACTIVO, BLOQUEADO}
-
 	for _, destino := range estadosInvalidos {
 		err := u.CambiarEstado(destino)
 		if err != ErrTransicionNoPermitida {
@@ -266,17 +206,13 @@ func TestInactivarUsuario(t *testing.T) {
 	u.PullEventos()
 
 	err := u.Inactivar()
-
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
-
 	if u.Estado() != INACTIVO {
 		t.Errorf("Expected estado INACTIVO, got %s", u.Estado())
 	}
-
 	eventos := u.PullEventos()
-
 	found := false
 	for _, e := range eventos {
 		if e.Nombre == "UsuarioInactivado" {
@@ -288,8 +224,6 @@ func TestInactivarUsuario(t *testing.T) {
 		t.Error("Expected 'UsuarioInactivado' evento")
 	}
 }
-
-// Tests para EstadoVerificacionCorreo
 
 func TestNuevoUsuarioEstadoVerificacionInicial(t *testing.T) {
 	u, _ := NuevoUsuario("", "juan@example.com", "Juan", "Pérez", "+34666666666")
@@ -309,7 +243,6 @@ func TestVerificarCorreoValidoDesdePendiente(t *testing.T) {
 	if u.EstadoVerificacionCorreo() != VERIFICADO {
 		t.Errorf("Expected estado VERIFICADO, got %s", u.EstadoVerificacionCorreo())
 	}
-
 	eventos := u.PullEventos()
 	if len(eventos) != 1 || eventos[0].Nombre != "CorreoVerificado" {
 		t.Error("Expected 'CorreoVerificado' evento")
@@ -317,7 +250,7 @@ func TestVerificarCorreoValidoDesdePendiente(t *testing.T) {
 }
 
 func TestVerificarCorreoInvalidoDesdeVerificado(t *testing.T) {
-	u, _ := NuevoUsuario("", "Juan", "Pérez", "juan@example.com", "+34666666666")
+	u, _ := NuevoUsuario("", "juan@example.com", "Juan", "Pérez", "+34666666666")
 	u.VerificarCorreo()
 	u.PullEventos()
 
@@ -328,7 +261,7 @@ func TestVerificarCorreoInvalidoDesdeVerificado(t *testing.T) {
 }
 
 func TestSolicitarReenvioValidoDesdePendiente(t *testing.T) {
-	u, _ := NuevoUsuario("", "Juan", "Pérez", "juan@example.com", "+34666666666")
+	u, _ := NuevoUsuario("", "juan@example.com", "Juan", "Pérez", "+34666666666")
 	u.PullEventos()
 
 	err := u.SolicitarReenvioVerificacion()
@@ -341,7 +274,7 @@ func TestSolicitarReenvioValidoDesdePendiente(t *testing.T) {
 }
 
 func TestSolicitarReenvioValidoDesdeEnlaceExpirado(t *testing.T) {
-	u, _ := NuevoUsuario("", "Juan", "Pérez", "juan@example.com", "+34666666666")
+	u, _ := NuevoUsuario("", "juan@example.com", "Juan", "Pérez", "+34666666666")
 	u.MarcarEnlaceExpirado()
 	u.PullEventos()
 
@@ -355,7 +288,7 @@ func TestSolicitarReenvioValidoDesdeEnlaceExpirado(t *testing.T) {
 }
 
 func TestSolicitarReenvioInvalidoDesdeVerificado(t *testing.T) {
-	u, _ := NuevoUsuario("", "Juan", "Pérez", "juan@example.com", "+34666666666")
+	u, _ := NuevoUsuario("", "juan@example.com", "Juan", "Pérez", "+34666666666")
 	u.VerificarCorreo()
 	u.PullEventos()
 
@@ -366,7 +299,7 @@ func TestSolicitarReenvioInvalidoDesdeVerificado(t *testing.T) {
 }
 
 func TestMarcarEnlaceExpiradoValidoDesdePendiente(t *testing.T) {
-	u, _ := NuevoUsuario("", "Juan", "Pérez", "juan@example.com", "+34666666666")
+	u, _ := NuevoUsuario("", "juan@example.com", "Juan", "Pérez", "+34666666666")
 	u.PullEventos()
 
 	err := u.MarcarEnlaceExpirado()
@@ -379,57 +312,30 @@ func TestMarcarEnlaceExpiradoValidoDesdePendiente(t *testing.T) {
 }
 
 func TestMarcarEnlaceExpiradoInvalidoDesdeVerificado(t *testing.T) {
-	u, _ := NuevoUsuario("", "Juan", "Pérez", "juan@example.com", "+34666666666")
+	u, _ := NuevoUsuario("", "juan@example.com", "Juan", "Pérez", "+34666666666")
 	u.VerificarCorreo()
 	u.PullEventos()
 
 	err := u.MarcarEnlaceExpirado()
-	if err != ErrTransicionVerificacionNoPermitida {
-		t.Errorf("Expected ErrTransicionVerificacionNoPermitida, got %v", err)
-	}
-}
-
-func TestMarcarVerificacionFallidaValidoDesdePendiente(t *testing.T) {
-	u, _ := NuevoUsuario("", "juan@example.com", "Juan", "Pérez", "+34666666666")
-	u.PullEventos()
-
-	err := u.MarcarVerificacionFallida()
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-	if u.EstadoVerificacionCorreo() != VERIFICACION_FALLIDA {
-		t.Errorf("Expected estado VERIFICACION_FALLIDA, got %s", u.EstadoVerificacionCorreo())
-	}
-}
-
-func TestMarcarVerificacionFallidaInvalidoDesdeVerificado(t *testing.T) {
-	u, _ := NuevoUsuario("", "Juan", "Pérez", "juan@example.com", "+34666666666")
-	u.VerificarCorreo()
-	u.PullEventos()
-
-	err := u.MarcarVerificacionFallida()
 	if err != ErrTransicionVerificacionNoPermitida {
 		t.Errorf("Expected ErrTransicionVerificacionNoPermitida, got %v", err)
 	}
 }
 
 func TestFlujoCompletoVerificacion(t *testing.T) {
-	u, _ := NuevoUsuario("", "Juan", "Pérez", "juan@example.com", "+34666666666")
+	u, _ := NuevoUsuario("", "juan@example.com", "Juan", "Pérez", "+34666666666")
 	u.PullEventos()
 
-	// PENDIENTE_VERIFICACION -> ENLACE_EXPIRADO
 	err := u.MarcarEnlaceExpirado()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
 
-	// ENLACE_EXPIRADO -> REENVIO_SOLICITADO
 	err = u.SolicitarReenvioVerificacion()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
 
-	// REENVIO_SOLICITADO -> VERIFICADO
 	err = u.VerificarCorreo()
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)

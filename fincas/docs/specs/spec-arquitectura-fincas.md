@@ -533,7 +533,7 @@ En esta fase (monolito modular), `fincas` no se comunica con otros servicios. La
 
 | Componente | Propósito |
 |------------|-----------|
-| PostgreSQL 16+ | Base de datos relacional |
+| PostgreSQL 18+ | Base de datos relacional |
 | Docker + docker-compose | Entorno de desarrollo local |
 
 ---

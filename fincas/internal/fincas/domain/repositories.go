@@ -9,14 +9,13 @@ type FincaRepositorio interface {
 	ListarTodas(ctx context.Context) ([]Finca, error)
 	Actualizar(ctx context.Context, finca *Finca) error
 	Eliminar(ctx context.Context, id string) error
+	ContarLotes(ctx context.Context, fincaID string) (int, error)
 }
 
 type LoteRepositorio interface {
 	Crear(ctx context.Context, lote *Lote) error
 	ObtenerPorID(ctx context.Context, id string) (*Lote, error)
 	ListarPorFinca(ctx context.Context, fincaID string) ([]Lote, error)
-	ContarPorFinca(ctx context.Context, fincaID string) (int, error)
 	Actualizar(ctx context.Context, lote *Lote) error
 	Eliminar(ctx context.Context, id string) error
-	EliminarPorFinca(ctx context.Context, fincaID string) error
 }

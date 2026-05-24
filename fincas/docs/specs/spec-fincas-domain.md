@@ -2,7 +2,7 @@
 title: Especificación de Dominio — Fincas
 version: 2.0
 date_created: 2026-05-23
-owner: Equipo Catastro
+owner: Fincas Team
 tags: fincas, lotes, dominio
 ---
 

@@ -1,82 +1,84 @@
 package domain
 
-import (
-	"time"
+import "time"
+
+// EstadoLote representa los estados válidos de un lote
+type EstadoLote string
+
+const (
+	LoteActivo   EstadoLote = "ACTIVO"
+	LoteEliminado EstadoLote = "ELIMINADO"
 )
 
+var transicionesLote = map[EstadoLote]map[EstadoLote]bool{
+	LoteActivo: {
+		LoteEliminado: true,
+	},
+	LoteEliminado: {},
+}
+
+// Lote es una subdivisión de una Finca
 type Lote struct {
-	ID          string
-	FincaID     string
-	Nombre      string
-	Area        float64
-	Descripcion string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	id          string
+	fincaID     string
+	nombre      string
+	area        float64
+	descripcion string
+	estado      EstadoLote
+	createdAt   time.Time
+	updatedAt   time.Time
 }
 
-func NewLote(fincaID, nombre string, area float64, descripcion string) (*Lote, error) {
-	l := &Lote{
-		FincaID:     fincaID,
-		Nombre:      nombre,
-		Area:        area,
-		Descripcion: descripcion,
+// NuevoLote crea un nuevo lote asociado a una finca. Sin validaciones de formato.
+func NuevoLote(fincaID, nombre string, area float64, descripcion string) *Lote {
+	return &Lote{
+		fincaID:     fincaID,
+		nombre:      nombre,
+		area:        area,
+		descripcion: descripcion,
+		estado:      LoteActivo,
 	}
-
-	if err := l.validar(); err != nil {
-		return nil, err
-	}
-
-	return l, nil
 }
 
+// Getters
+func (l *Lote) ID() string            { return l.id }
+func (l *Lote) FincaID() string       { return l.fincaID }
+func (l *Lote) Nombre() string        { return l.nombre }
+func (l *Lote) Area() float64         { return l.area }
+func (l *Lote) Descripcion() string   { return l.descripcion }
+func (l *Lote) Estado() EstadoLote    { return l.estado }
+func (l *Lote) CreatedAt() time.Time  { return l.createdAt }
+func (l *Lote) UpdatedAt() time.Time  { return l.updatedAt }
+
+// Actualizar actualiza los datos del lote
+func (l *Lote) Actualizar(nombre string, area float64, descripcion string) {
+	l.nombre = nombre
+	l.area = area
+	l.descripcion = descripcion
+}
+
+// CambiarEstado cambia el estado del lote validando la transición
+func (l *Lote) CambiarEstado(siguiente EstadoLote) error {
+	if !transicionesLote[l.estado][siguiente] {
+		return ErrTransicionEstadoNoPermitida
+	}
+	l.estado = siguiente
+	return nil
+}
+
+// NewLoteFromPersistence reconstruye un lote desde persistencia
 func NewLoteFromPersistence(
 	id, fincaID, nombre string, area float64, descripcion string,
-	createdAt, updatedAt time.Time,
+	estado EstadoLote, createdAt, updatedAt time.Time,
 ) *Lote {
 	return &Lote{
-		ID:          id,
-		FincaID:     fincaID,
-		Nombre:      nombre,
-		Area:        area,
-		Descripcion: descripcion,
-		CreatedAt:   createdAt,
-		UpdatedAt:   updatedAt,
+		id:          id,
+		fincaID:     fincaID,
+		nombre:      nombre,
+		area:        area,
+		descripcion: descripcion,
+		estado:      estado,
+		createdAt:   createdAt,
+		updatedAt:   updatedAt,
 	}
-}
-
-func (l *Lote) validar() error {
-	if len(l.Nombre) < 3 {
-		return ErrNombreLoteRequerido
-	}
-	if len(l.Nombre) > 200 {
-		return ErrNombreLoteLargo
-	}
-	if l.Area <= 0 {
-		return ErrAreaRequerida
-	}
-	if len(l.Descripcion) > 1000 {
-		return ErrDescripcionLarga
-	}
-	if l.FincaID == "" {
-		return ErrFincaIDRequerido
-	}
-	return nil
-}
-
-func (l *Lote) Actualizar(nombre string, area float64, descripcion string) error {
-	origNombre, origArea, origDescripcion := l.Nombre, l.Area, l.Descripcion
-
-	l.Nombre = nombre
-	l.Area = area
-	l.Descripcion = descripcion
-
-	if err := l.validar(); err != nil {
-		l.Nombre = origNombre
-		l.Area = origArea
-		l.Descripcion = origDescripcion
-		return err
-	}
-
-	l.UpdatedAt = time.Now()
-	return nil
 }

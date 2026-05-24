@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import './Auth.css';
 
 export default function LoginPage() {
@@ -9,6 +9,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const { login, loading, error } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const mensajeBienvenida = location.state?.mensaje;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,36 +22,46 @@ export default function LoginPage() {
 
   return (
     <div className="auth-layout">
-      {/* Left Hero Panel */}
       <div className="auth-hero">
-        <img
-          src="/coffee-bg.png"
-          alt="Plantación de café"
-          className="auth-hero__bg"
-        />
+        <img src="/coffee-bg.png" alt="Plantación de café" className="auth-hero__bg" />
         <div className="auth-hero__overlay" />
-
         <div className="auth-hero__logo">
           <div className="auth-hero__logo-icon">☕</div>
           <span className="auth-hero__logo-text">Bunna</span>
         </div>
-
         <div className="auth-hero__content">
           <span className="auth-hero__tag">Diagnóstico de Nitrógeno</span>
-          <h1 className="auth-hero__title">
-            Entra a tu finca desde cualquier dispositivo.
-          </h1>
+          <h1 className="auth-hero__title">Entra a tu finca desde cualquier dispositivo.</h1>
         </div>
       </div>
 
-      {/* Right Form Panel */}
       <div className="auth-form-panel">
         <div className="auth-form-container">
-          <p className="auth-form__subtitle">Bienvenida de vuelta</p>
+          <p className="auth-form__subtitle">Bienvenido de vuelta</p>
           <h2 className="auth-form__title">Iniciar sesión</h2>
-          <p className="auth-form__description">
-            Accede con tu correo y contraseña.
-          </p>
+          <p className="auth-form__description">Accede con tu correo y contraseña.</p>
+
+          {mensajeBienvenida && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '0.75rem',
+              padding: '0.85rem 1rem',
+              marginBottom: '1.5rem',
+              background: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '0.75rem',
+              color: '#166534',
+              fontSize: '0.85rem',
+              fontWeight: 500,
+              lineHeight: 1.5,
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.9 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              {mensajeBienvenida}
+            </div>
+          )}
 
           {error && (
             <div className="auth-error" id="login-error">
@@ -64,9 +76,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} id="login-form">
             <div className="form-group">
-              <label className="form-label" htmlFor="login-email">
-                Correo
-              </label>
+              <label className="form-label" htmlFor="login-email">Correo</label>
               <div className="form-input-wrapper">
                 <input
                   id="login-email"
@@ -85,7 +95,7 @@ export default function LoginPage() {
             <div className="form-group">
               <label className="form-label" htmlFor="login-password">
                 Contraseña
-                <span className="form-label__link">¿Olvidaste?</span>
+                <Link to="/forgot-password" className="form-label__link">¿Olvidaste?</Link>
               </label>
               <div className="form-input-wrapper">
                 <input
@@ -99,52 +109,34 @@ export default function LoginPage() {
                   required
                   disabled={loading}
                 />
-                <button
-                  type="button"
-                  className="form-input-icon"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                >
+                <button type="button" className="form-input-icon" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
                   {showPassword ? (
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
                     </svg>
                   ) : (
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
                     </svg>
                   )}
                 </button>
               </div>
             </div>
 
-            <button
-              type="submit"
-              className={`btn-primary ${loading ? 'btn-primary--loading' : ''}`}
-              id="login-submit"
-              disabled={loading}
-            >
+            <button type="submit" className={`btn-primary ${loading ? 'btn-primary--loading' : ''}`} id="login-submit" disabled={loading}>
               {loading ? (
-                <>
-                  <div className="btn-spinner" />
-                  Entrando...
-                </>
+                <><div className="btn-spinner" />Entrando...</>
               ) : (
-                <>
-                  Entrar
-                  <span className="btn-primary__arrow">→</span>
-                </>
+                <>Entrar <span className="btn-primary__arrow">→</span></>
               )}
             </button>
           </form>
 
           <p className="auth-footer">
             ¿No tienes cuenta?{' '}
-            <Link to="/register" className="auth-footer__link">
-              Crear cuenta
-            </Link>
+            <Link to="/register" className="auth-footer__link">Crear cuenta</Link>
           </p>
         </div>
       </div>

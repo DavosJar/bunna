@@ -10,7 +10,6 @@ import (
 )
 
 // ServicioRegistro es el servicio de aplicación para el caso de uso de registro
-// Usa UnitOfWork para manejar transacciones atómicas
 type ServicioRegistro struct {
 	unitOfWork usuario.UnitOfWork
 }
@@ -29,7 +28,6 @@ func (s *ServicioRegistro) Ejecutar(ctx context.Context, comando *ComandoRegistr
 		return nil, err
 	}
 
-	// 2. TODO EN TRANSACCIÓN - Cualquier error causará rollback automático
 	var respuesta *DtoRespuestaRegistro
 
 	err := s.unitOfWork.Transaccional(ctx, func(tx usuario.UnitOfWork) error {
@@ -50,20 +48,20 @@ func (s *ServicioRegistro) Ejecutar(ctx context.Context, comando *ComandoRegistr
 			return fmt.Errorf("error al persister usuario: %w", err)
 		}
 
-		// 2b. Hashear password
+		// 2c. Hashear password
 		passwordHash, err := tx.EncriptacionServicio().Hashear(comando.Password)
 		if err != nil {
 			return fmt.Errorf("error al hashear password: %w", err)
 		}
 
-		// 2c. Crear credenciales
+		// 2d. Crear credenciales
 		nuevasCredenciales := domain.NuevaCredencialesUsuario(usuarioCreado.ID(), passwordHash)
 		_, err = tx.CredencialesRepository().Crear(ctx, nuevasCredenciales)
 		if err != nil {
 			return fmt.Errorf("error al persister credenciales: %w", err)
 		}
 
-		// 2d. Preparar respuesta
+		// 2e. Preparar respuesta
 		respuesta = &DtoRespuestaRegistro{
 			UsuarioID: usuarioCreado.ID(),
 			Correo:    usuarioCreado.Correo(),
@@ -71,13 +69,12 @@ func (s *ServicioRegistro) Ejecutar(ctx context.Context, comando *ComandoRegistr
 			Timestamp: usuarioCreado.FechaCreacion(),
 		}
 
-		return nil // ← COMMIT automático
+		return nil
 	})
 
 	if err != nil {
-		return nil, err // ← ROLLBACK automático
+		return nil, err
 	}
-
 	return respuesta, nil
 }
 
@@ -87,16 +84,23 @@ func validarComando(comando *ComandoRegistro) error {
 		return fmt.Errorf("correo no puede estar vacío")
 	}
 
-	// Validar formato de email con net.mail.ParseAddress
+	// Validar formato de email
 	if _, err := mail.ParseAddress(comando.Correo); err != nil {
 		return fmt.Errorf("formato de correo inválido: %w", err)
+	}
+
+	// Validar que el dominio del correo exista via DNS
+	if err := validarDominioCorreo(comando.Correo); err != nil {
+		return fmt.Errorf("dominio de correo inválido: %w", err)
 	}
 
 	if comando.Password == "" {
 		return fmt.Errorf("password no puede estar vacío")
 	}
+
 	if comando.Nombre == "" {
 		return fmt.Errorf("nombre no puede estar vacío")
 	}
+
 	return nil
 }

@@ -2,17 +2,48 @@
 package router
 
 import (
+	"strings"
+
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humagin"
 	"github.com/gin-gonic/gin"
+
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/facades"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/handlers"
+	"github.com/davosjar/bunna/services/identidad/internal/presentation/middleware"
+	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 )
 
 // Config contiene la configuración del router.
 type Config struct {
 	Version     string
 	CORSOrigins []string
+	TokenSvc    sesiones_domain.TokenServicio
+}
+
+// jwtIfRequired es un wrapper del middleware JWT que lo omite para rutas públicas.
+func jwtIfRequired(tokenSvc sesiones_domain.TokenServicio) gin.HandlerFunc {
+	jwtMid := middleware.JWTMiddleware(tokenSvc)
+	publicPaths := []string{
+		"/health",
+		"/api/v1/auth/login",
+		"/api/v1/auth/register",
+		"/api/v1/auth/refresh",
+		"/api/v1/recuperacion/solicitar",
+		"/api/v1/recuperacion/validar",
+		"/api/v1/recuperacion/confirmar",
+		"/api/v1/verificacion/confirmar",
+	}
+
+	return func(c *gin.Context) {
+		for _, p := range publicPaths {
+			if strings.HasPrefix(c.Request.URL.Path, p) {
+				c.Next()
+				return
+			}
+		}
+		jwtMid(c)
+	}
 }
 
 // New construye y retorna el router Gin con Huma configurado.
@@ -22,6 +53,11 @@ func New(all *facades.AllFacades, cfg Config) *gin.Engine {
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 	router.Use(corsMiddleware(cfg.CORSOrigins))
+
+	// Aplicar JWT middleware condicionalmente
+	if cfg.TokenSvc != nil {
+		router.Use(jwtIfRequired(cfg.TokenSvc))
+	}
 
 	// Configurar Huma sobre Gin
 	api := humagin.New(router, huma.DefaultConfig("Identidad API", cfg.Version))

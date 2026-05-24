@@ -1,4 +1,3 @@
-
 package rate_limiter_test
 
 import (

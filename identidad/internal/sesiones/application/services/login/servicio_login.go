@@ -8,8 +8,8 @@ import (
 
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/bloqueo_ip"
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/rate_limiter"
-	"github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
+	"github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	usuario_domain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 )
 
@@ -26,9 +26,9 @@ var (
 // ServicioLogin implementa el caso de uso de inicio de sesión.
 // Integra verificación de rate limiting y bloqueo por IP antes de procesar credenciales.
 type ServicioLogin struct {
-	uow            sesiones_domain.UnitOfWork
-	bloqueoIP      *bloqueo_ip.ServicioBloqueoIP
-	rateLimiter    *rate_limiter.ServicioRateLimit
+	uow         sesiones_domain.UnitOfWork
+	bloqueoIP   *bloqueo_ip.ServicioBloqueoIP
+	rateLimiter *rate_limiter.ServicioRateLimit
 }
 
 // NuevoServicioLogin crea una nueva instancia de ServicioLogin.

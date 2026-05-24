@@ -1,7 +1,7 @@
 package assignpermissiontorole
 
 type RespuestaAsignarPermisoARol struct {
-	RolID        string
+	RolID         string
 	PermisoCodigo string
-	AsignadoEn   string
+	AsignadoEn    string
 }

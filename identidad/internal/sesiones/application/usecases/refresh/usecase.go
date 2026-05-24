@@ -9,13 +9,13 @@ import (
 )
 
 var (
-	ErrRefreshTokenRequerido     = errors.New("el refresh token es requerido")
-	ErrTokenInvalido             = errors.New("token inválido o expirado")
-	ErrSesionNoValida            = errors.New("sesión no válida")
-	ErrRefreshTokenExpirado      = errors.New("refresh token expirado, inicie sesión nuevamente")
-	ErrLimiteRefrescosAlcanzado  = errors.New("límite de refrescos alcanzado, inicie sesión nuevamente")
-	ErrSesionAbsolutaExpirada    = errors.New("sesión expirada, inicie sesión nuevamente")
-	ErrErrorGenerandoTokens      = errors.New("error al generar tokens")
+	ErrRefreshTokenRequerido    = errors.New("el refresh token es requerido")
+	ErrTokenInvalido            = errors.New("token inválido o expirado")
+	ErrSesionNoValida           = errors.New("sesión no válida")
+	ErrRefreshTokenExpirado     = errors.New("refresh token expirado, inicie sesión nuevamente")
+	ErrLimiteRefrescosAlcanzado = errors.New("límite de refrescos alcanzado, inicie sesión nuevamente")
+	ErrSesionAbsolutaExpirada   = errors.New("sesión expirada, inicie sesión nuevamente")
+	ErrErrorGenerandoTokens     = errors.New("error al generar tokens")
 )
 
 type ConfigRefresh struct {

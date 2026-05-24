@@ -11,9 +11,9 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humagin"
-	"github.com/gin-gonic/gin"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/facades"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/handlers"
+	"github.com/gin-gonic/gin"
 )
 
 // ── Mock AuthFacade ───────────────────────────────────────────────────────────

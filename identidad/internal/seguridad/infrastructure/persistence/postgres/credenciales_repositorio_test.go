@@ -57,7 +57,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"").Error; err != nil {
 		t.Fatalf("Failed to create uuid-ossp extension: %v", err)
 	}
-	
+
 	if err := db.AutoMigrate(&CredencialesModel{}); err != nil {
 		t.Fatalf("Failed to migrate database: %v", err)
 	}

@@ -36,10 +36,10 @@ func (r *verificacionRepositorio) ActualizarPrueba(ctx context.Context, usuarioI
 	return r.db.WithContext(ctx).Model(&VerificacionUsuarioModel{}).
 		Where("id = ?", usuarioID).
 		Updates(map[string]interface{}{
-			"verificacion_token_hash":  prueba.SecretoHash(),
-			"verificacion_expiracion":  prueba.ExpiraEn(),
-			"contador_reenvios":        gorm.Expr("contador_reenvios + 1"),
-			"ultimo_reenvio":           ahora,
+			"verificacion_token_hash": prueba.SecretoHash(),
+			"verificacion_expiracion": prueba.ExpiraEn(),
+			"contador_reenvios":       gorm.Expr("contador_reenvios + 1"),
+			"ultimo_reenvio":          ahora,
 		}).Error
 }
 

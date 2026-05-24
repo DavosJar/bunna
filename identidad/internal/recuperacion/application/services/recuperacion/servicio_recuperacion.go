@@ -8,17 +8,17 @@ import (
 
 	notificaciones "github.com/davosjar/bunna/services/identidad/internal/notificaciones/domain"
 	dominio "github.com/davosjar/bunna/services/identidad/internal/recuperacion/domain"
-	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
-	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
+	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
+	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 )
 
 // ConfigRecuperacion contiene parámetros configurables
 type ConfigRecuperacion struct {
-	TokenExpiracion       time.Duration
-	RateLimitIPMax        int
-	RateLimitUsuarioMax   int
-	RateLimitVentana      time.Duration
+	TokenExpiracion     time.Duration
+	RateLimitIPMax      int
+	RateLimitUsuarioMax int
+	RateLimitVentana    time.Duration
 }
 
 // ServicioRecuperacion maneja los casos de uso de recuperación de contraseña
@@ -57,14 +57,14 @@ func NuevoServicioRecuperacion(
 		config.RateLimitVentana = 15 * time.Minute
 	}
 	return &ServicioRecuperacion{
-		tokenRepo:    tokenRepo,
-		usuarioRepo:  usuarioRepo,
-		sesionRepo:   sesionRepo,
-		credRepo:     credRepo,
-		encriptacion: encriptacion,
+		tokenRepo:     tokenRepo,
+		usuarioRepo:   usuarioRepo,
+		sesionRepo:    sesionRepo,
+		credRepo:      credRepo,
+		encriptacion:  encriptacion,
 		emailServicio: emailServicio,
-		idGenerator:  idGenerator,
-		config:       config,
+		idGenerator:   idGenerator,
+		config:        config,
 	}
 }
 

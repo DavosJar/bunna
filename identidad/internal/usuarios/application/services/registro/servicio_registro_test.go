@@ -1,8 +1,8 @@
 package registro_test
 
 import (
-	"github.com/davosjar/bunna/services/identidad/internal/usuarios/application/services/registro"
 	"context"
+	"github.com/davosjar/bunna/services/identidad/internal/usuarios/application/services/registro"
 	"testing"
 
 	"github.com/davosjar/bunna/services/identidad/internal/config"

@@ -22,6 +22,7 @@ type Config struct {
 	BcryptCost int
 
 	JWTSecret            string
+	JWTIssuer            string
 	JWTAccessExpiracion  time.Duration
 	JWTRefreshExpiracion time.Duration
 
@@ -143,6 +144,7 @@ func LoadConfig() (*Config, error) {
 		BcryptCost: bcryptCost,
 
 		JWTSecret:            getEnv("JWT_SECRET", ""),
+		JWTIssuer:            getEnv("JWT_ISSUER", "ServicioIdentidad"),
 		JWTAccessExpiracion:  jwtAccessExpiracion,
 		JWTRefreshExpiracion: jwtRefreshExpiracion,
 

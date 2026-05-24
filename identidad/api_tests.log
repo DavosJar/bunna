@@ -1,0 +1,218 @@
+Iniciando pruebas de la API...
+=====================================
+=====================================
+⚙️ TEST: GET /health
+✅ ÉXITO (Status: 200)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/HealthOutputBody.json","status":"ok"}
+
+=====================================
+⚙️ TEST: POST /api/v1/auth/register
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property apellido to be present","location":"body","value":{}},{"message":"expected required property correo to be present","location":"body","value":{}},{"message":"expected required property nombre to be present","location":"body","value":{}},{"message":"expected required property password to be present","location":"body","value":{}}]}
+
+=====================================
+⚙️ TEST: POST /api/v1/auth/login
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property correo to be present","location":"body","value":{"email":"test@test.com","password":"123456"}},{"message":"unexpected property","location":"body.email","value":{"email":"test@test.com","password":"123456"}}]}
+
+=====================================
+⚙️ TEST: POST /api/v1/auth/refresh
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property refresh_token to be present","location":"body","value":{}}]}
+
+=====================================
+⚙️ TEST: POST /api/v1/auth/logout
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: POST /api/v1/auth/logout/all
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: POST /api/v1/recuperacion/solicitar
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property correo to be present","location":"body","value":{}}]}
+
+=====================================
+⚙️ TEST: POST /api/v1/recuperacion/validar
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property token to be present","location":"body","value":{}}]}
+
+=====================================
+⚙️ TEST: POST /api/v1/recuperacion/confirmar
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property nueva_password to be present","location":"body","value":{}},{"message":"expected required property token to be present","location":"body","value":{}}]}
+
+=====================================
+⚙️ TEST: POST /api/v1/verificacion/solicitar
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: POST /api/v1/verificacion/confirmar
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property token to be present","location":"body","value":{}}]}
+
+=====================================
+⚙️ TEST: POST /api/v1/verificacion/reenviar
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: PUT /api/v1/mi-password
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property nueva_password to be present","location":"body","value":{}},{"message":"expected required property password_actual to be present","location":"body","value":{}}]}
+
+=====================================
+⚙️ TEST: POST /api/v1/usuarios/123e4567-e89b-12d3-a456-426614174000/reset-password
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property nueva_password to be present","location":"body","value":{}}]}
+
+=====================================
+⚙️ TEST: POST /api/v1/usuarios/123e4567-e89b-12d3-a456-426614174000/unlock
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: GET /api/v1/ips-bloqueadas
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: DELETE /api/v1/ips-bloqueadas/192.168.1.100
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: GET /api/v1/credenciales/123e4567-e89b-12d3-a456-426614174000
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: GET /api/v1/sesiones
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: DELETE /api/v1/sesiones/abc-123-sesion-id
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: GET /api/v1/roles
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: POST /api/v1/roles
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property descripcion to be present","location":"body","value":{}},{"message":"expected required property nombre to be present","location":"body","value":{}},{"message":"expected required property permisos to be present","location":"body","value":{}}]}
+
+=====================================
+⚙️ TEST: PUT /api/v1/roles/rol-id-123
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property descripcion to be present","location":"body","value":{}},{"message":"expected required property nombre to be present","location":"body","value":{}}]}
+
+=====================================
+⚙️ TEST: DELETE /api/v1/roles/rol-id-123
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: POST /api/v1/usuarios/123e4567-e89b-12d3-a456-426614174000/roles
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property rol_id to be present","location":"body","value":{}},{"message":"expected required property tenant_id to be present","location":"body","value":{}}]}
+
+=====================================
+⚙️ TEST: DELETE /api/v1/usuarios/123e4567-e89b-12d3-a456-426614174000/roles/rol-id-123
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: POST /api/v1/roles/rol-id-123/permisos
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property permiso_codigo to be present","location":"body","value":{}}]}
+
+=====================================
+⚙️ TEST: DELETE /api/v1/roles/rol-id-123/permisos/PERMISO_TEST
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: PUT /api/v1/tenants/tenant-id-123
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property nombre to be present","location":"body","value":{}},{"message":"expected required property slug to be present","location":"body","value":{}}]}
+
+=====================================
+⚙️ TEST: POST /api/v1/usuarios
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property apellido to be present","location":"body","value":{}},{"message":"expected required property correo to be present","location":"body","value":{}},{"message":"expected required property nombre to be present","location":"body","value":{}},{"message":"expected required property password to be present","location":"body","value":{}}]}
+
+=====================================
+⚙️ TEST: GET /api/v1/usuarios
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: PUT /api/v1/usuarios/123e4567-e89b-12d3-a456-426614174000
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property apellido to be present","location":"body","value":{}},{"message":"expected required property nombre to be present","location":"body","value":{}}]}
+
+=====================================
+⚙️ TEST: DELETE /api/v1/usuarios/123e4567-e89b-12d3-a456-426614174000
+⚠️ ERROR REGISTRADO (Status: 400)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Bad Request","status":400,"detail":"request body is required"}
+
+=====================================
+⚙️ TEST: POST /api/v1/usuarios/123e4567-e89b-12d3-a456-426614174000/expulsar
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: GET /api/v1/mi-perfil
+⚠️ ERROR REGISTRADO (Status: 401)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+
+=====================================
+⚙️ TEST: PUT /api/v1/mi-perfil
+⚠️ ERROR REGISTRADO (Status: 422)
+RESPONSE BODY:
+{"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property apellido to be present","location":"body","value":{}},{"message":"expected required property nombre to be present","location":"body","value":{}}]}
+

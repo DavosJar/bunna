@@ -3,7 +3,6 @@ package facades
 import (
 	"context"
 
-	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	uc_assignpermissiontorole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignpermissiontorole"
 	uc_assignrole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignrole"
 	uc_createrole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/createrole"
@@ -12,6 +11,7 @@ import (
 	uc_revokepermissionfromrole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/revokepermissionfromrole"
 	uc_revokerole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/revokerole"
 	uc_updaterole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/updaterole"
+	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 )
 
 type ComandoListarRoles struct {
@@ -128,14 +128,14 @@ type RbacFacade interface {
 }
 
 type rbacFacadeImpl struct {
-	listarRoles           *uc_listroles.ListarRolesCasoDeUso
-	crearRol              *uc_createrole.CrearRolCasoDeUso
-	modificarRol          *uc_updaterole.ModificarRolCasoDeUso
-	eliminarRol           *uc_deleterole.EliminarRolCasoDeUso
-	asignarRol            *uc_assignrole.AsignarRolCasoDeUso
-	revocarRol            *uc_revokerole.RevocarRolCasoDeUso
-	asignarPermisoARol    *uc_assignpermissiontorole.AsignarPermisoARolCasoDeUso
-	revocarPermisoDeRol   *uc_revokepermissionfromrole.RevocarPermisoDeRolCasoDeUso
+	listarRoles         *uc_listroles.ListarRolesCasoDeUso
+	crearRol            *uc_createrole.CrearRolCasoDeUso
+	modificarRol        *uc_updaterole.ModificarRolCasoDeUso
+	eliminarRol         *uc_deleterole.EliminarRolCasoDeUso
+	asignarRol          *uc_assignrole.AsignarRolCasoDeUso
+	revocarRol          *uc_revokerole.RevocarRolCasoDeUso
+	asignarPermisoARol  *uc_assignpermissiontorole.AsignarPermisoARolCasoDeUso
+	revocarPermisoDeRol *uc_revokepermissionfromrole.RevocarPermisoDeRolCasoDeUso
 }
 
 func NewRbacFacade(

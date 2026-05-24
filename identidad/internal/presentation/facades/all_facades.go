@@ -4,12 +4,12 @@ import "github.com/davosjar/bunna/services/identidad/internal/registry"
 
 // AllFacades agrupa todas las fachadas de la capa de presentación.
 type AllFacades struct {
-	Auth        AuthFacade
-	Usuario     UsuarioFacade
-	Sesion      SesionFacade
-	Seguridad   SeguridadFacade
-	Rbac        RbacFacade
-	Tenant      TenantFacade
+	Auth         AuthFacade
+	Usuario      UsuarioFacade
+	Sesion       SesionFacade
+	Seguridad    SeguridadFacade
+	Rbac         RbacFacade
+	Tenant       TenantFacade
 	Verificacion VerificacionFacade
 	Recuperacion RecuperacionFacade
 }
@@ -19,9 +19,9 @@ func NewAllFacades(reg *registry.Registry) *AllFacades {
 	return &AllFacades{
 		Auth: NewAuthFacade(
 			reg.GetServicioRegistro(),
-			reg.ServicioLogin,
-			reg.ServicioRefresh,
-			reg.ServicioLogout,
+			reg.IniciarSesionCasoDeUso,
+			reg.RenovarSesionCasoDeUso,
+			reg.CerrarSesionCasoDeUso,
 		),
 		Usuario: NewUsuarioFacade(
 			reg.CrearUsuarioCasoDeUso,

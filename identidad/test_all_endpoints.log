@@ -1,0 +1,190 @@
+=== INICIANDO PRUEBAS DE ENDPOINTS ===
+
+--- Health ---
+========================================
+Request: GET /health
+Status: 200
+Body: {"$schema":"http://localhost:8080/schemas/HealthOutputBody.json","status":"ok"}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X GET http://localhost:8080/health
+
+[PASS] GET /health (200)
+
+--- Auth: Registro ---
+========================================
+Request: POST /api/v1/auth/register
+Payload: {"correo":"incompleto@"}
+Status: 422
+Body: {"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unprocessable Entity","status":422,"detail":"validation failed","errors":[{"message":"expected required property apellido to be present","location":"body","value":{"correo":"incompleto@"}},{"message":"expected required property nombre to be present","location":"body","value":{"correo":"incompleto@"}},{"message":"expected required property password to be present","location":"body","value":{"correo":"incompleto@"}}]}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X POST http://localhost:8080/api/v1/auth/register -H "Content-Type: application/json" -d '{"correo":"incompleto@"}'
+
+[PASS] POST /api/v1/auth/register (Datos incompletos) (422)
+========================================
+Request: POST /api/v1/auth/register
+Payload: {"nombre":"Juan","apellido":"Perez","correo":"test_1779584331@example.com","password":"Password123!"}
+Status: 201
+Body: {"$schema":"http://localhost:8080/schemas/ApiResponseRegisterResponse.json","data":{"usuario_id":"019e577d-ed86-70ba-972e-db654bda0b2e","correo":"test_1779584331@example.com","estado":"NO_VERIFICADO"},"_links":{"self":{"href":"/api/v1/usuarios/019e577d-ed86-70ba-972e-db654bda0b2e","method":"GET"}}}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X POST http://localhost:8080/api/v1/auth/register -H "Content-Type: application/json" -d '{"nombre":"Juan","apellido":"Perez","correo":"test_1779584331@example.com","password":"Password123!"}'
+
+[PASS] POST /api/v1/auth/register (Exito) (201)
+
+--- Auth: Login ---
+========================================
+Request: POST /api/v1/auth/login
+Payload: {"correo":"test_1779584331@example.com","password":"MALA"}
+Status: 401
+Body: {"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"credenciales inválidas"}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X POST http://localhost:8080/api/v1/auth/login -H "Content-Type: application/json" -d '{"correo":"test_1779584331@example.com","password":"MALA"}'
+
+[PASS] POST /api/v1/auth/login (Contraseña incorrecta) (401)
+========================================
+Request: POST /api/v1/auth/login
+Payload: {"correo":"test_1779584331@example.com","password":"Password123!"}
+Status: 200
+Body: {"$schema":"http://localhost:8080/schemas/ApiResponseLoginResponse.json","data":{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOiIwMTllNTc3ZC1mMDdhLTcyNDgtYjQyNy1mODM2MmY0MTFhZDMiLCJ0eXAiOiJhY2Nlc3MiLCJnbG9iYWwiOmZhbHNlLCJpc3MiOiJTZXJ2aWNpb0lkZW50aWRhZCIsInN1YiI6IjAxOWU1NzdkLWVkODYtNzBiYS05NzJlLWRiNjU0YmRhMGIyZSIsImV4cCI6MTc3OTU4NTIzMSwiaWF0IjoxNzc5NTg0MzMxfQ.oML7hUNynYdwjitMVGncnKA8SjgwYeItFwh07Nvr5Kw","refresh_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOiIwMTllNTc3ZC1mMDdhLTcyNDgtYjQyNy1mODM2MmY0MTFhZDMiLCJ0eXAiOiJyZWZyZXNoIiwiZ2xvYmFsIjpmYWxzZSwiaXNzIjoiU2VydmljaW9JZGVudGlkYWQiLCJzdWIiOiIwMTllNTc3ZC1lZDg2LTcwYmEtOTcyZS1kYjY1NGJkYTBiMmUiLCJleHAiOjE3Nzk2NzA3MzEsImlhdCI6MTc3OTU4NDMzMX0.fglKmWX88CFPefXy8XzgjQJBe7ZvwNOdsvFaLSrOIOw","expires_in":899,"token_type":"Bearer","usuario_id":"019e577d-ed86-70ba-972e-db654bda0b2e"},"_links":{"refresh":{"href":"/api/v1/auth/refresh","method":"POST"},"self":{"href":"/api/v1/usuarios/019e577d-ed86-70ba-972e-db654bda0b2e","method":"GET"}}}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X POST http://localhost:8080/api/v1/auth/login -H "Content-Type: application/json" -d '{"correo":"test_1779584331@example.com","password":"Password123!"}'
+
+[PASS] POST /api/v1/auth/login (Exito) (200)
+
+--- Mi Perfil ---
+========================================
+Request: GET /api/v1/mi-perfil
+Status: 200
+Body: {"$schema":"http://localhost:8080/schemas/ApiResponseVerMiPerfilResponse.json","data":{"id":"019e577d-ed86-70ba-972e-db654bda0b2e","correo":"test_1779584331@example.com","nombre":"Juan","apellido":"Perez","telefono":"","estado":"NO_VERIFICADO","creado_en":"2026-05-23T19:58:51Z"}}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X GET http://localhost:8080/api/v1/mi-perfil -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOiIwMTllNTc3ZC1mMDdhLTcyNDgtYjQyNy1mODM2MmY0MTFhZDMiLCJ0eXAiOiJhY2Nlc3MiLCJnbG9iYWwiOmZhbHNlLCJpc3MiOiJTZXJ2aWNpb0lkZW50aWRhZCIsInN1YiI6IjAxOWU1NzdkLWVkODYtNzBiYS05NzJlLWRiNjU0YmRhMGIyZSIsImV4cCI6MTc3OTU4NTIzMSwiaWF0IjoxNzc5NTg0MzMxfQ.oML7hUNynYdwjitMVGncnKA8SjgwYeItFwh07Nvr5Kw"
+
+[PASS] GET /api/v1/mi-perfil (200)
+========================================
+Request: PUT /api/v1/mi-perfil
+Payload: {"nombre":"NuevoNombre","apellido":"NuevoApellido"}
+Status: 200
+Body: {"$schema":"http://localhost:8080/schemas/ApiResponseModificarMiPerfilResponse.json","data":{"id":"019e577d-ed86-70ba-972e-db654bda0b2e","correo":"test_1779584331@example.com","nombre":"Juan","apellido":"Perez","modificado_en":"2026-05-23T19:58:51Z"}}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X PUT http://localhost:8080/api/v1/mi-perfil -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOiIwMTllNTc3ZC1mMDdhLTcyNDgtYjQyNy1mODM2MmY0MTFhZDMiLCJ0eXAiOiJhY2Nlc3MiLCJnbG9iYWwiOmZhbHNlLCJpc3MiOiJTZXJ2aWNpb0lkZW50aWRhZCIsInN1YiI6IjAxOWU1NzdkLWVkODYtNzBiYS05NzJlLWRiNjU0YmRhMGIyZSIsImV4cCI6MTc3OTU4NTIzMSwiaWF0IjoxNzc5NTg0MzMxfQ.oML7hUNynYdwjitMVGncnKA8SjgwYeItFwh07Nvr5Kw" -H "Content-Type: application/json" -d '{"nombre":"NuevoNombre","apellido":"NuevoApellido"}'
+
+[PASS] PUT /api/v1/mi-perfil (200)
+
+--- Seguridad: Mi Password ---
+========================================
+Request: PUT /api/v1/mi-password
+Payload: {"password_actual":"Password123!","nueva_password":"NewPassword123!"}
+Status: 200
+Body: {"$schema":"http://localhost:8080/schemas/ApiResponseCambiarMiPasswordResponse.json","data":{"modificado_en":"2026-05-23T19:58:52Z"}}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X PUT http://localhost:8080/api/v1/mi-password -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOiIwMTllNTc3ZC1mMDdhLTcyNDgtYjQyNy1mODM2MmY0MTFhZDMiLCJ0eXAiOiJhY2Nlc3MiLCJnbG9iYWwiOmZhbHNlLCJpc3MiOiJTZXJ2aWNpb0lkZW50aWRhZCIsInN1YiI6IjAxOWU1NzdkLWVkODYtNzBiYS05NzJlLWRiNjU0YmRhMGIyZSIsImV4cCI6MTc3OTU4NTIzMSwiaWF0IjoxNzc5NTg0MzMxfQ.oML7hUNynYdwjitMVGncnKA8SjgwYeItFwh07Nvr5Kw" -H "Content-Type: application/json" -d '{"password_actual":"Password123!","nueva_password":"NewPassword123!"}'
+
+[PASS] PUT /api/v1/mi-password (Exito) (200)
+========================================
+Request: POST /api/v1/auth/login
+Payload: {"correo":"test_1779584331@example.com","password":"NewPassword123!"}
+Status: 401
+Body: {"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"credenciales inválidas"}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X POST http://localhost:8080/api/v1/auth/login -H "Content-Type: application/json" -d '{"correo":"test_1779584331@example.com","password":"NewPassword123!"}'
+
+
+--- Verificacion ---
+========================================
+Request: POST /api/v1/verificacion/solicitar
+Status: 401
+Body: {"$schema":"http://localhost:8080/schemas/ErrorModel.json","title":"Unauthorized","status":401,"detail":"token requerido"}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X POST http://localhost:8080/api/v1/verificacion/solicitar
+
+[FAIL] POST /api/v1/verificacion/solicitar (Expected: 200, Got: 401)
+
+--- Recuperacion ---
+========================================
+Request: POST /api/v1/recuperacion/solicitar
+Payload: {"correo":"test_1779584331@example.com"}
+Status: 200
+Body: {"$schema":"http://localhost:8080/schemas/ApiResponseSolicitarRecuperacionResponse.json","data":{"mensaje":"Si el email existe, recibirás un enlace de recuperación"}}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X POST http://localhost:8080/api/v1/recuperacion/solicitar -H "Content-Type: application/json" -d '{"correo":"test_1779584331@example.com"}'
+
+[PASS] POST /api/v1/recuperacion/solicitar (200)
+
+--- Usuarios ---
+========================================
+Request: GET /api/v1/usuarios
+Status: 401
+Body: {"detail":"header Authorization ausente","status":401,"title":"Unauthorized"}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X GET http://localhost:8080/api/v1/usuarios
+
+[PASS] GET /api/v1/usuarios (Obtuvimos 401)
+========================================
+Request: GET /api/v1/usuarios/019e577d-ed86-70ba-972e-db654bda0b2e
+Status: 401
+Body: {"detail":"header Authorization ausente","status":401,"title":"Unauthorized"}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X GET http://localhost:8080/api/v1/usuarios/019e577d-ed86-70ba-972e-db654bda0b2e
+
+[PASS] GET /api/v1/usuarios/{id} (Obtuvimos 401)
+
+--- Sesiones ---
+========================================
+Request: GET /api/v1/sesiones
+Status: 401
+Body: {"detail":"header Authorization ausente","status":401,"title":"Unauthorized"}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X GET http://localhost:8080/api/v1/sesiones
+
+[PASS] GET /api/v1/sesiones (Obtuvimos 401)
+
+--- Roles ---
+========================================
+Request: GET /api/v1/roles
+Status: 401
+Body: {"detail":"header Authorization ausente","status":401,"title":"Unauthorized"}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X GET http://localhost:8080/api/v1/roles
+
+[PASS] GET /api/v1/roles (Obtuvimos 401)
+
+--- Tenants ---
+========================================
+Request: GET /api/v1/tenants/fake-id
+Status: 401
+Body: {"detail":"header Authorization ausente","status":401,"title":"Unauthorized"}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X GET http://localhost:8080/api/v1/tenants/fake-id
+
+[PASS] GET /api/v1/tenants/{id} (Obtuvimos 401)
+
+--- Auth: Refresh ---
+========================================
+Request: POST /api/v1/auth/refresh
+Payload: {"refresh_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOiIwMTllNTc3ZC1mMDdhLTcyNDgtYjQyNy1mODM2MmY0MTFhZDMiLCJ0eXAiOiJyZWZyZXNoIiwiZ2xvYmFsIjpmYWxzZSwiaXNzIjoiU2VydmljaW9JZGVudGlkYWQiLCJzdWIiOiIwMTllNTc3ZC1lZDg2LTcwYmEtOTcyZS1kYjY1NGJkYTBiMmUiLCJleHAiOjE3Nzk2NzA3MzEsImlhdCI6MTc3OTU4NDMzMX0.fglKmWX88CFPefXy8XzgjQJBe7ZvwNOdsvFaLSrOIOw"}
+Status: 200
+Body: {"$schema":"http://localhost:8080/schemas/ApiResponseRefreshResponse.json","data":{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOiIwMTllNTc3ZC1mMDdhLTcyNDgtYjQyNy1mODM2MmY0MTFhZDMiLCJ0eXAiOiJhY2Nlc3MiLCJnbG9iYWwiOmZhbHNlLCJpc3MiOiJTZXJ2aWNpb0lkZW50aWRhZCIsInN1YiI6IjAxOWU1NzdkLWVkODYtNzBiYS05NzJlLWRiNjU0YmRhMGIyZSIsImV4cCI6MTc3OTU4NTIzMywiaWF0IjoxNzc5NTg0MzMzfQ.MwF94JPlmilvyxigQaBEEMvs0MimItq6Q7NtWemmcrA","refresh_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOiIwMTllNTc3ZC1mMDdhLTcyNDgtYjQyNy1mODM2MmY0MTFhZDMiLCJ0eXAiOiJyZWZyZXNoIiwiZ2xvYmFsIjpmYWxzZSwiaXNzIjoiU2VydmljaW9JZGVudGlkYWQiLCJzdWIiOiIwMTllNTc3ZC1lZDg2LTcwYmEtOTcyZS1kYjY1NGJkYTBiMmUiLCJleHAiOjE3Nzk2NzA3MzMsImlhdCI6MTc3OTU4NDMzM30.3hxy6d9GN3aSnxJOmfu9o8v7n3oKa9FZjGeL3rC__hA","expires_in":899,"token_type":"Bearer","usuario_id":"019e577d-ed86-70ba-972e-db654bda0b2e"}}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X POST http://localhost:8080/api/v1/auth/refresh -H "Content-Type: application/json" -d '{"refresh_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOiIwMTllNTc3ZC1mMDdhLTcyNDgtYjQyNy1mODM2MmY0MTFhZDMiLCJ0eXAiOiJyZWZyZXNoIiwiZ2xvYmFsIjpmYWxzZSwiaXNzIjoiU2VydmljaW9JZGVudGlkYWQiLCJzdWIiOiIwMTllNTc3ZC1lZDg2LTcwYmEtOTcyZS1kYjY1NGJkYTBiMmUiLCJleHAiOjE3Nzk2NzA3MzEsImlhdCI6MTc3OTU4NDMzMX0.fglKmWX88CFPefXy8XzgjQJBe7ZvwNOdsvFaLSrOIOw"}'
+
+[PASS] POST /api/v1/auth/refresh (200)
+
+--- Auth: Logout ---
+========================================
+Request: POST /api/v1/auth/logout
+Status: 200
+Body: {"$schema":"http://localhost:8080/schemas/ApiResponseLogoutResponse.json","data":{"sesiones_revocadas":1}}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X POST http://localhost:8080/api/v1/auth/logout -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOiIwMTllNTc3ZC1mMDdhLTcyNDgtYjQyNy1mODM2MmY0MTFhZDMiLCJ0eXAiOiJhY2Nlc3MiLCJnbG9iYWwiOmZhbHNlLCJpc3MiOiJTZXJ2aWNpb0lkZW50aWRhZCIsInN1YiI6IjAxOWU1NzdkLWVkODYtNzBiYS05NzJlLWRiNjU0YmRhMGIyZSIsImV4cCI6MTc3OTU4NTIzMywiaWF0IjoxNzc5NTg0MzMzfQ.MwF94JPlmilvyxigQaBEEMvs0MimItq6Q7NtWemmcrA"
+
+[PASS] POST /api/v1/auth/logout (200)
+========================================
+Request: GET /api/v1/mi-perfil
+Status: 200
+Body: {"$schema":"http://localhost:8080/schemas/ApiResponseVerMiPerfilResponse.json","data":{"id":"019e577d-ed86-70ba-972e-db654bda0b2e","correo":"test_1779584331@example.com","nombre":"Juan","apellido":"Perez","telefono":"","estado":"NO_VERIFICADO","creado_en":"2026-05-23T19:58:51Z"}}
+========================================
+CMD: curl -s -w '\n%{http_code}' -X GET http://localhost:8080/api/v1/mi-perfil -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOiIwMTllNTc3ZC1mMDdhLTcyNDgtYjQyNy1mODM2MmY0MTFhZDMiLCJ0eXAiOiJhY2Nlc3MiLCJnbG9iYWwiOmZhbHNlLCJpc3MiOiJTZXJ2aWNpb0lkZW50aWRhZCIsInN1YiI6IjAxOWU1NzdkLWVkODYtNzBiYS05NzJlLWRiNjU0YmRhMGIyZSIsImV4cCI6MTc3OTU4NTIzMywiaWF0IjoxNzc5NTg0MzMzfQ.MwF94JPlmilvyxigQaBEEMvs0MimItq6Q7NtWemmcrA"
+
+[PASS] GET /api/v1/mi-perfil post-logout (token aun valido hasta expirar, JWT stateless) (200)
+
+=== FIN DE PRUEBAS ===
+Log detallado guardado en: test_all_endpoints.log

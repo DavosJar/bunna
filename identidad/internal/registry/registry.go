@@ -164,6 +164,7 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 	encriptacion := bcrypt.NewBcryptEncriptacion(cfg.BcryptCost)
 	tokenSvc := sesiones_jwt.NewJWTTokenServicio(sesiones_jwt.ConfigJWT{
 		Secret:            cfg.JWTSecret,
+		Issuer:            cfg.JWTIssuer,
 		ExpiracionAccess:  cfg.JWTAccessExpiracion,
 		ExpiracionRefresh: cfg.JWTRefreshExpiracion,
 	})

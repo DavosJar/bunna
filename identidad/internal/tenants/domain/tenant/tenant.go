@@ -78,8 +78,8 @@ func (t *Tenant) Desactivar() error {
 func (t *Tenant) EstaActivo() bool { return t.activo }
 
 // Getters
-func (t *Tenant) ID() string                   { return t.id }
-func (t *Tenant) Nombre() string               { return t.nombre }
-func (t *Tenant) Slug() string                 { return t.slug }
-func (t *Tenant) FechaCreacion() time.Time     { return t.fechaCreacion }
+func (t *Tenant) ID() string                    { return t.id }
+func (t *Tenant) Nombre() string                { return t.nombre }
+func (t *Tenant) Slug() string                  { return t.slug }
+func (t *Tenant) FechaCreacion() time.Time      { return t.fechaCreacion }
 func (t *Tenant) FechaActualizacion() time.Time { return t.fechaActualizacion }

@@ -1,8 +1,8 @@
 package resetpassword
 
 type ComandoResetearContrasena struct {
-	UsuarioID      string
-	NuevaPassword  string
-	TenantID       string
-	EjecutorID     string
+	UsuarioID     string
+	NuevaPassword string
+	TenantID      string
+	EjecutorID    string
 }

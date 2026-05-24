@@ -12,11 +12,11 @@ type VerificacionRepositorio interface {
 
 // UsuarioVerificacion es una proyección del usuario con solo los datos necesarios
 type UsuarioVerificacion struct {
-	ID                      string
-	Nombre                  string
-	Correo                  string
-	EstadoVerificacion      string
-	PruebaVerificacion      PruebaVerificacion
-	ContadorReenvios        int
-	UltimoReenvio           interface{}
+	ID                 string
+	Nombre             string
+	Correo             string
+	EstadoVerificacion string
+	PruebaVerificacion PruebaVerificacion
+	ContadorReenvios   int
+	UltimoReenvio      interface{}
 }

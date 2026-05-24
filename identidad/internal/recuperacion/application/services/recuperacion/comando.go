@@ -13,6 +13,6 @@ type ComandoValidarToken struct {
 
 // ComandoConfirmarRestablecimiento confirma el restablecimiento con nuevo password
 type ComandoConfirmarRestablecimiento struct {
-	Token       string
+	Token         string
 	NuevoPassword string
 }

@@ -30,10 +30,10 @@ func NuevoCorreoElectronicoDesdeBD(direccion string, estado EstadoVerificacionCo
 }
 
 // Getters
-func (c *CorreoElectronico) Direccion() string              { return c.direccion }
+func (c *CorreoElectronico) Direccion() string                { return c.direccion }
 func (c *CorreoElectronico) Estado() EstadoVerificacionCorreo { return c.estado }
-func (c *CorreoElectronico) EstaVerificado() bool           { return c.estado == VERIFICADO }
-func (c *CorreoElectronico) EstaPendiente() bool            { return c.estado == PENDIENTE_VERIFICACION }
+func (c *CorreoElectronico) EstaVerificado() bool             { return c.estado == VERIFICADO }
+func (c *CorreoElectronico) EstaPendiente() bool              { return c.estado == PENDIENTE_VERIFICACION }
 
 // Verificar transiciona el estado a VERIFICADO.
 func (c *CorreoElectronico) Verificar() error {

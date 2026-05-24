@@ -33,7 +33,7 @@ func NuevoTokenPair(
 	}, nil
 }
 
-func (t TokenPair) AccessToken() string        { return t.accessToken }
-func (t TokenPair) RefreshToken() string       { return t.refreshToken }
+func (t TokenPair) AccessToken() string          { return t.accessToken }
+func (t TokenPair) RefreshToken() string         { return t.refreshToken }
 func (t TokenPair) ExpiracionAccess() time.Time  { return t.expiracionAccess }
 func (t TokenPair) ExpiracionRefresh() time.Time { return t.expiracionRefresh }

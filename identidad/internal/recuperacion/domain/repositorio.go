@@ -11,9 +11,9 @@ type TokenRecuperacionRepositorio interface {
 
 // UsuarioRecuperacion proyección del usuario para recuperación
 type UsuarioRecuperacion struct {
-	ID      string
-	Nombre  string
-	Correo  string
+	ID     string
+	Nombre string
+	Correo string
 }
 
 // UsuarioRecuperacionRepositorio operaciones sobre usuarios para recuperación

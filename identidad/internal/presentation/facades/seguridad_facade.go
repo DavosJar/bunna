@@ -3,13 +3,13 @@ package facades
 import (
 	"context"
 
-	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	uc_changemypassword "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/usecases/changemypassword"
 	uc_listblockedips "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/usecases/listblockedips"
 	uc_resetpassword "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/usecases/resetpassword"
 	uc_unblockip "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/usecases/unblockip"
 	uc_unlockaccount "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/usecases/unlockaccount"
 	uc_viewcredentials "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/usecases/viewcredentials"
+	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 )
 
 type ComandoCambiarMiPassword struct {
@@ -87,11 +87,11 @@ type SeguridadFacade interface {
 }
 
 type seguridadFacadeImpl struct {
-	cambiarMiPassword   *uc_changemypassword.CambiarMiContrasenaCasoDeUso
-	resetearPassword    *uc_resetpassword.ResetearContrasenaCasoDeUso
-	desbloquearCuenta   *uc_unlockaccount.DesbloquearCuentaCasoDeUso
-	listarIPsBloqueadas *uc_listblockedips.ListarIPsBloqueadasCasoDeUso
-	desbloquearIP       *uc_unblockip.DesbloquearIPCasoDeUso
+	cambiarMiPassword     *uc_changemypassword.CambiarMiContrasenaCasoDeUso
+	resetearPassword      *uc_resetpassword.ResetearContrasenaCasoDeUso
+	desbloquearCuenta     *uc_unlockaccount.DesbloquearCuentaCasoDeUso
+	listarIPsBloqueadas   *uc_listblockedips.ListarIPsBloqueadasCasoDeUso
+	desbloquearIP         *uc_unblockip.DesbloquearIPCasoDeUso
 	consultarCredenciales *uc_viewcredentials.ConsultarCredencialesCasoDeUso
 }
 
@@ -104,11 +104,11 @@ func NewSeguridadFacade(
 	consultarCredenciales *uc_viewcredentials.ConsultarCredencialesCasoDeUso,
 ) SeguridadFacade {
 	return &seguridadFacadeImpl{
-		cambiarMiPassword:    cambiarMiPassword,
-		resetearPassword:     resetearPassword,
-		desbloquearCuenta:    desbloquearCuenta,
-		listarIPsBloqueadas:  listarIPsBloqueadas,
-		desbloquearIP:        desbloquearIP,
+		cambiarMiPassword:     cambiarMiPassword,
+		resetearPassword:      resetearPassword,
+		desbloquearCuenta:     desbloquearCuenta,
+		listarIPsBloqueadas:   listarIPsBloqueadas,
+		desbloquearIP:         desbloquearIP,
 		consultarCredenciales: consultarCredenciales,
 	}
 }

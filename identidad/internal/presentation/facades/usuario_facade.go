@@ -123,12 +123,12 @@ type UsuarioFacade interface {
 }
 
 type usuarioFacadeImpl struct {
-	crearUsuario    *uc_createuser.CrearUsuarioCasoDeUso
-	listarUsuarios  *uc_listusers.ListarUsuariosCasoDeUso
-	modificarUsuario *uc_updateuser.ModificarUsuarioCasoDeUso
-	darDeBajaUsuario *uc_deleteuser.DarDeBajaUsuarioCasoDeUso
-	expulsarUsuario  *uc_expeluser.ExpulsarUsuarioCasoDeUso
-	verMiPerfil      *uc_viewmyprofile.VerMiPerfilCasoDeUso
+	crearUsuario      *uc_createuser.CrearUsuarioCasoDeUso
+	listarUsuarios    *uc_listusers.ListarUsuariosCasoDeUso
+	modificarUsuario  *uc_updateuser.ModificarUsuarioCasoDeUso
+	darDeBajaUsuario  *uc_deleteuser.DarDeBajaUsuarioCasoDeUso
+	expulsarUsuario   *uc_expeluser.ExpulsarUsuarioCasoDeUso
+	verMiPerfil       *uc_viewmyprofile.VerMiPerfilCasoDeUso
 	modificarMiPerfil *uc_updatemyprofile.ModificarMiPerfilCasoDeUso
 }
 
@@ -142,12 +142,12 @@ func NewUsuarioFacade(
 	modificarMiPerfil *uc_updatemyprofile.ModificarMiPerfilCasoDeUso,
 ) UsuarioFacade {
 	return &usuarioFacadeImpl{
-		crearUsuario:     crearUsuario,
-		listarUsuarios:   listarUsuarios,
-		modificarUsuario: modificarUsuario,
-		darDeBajaUsuario: darDeBajaUsuario,
-		expulsarUsuario:  expulsarUsuario,
-		verMiPerfil:      verMiPerfil,
+		crearUsuario:      crearUsuario,
+		listarUsuarios:    listarUsuarios,
+		modificarUsuario:  modificarUsuario,
+		darDeBajaUsuario:  darDeBajaUsuario,
+		expulsarUsuario:   expulsarUsuario,
+		verMiPerfil:       verMiPerfil,
 		modificarMiPerfil: modificarMiPerfil,
 	}
 }

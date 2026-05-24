@@ -12,9 +12,9 @@ import (
 
 // ConfigVerificacion contiene parámetros configurables del servicio
 type ConfigVerificacion struct {
-	TokenExpiracion  time.Duration
-	MaxReenvios      int
-	VentanaReenvios  time.Duration
+	TokenExpiracion time.Duration
+	MaxReenvios     int
+	VentanaReenvios time.Duration
 }
 
 // ServicioVerificacion maneja los casos de uso de verificación de correo

@@ -3,9 +3,9 @@ package facades
 import (
 	"context"
 
-	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	uc_listsessions "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/listsessions"
 	uc_terminatesession "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/terminatesession"
+	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 )
 
 type ComandoListarSesiones struct {
@@ -36,7 +36,7 @@ type SesionFacade interface {
 }
 
 type sesionFacadeImpl struct {
-	listarSesiones    *uc_listsessions.ListarSesionesCasoDeUso
+	listarSesiones     *uc_listsessions.ListarSesionesCasoDeUso
 	forzarCierreSesion *uc_terminatesession.ForzarCierreSesionCasoDeUso
 }
 
@@ -45,7 +45,7 @@ func NewSesionFacade(
 	forzarCierreSesion *uc_terminatesession.ForzarCierreSesionCasoDeUso,
 ) SesionFacade {
 	return &sesionFacadeImpl{
-		listarSesiones:    listarSesiones,
+		listarSesiones:     listarSesiones,
 		forzarCierreSesion: forzarCierreSesion,
 	}
 }

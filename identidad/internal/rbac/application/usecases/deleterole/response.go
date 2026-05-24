@@ -1,6 +1,6 @@
 package deleterole
 
 type RespuestaEliminarRol struct {
-	RolID      string
+	RolID       string
 	EliminadoEn string
 }

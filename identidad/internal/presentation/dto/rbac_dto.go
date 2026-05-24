@@ -46,8 +46,8 @@ type EliminarRolResponse struct {
 }
 
 type AsignarRolRequest struct {
-	RolID     string `json:"rol_id"     doc:"ID del rol a asignar"  example:"rol-123"`
-	TenantID  string `json:"tenant_id"  doc:"ID del tenant (opcional, vacío = global)" example:""`
+	RolID    string `json:"rol_id"     doc:"ID del rol a asignar"  example:"rol-123"`
+	TenantID string `json:"tenant_id"  doc:"ID del tenant (opcional, vacío = global)" example:""`
 }
 
 type AsignarRolResponse struct {

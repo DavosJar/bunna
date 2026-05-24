@@ -159,15 +159,15 @@ func (s *Sesion) RotarTokens(
 
 // --- Getters ---
 
-func (s *Sesion) ID() string                         { return s.id }
-func (s *Sesion) UsuarioID() string                  { return s.usuarioID }
-func (s *Sesion) AccessTokenHash() string            { return s.accessTokenHash }
-func (s *Sesion) RefreshTokenHash() string           { return s.refreshTokenHash }
-func (s *Sesion) Estado() EstadoSesion               { return s.estado }
-func (s *Sesion) IPOrigen() string                   { return s.ipOrigen }
-func (s *Sesion) FechaCreacion() time.Time           { return s.fechaCreacion }
-func (s *Sesion) FechaActualizacion() time.Time      { return s.fechaActualizacion }
-func (s *Sesion) FechaExpiracionAccess() time.Time   { return s.fechaExpiracionAccess }
-func (s *Sesion) FechaExpiracionRefresh() time.Time  { return s.fechaExpiracionRefresh }
-func (s *Sesion) UltimaActividad() time.Time         { return s.ultimaActividad }
-func (s *Sesion) ContadorRefrescos() int             { return s.contadorRefrescos }
+func (s *Sesion) ID() string                        { return s.id }
+func (s *Sesion) UsuarioID() string                 { return s.usuarioID }
+func (s *Sesion) AccessTokenHash() string           { return s.accessTokenHash }
+func (s *Sesion) RefreshTokenHash() string          { return s.refreshTokenHash }
+func (s *Sesion) Estado() EstadoSesion              { return s.estado }
+func (s *Sesion) IPOrigen() string                  { return s.ipOrigen }
+func (s *Sesion) FechaCreacion() time.Time          { return s.fechaCreacion }
+func (s *Sesion) FechaActualizacion() time.Time     { return s.fechaActualizacion }
+func (s *Sesion) FechaExpiracionAccess() time.Time  { return s.fechaExpiracionAccess }
+func (s *Sesion) FechaExpiracionRefresh() time.Time { return s.fechaExpiracionRefresh }
+func (s *Sesion) UltimaActividad() time.Time        { return s.ultimaActividad }
+func (s *Sesion) ContadorRefrescos() int            { return s.contadorRefrescos }

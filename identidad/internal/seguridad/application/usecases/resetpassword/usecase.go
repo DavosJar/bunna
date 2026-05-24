@@ -11,10 +11,10 @@ import (
 )
 
 type ResetearContrasenaCasoDeUso struct {
-	credRepo    seguridad.CredencialesRepositorio
-	sesionRepo  sesiones.SesionRepositorio
-	encSvc      seguridad.EncriptacionServicio
-	authSvc     rbac.AuthorizationService
+	credRepo   seguridad.CredencialesRepositorio
+	sesionRepo sesiones.SesionRepositorio
+	encSvc     seguridad.EncriptacionServicio
+	authSvc    rbac.AuthorizationService
 }
 
 func NewResetearContrasenaCasoDeUso(

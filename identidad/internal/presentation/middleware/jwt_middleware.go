@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
+	"github.com/gin-gonic/gin"
 )
 
 // Claves usadas en gin.Context.Set/Get (tipo string para compatibilidad gin).

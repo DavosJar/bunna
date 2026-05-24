@@ -1,7 +1,7 @@
 package changemypassword
 
 type ComandoCambiarMiContrasena struct {
-	EjecutorID    string
+	EjecutorID     string
 	PasswordActual string
-	NuevaPassword string
+	NuevaPassword  string
 }

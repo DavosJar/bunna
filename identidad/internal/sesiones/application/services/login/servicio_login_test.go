@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
+	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/bloqueo_ip"
 	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
-	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/login"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
-	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
-	"github.com/stretchr/testify/mock"
+	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	usuario_domain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
+	"github.com/stretchr/testify/mock"
 )
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
@@ -33,12 +33,16 @@ func (m *mockUnitOfWork) Transaccional(ctx context.Context, fn func(tx sesiones_
 	}
 	return fn(m)
 }
-func (m *mockUnitOfWork) SesionRepositorio() sesiones_domain.SesionRepositorio             { return m.sesionRepo }
-func (m *mockUnitOfWork) CredencialesRepositorio() seguridad_domain.CredencialesRepositorio { return m.credRepo }
-func (m *mockUnitOfWork) UsuarioRepositorio() usuario_domain.UsuarioRepositorio             { return m.usuarioRepo }
-func (m *mockUnitOfWork) EncriptacionServicio() seguridad_domain.EncriptacionServicio       { return m.encriptacion }
-func (m *mockUnitOfWork) TokenServicio() sesiones_domain.TokenServicio                      { return m.tokenServicio }
-func (m *mockUnitOfWork) GeneradorID() shared_domain.GeneradorID                            { return m.generadorID }
+func (m *mockUnitOfWork) SesionRepositorio() sesiones_domain.SesionRepositorio { return m.sesionRepo }
+func (m *mockUnitOfWork) CredencialesRepositorio() seguridad_domain.CredencialesRepositorio {
+	return m.credRepo
+}
+func (m *mockUnitOfWork) UsuarioRepositorio() usuario_domain.UsuarioRepositorio { return m.usuarioRepo }
+func (m *mockUnitOfWork) EncriptacionServicio() seguridad_domain.EncriptacionServicio {
+	return m.encriptacion
+}
+func (m *mockUnitOfWork) TokenServicio() sesiones_domain.TokenServicio { return m.tokenServicio }
+func (m *mockUnitOfWork) GeneradorID() shared_domain.GeneradorID       { return m.generadorID }
 
 // mockUsuarioRepo
 type mockUsuarioRepo struct {

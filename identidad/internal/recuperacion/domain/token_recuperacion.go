@@ -66,10 +66,10 @@ func HashearToken(tokenEnPlano string) string {
 }
 
 // Getters
-func (t *TokenRecuperacion) ID() string        { return t.id }
-func (t *TokenRecuperacion) UsuarioID() string { return t.usuarioID }
-func (t *TokenRecuperacion) TokenHash() string { return t.tokenHash }
+func (t *TokenRecuperacion) ID() string          { return t.id }
+func (t *TokenRecuperacion) UsuarioID() string   { return t.usuarioID }
+func (t *TokenRecuperacion) TokenHash() string   { return t.tokenHash }
 func (t *TokenRecuperacion) ExpiraEn() time.Time { return t.expiraEn }
-func (t *TokenRecuperacion) Usado() bool       { return t.usado }
+func (t *TokenRecuperacion) Usado() bool         { return t.usado }
 func (t *TokenRecuperacion) CreadoEn() time.Time { return t.creadoEn }
 func (t *TokenRecuperacion) UsadoEn() *time.Time { return t.usadoEn }

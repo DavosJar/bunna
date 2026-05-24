@@ -1,6 +1,6 @@
 package unlockaccount
 
 type RespuestaDesbloquearCuenta struct {
-	UsuarioID     string
+	UsuarioID      string
 	DesbloqueadoEn string
 }

@@ -4,6 +4,6 @@ package notificaciones
 type TipoEmail string
 
 const (
-	TipoVerificacionCorreo    TipoEmail = "VERIFICACION_CORREO"
+	TipoVerificacionCorreo     TipoEmail = "VERIFICACION_CORREO"
 	TipoRecuperacionContrasena TipoEmail = "RECUPERACION_CONTRASENA"
 )

@@ -26,6 +26,7 @@ func main() {
 	r := router.New(allFacades, router.Config{
 		Version:     "1.0.0",
 		CORSOrigins: []string{cfg.CORSOrigins},
+		TokenSvc:    reg.TokenServicio(),
 	})
 
 	log.Printf("Server starting on :%s", cfg.Port)

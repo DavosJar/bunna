@@ -1,8 +1,8 @@
 package listblockedips
 
 type IPBloqueadaDTO struct {
-	IP            string
-	Intentos      int
+	IP             string
+	Intentos       int
 	BloqueadoHasta string
 }
 

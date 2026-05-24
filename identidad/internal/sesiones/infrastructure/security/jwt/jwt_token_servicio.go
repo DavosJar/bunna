@@ -12,14 +12,15 @@ import (
 
 type ConfigJWT struct {
 	Secret            string
+	Issuer            string
 	ExpiracionAccess  time.Duration
 	ExpiracionRefresh time.Duration
 }
 
 type claimsJWT struct {
-	SesionID string                      `json:"sid"`
-	Tipo     string                      `json:"typ"`
-	Global   bool                        `json:"global"`
+	SesionID string                       `json:"sid"`
+	Tipo     string                       `json:"typ"`
+	Global   bool                         `json:"global"`
 	Tenants  map[string]rbac.TenantClaims `json:"tenants,omitempty"`
 	jwt.RegisteredClaims
 }
@@ -50,6 +51,7 @@ func (s *JWTTokenServicio) GenerarAccessToken(usuarioID, sesionID string, claims
 		Tenants:  tenants,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   usuarioID,
+			Issuer:    s.config.Issuer,
 			ExpiresAt: jwt.NewNumericDate(expira),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -69,6 +71,7 @@ func (s *JWTTokenServicio) GenerarRefreshToken(usuarioID, sesionID string) (stri
 		Tipo:     "refresh",
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   usuarioID,
+			Issuer:    s.config.Issuer,
 			ExpiresAt: jwt.NewNumericDate(expira),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},

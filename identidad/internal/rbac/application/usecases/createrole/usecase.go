@@ -9,10 +9,10 @@ import (
 )
 
 type CrearRolCasoDeUso struct {
-	rolRepo     rbac.RolRepositorio
-	permisoRepo rbac.PermisoRepositorio
+	rolRepo        rbac.RolRepositorio
+	permisoRepo    rbac.PermisoRepositorio
 	rolPermisoRepo rbac.RolPermisoRepositorio
-	authSvc     rbac.AuthorizationService
+	authSvc        rbac.AuthorizationService
 }
 
 func NewCrearRolCasoDeUso(

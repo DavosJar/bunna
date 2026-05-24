@@ -6,10 +6,7 @@ import (
 	"log"
 
 	"github.com/davosjar/bunna/services/identidad/internal/config"
-	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	rbac_app "github.com/davosjar/bunna/services/identidad/internal/rbac/application"
-	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
-	rbac_postgres "github.com/davosjar/bunna/services/identidad/internal/rbac/infrastructure/persistence/postgres"
 	uc_assignpermissiontorole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignpermissiontorole"
 	uc_assignrole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignrole"
 	uc_createrole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/createrole"
@@ -18,6 +15,9 @@ import (
 	uc_revokepermissionfromrole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/revokepermissionfromrole"
 	uc_revokerole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/revokerole"
 	uc_updaterole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/updaterole"
+	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
+	rbac_postgres "github.com/davosjar/bunna/services/identidad/internal/rbac/infrastructure/persistence/postgres"
+	uc_forgotpassword "github.com/davosjar/bunna/services/identidad/internal/recuperacion/application/usecases/forgotpassword"
 	"github.com/davosjar/bunna/services/identidad/internal/registry"
 	uc_changemypassword "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/usecases/changemypassword"
 	uc_listblockedips "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/usecases/listblockedips"
@@ -26,34 +26,34 @@ import (
 	uc_unlockaccount "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/usecases/unlockaccount"
 	uc_viewcredentials "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/usecases/viewcredentials"
 	seguridad_postgres "github.com/davosjar/bunna/services/identidad/internal/seguridad/infrastructure/persistence/postgres"
-	sesiones_postgres "github.com/davosjar/bunna/services/identidad/internal/sesiones/infrastructure/persistence/postgres"
-	uc_sesiones_login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/login"
 	uc_listsessions "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/listsessions"
+	uc_sesiones_login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/login"
 	uc_sesiones_logout "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/logout"
 	uc_sesiones_refresh "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/refresh"
 	uc_terminatesession "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/terminatesession"
+	sesiones_postgres "github.com/davosjar/bunna/services/identidad/internal/sesiones/infrastructure/persistence/postgres"
+	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	shared_idgenerator "github.com/davosjar/bunna/services/identidad/internal/shared/infrastructure/idgenerator"
+	uc_updatetenant "github.com/davosjar/bunna/services/identidad/internal/tenants/application/usecases/updatetenant"
 	tenant_domain "github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
 	tenant_postgres "github.com/davosjar/bunna/services/identidad/internal/tenants/infrastructure/persistence/postgres"
-	uc_updatetenant "github.com/davosjar/bunna/services/identidad/internal/tenants/application/usecases/updatetenant"
-	usuarios_postgres "github.com/davosjar/bunna/services/identidad/internal/usuarios/infrastructure/persistence/postgres"
 	uc_createuser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/createuser"
 	uc_deleteuser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/deleteuser"
 	uc_expeluser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/expeluser"
 	uc_listusers "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/listusers"
+	uc_register "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/register"
 	uc_updatemyprofile "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/updatemyprofile"
 	uc_updateuser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/updateuser"
 	uc_viewmyprofile "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/viewmyprofile"
-	uc_register "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/register"
+	usuarios_postgres "github.com/davosjar/bunna/services/identidad/internal/usuarios/infrastructure/persistence/postgres"
 	uc_verifyemail "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/verifyemail"
-	uc_forgotpassword "github.com/davosjar/bunna/services/identidad/internal/recuperacion/application/usecases/forgotpassword"
 )
 
 const (
 	reset   = "\033[0m"
 	rojo    = "\033[31m"
 	verde   = "\033[32m"
-	amar  = "\033[33m"
+	amar    = "\033[33m"
 	azul    = "\033[34m"
 	magenta = "\033[35m"
 	cian    = "\033[36m"
@@ -62,7 +62,7 @@ const (
 
 var (
 	exitos = 0
-	fal  = 0
+	fal    = 0
 )
 
 func ok(desc string, args ...interface{}) {
@@ -166,7 +166,7 @@ func main() {
 	subtitulo("1.1 Registros exitosos")
 
 	regCmd1 := uc_register.ComandoRegistrarUsuario{
-		Correo:   "ana.lopez@example.com", Password: "SecurePass123!",
+		Correo: "ana.lopez@example.com", Password: "SecurePass123!",
 		Nombre: "Ana", Apellido: "López", Telefono: "6001112233",
 	}
 	_, _ = reg.IniciarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_login.ComandoIniciarSesion{
@@ -210,17 +210,29 @@ func main() {
 	_, err = uc_register.NewRegistrarUsuarioCasoDeUso(reg.UsuarioUnitOfWork()).Ejecutar(ctx, &uc_register.ComandoRegistrarUsuario{
 		Correo: "ana.lopez@example.com", Password: "OtraPass1@", Nombre: "Ana", Apellido: "López",
 	})
-	if err != nil { ok("Email duplicado rechazado: %v", err) } else { fail("Email duplicado debería fallar") }
+	if err != nil {
+		ok("Email duplicado rechazado: %v", err)
+	} else {
+		fail("Email duplicado debería fallar")
+	}
 
 	_, err = uc_register.NewRegistrarUsuarioCasoDeUso(reg.UsuarioUnitOfWork()).Ejecutar(ctx, &uc_register.ComandoRegistrarUsuario{
 		Correo: "invalido", Password: "Passw0rd@", Nombre: "T", Apellido: "U",
 	})
-	if err != nil { ok("Email inválido rechazado: %v", err) } else { fail("Email inválido debería fallar") }
+	if err != nil {
+		ok("Email inválido rechazado: %v", err)
+	} else {
+		fail("Email inválido debería fallar")
+	}
 
 	_, err = uc_register.NewRegistrarUsuarioCasoDeUso(reg.UsuarioUnitOfWork()).Ejecutar(ctx, &uc_register.ComandoRegistrarUsuario{
 		Correo: "", Password: "Passw0rd@", Nombre: "T", Apellido: "U",
 	})
-	if err != nil { ok("Email vacío rechazado: %v", err) } else { fail("Email vacío debería fallar") }
+	if err != nil {
+		ok("Email vacío rechazado: %v", err)
+	} else {
+		fail("Email vacío debería fallar")
+	}
 
 	// Asignar rol sys_admin al primer usuario para poder probar operaciones RBAC
 	rolSysAdmin, err := rolRepo.ObtenerPorNombre(ctx, rbac.RolSysAdmin)
@@ -248,30 +260,50 @@ func main() {
 		fail("Login ana.lopez: %v", err)
 	} else {
 		ok("Login exitoso → AccessToken: %s..., SesionID: %s", loginResp.AccessToken[:20], loginResp.SesionID)
-		if loginResp.UsuarioID == usuario1ID { ok("UsuarioID coincide") } else { fail("UsuarioID no coincide") }
+		if loginResp.UsuarioID == usuario1ID {
+			ok("UsuarioID coincide")
+		} else {
+			fail("UsuarioID no coincide")
+		}
 	}
 
 	loginResp2, err := reg.IniciarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_login.ComandoIniciarSesion{
 		Email: "jose.martinez@demo.com", Password: "Passw0rd!", IPOrigen: "10.0.0.50",
 	})
-	if err != nil { fail("Login jose.martinez: %v", err) } else { ok("Login jose.martinez → SesionID: %s", loginResp2.SesionID) }
+	if err != nil {
+		fail("Login jose.martinez: %v", err)
+	} else {
+		ok("Login jose.martinez → SesionID: %s", loginResp2.SesionID)
+	}
 
 	subtitulo("2.2 Login inválido (debe fallar)")
 
 	_, err = reg.IniciarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_login.ComandoIniciarSesion{
 		Email: "ana.lopez@example.com", Password: "WrongPassword1!", IPOrigen: "192.168.1.100",
 	})
-	if err != nil { ok("Password incorrecto rechazado") } else { fail("Password incorrecto debería fallar") }
+	if err != nil {
+		ok("Password incorrecto rechazado")
+	} else {
+		fail("Password incorrecto debería fallar")
+	}
 
 	_, err = reg.IniciarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_login.ComandoIniciarSesion{
 		Email: "no.existe@test.com", Password: "Passw0rd@", IPOrigen: "10.0.0.1",
 	})
-	if err != nil { ok("Email no registrado rechazado") } else { fail("Email no registrado debería fallar") }
+	if err != nil {
+		ok("Email no registrado rechazado")
+	} else {
+		fail("Email no registrado debería fallar")
+	}
 
 	_, err = reg.IniciarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_login.ComandoIniciarSesion{
 		Email: "", Password: "Passw0rd@", IPOrigen: "10.0.0.1",
 	})
-	if err != nil { ok("Email vacío rechazado") } else { fail("Email vacío debería fallar") }
+	if err != nil {
+		ok("Email vacío rechazado")
+	} else {
+		fail("Email vacío debería fallar")
+	}
 
 	// ─────────────────────────────────────────────────────────────────────────
 	// 3. REFRESH (#27)
@@ -288,27 +320,48 @@ func main() {
 		fail("Refresh falló: %v", err)
 	} else {
 		ok("Refresh exitoso → Nuevo AccessToken: %s...", refreshResp.AccessToken[:20])
-		if refreshResp.SesionID == loginResp.SesionID { ok("Misma sesiónID tras refresh") } else { fail("SesionID cambió") }
+		if refreshResp.SesionID == loginResp.SesionID {
+			ok("Misma sesiónID tras refresh")
+		} else {
+			fail("SesionID cambió")
+		}
 	}
 	oldRefreshToken := loginResp.RefreshToken
 	firstRefreshToken := refreshResp.RefreshToken
 
 	subtitulo("3.2 Token rotado (debe fallar)")
 	_, err = reg.RenovarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_refresh.ComandoRenovarSesion{RefreshToken: oldRefreshToken})
-	if err != nil { ok("Token rotado rechazado (detección robo): %v", err) } else { fail("Token rotado debería fallar") }
+	if err != nil {
+		ok("Token rotado rechazado (detección robo): %v", err)
+	} else {
+		fail("Token rotado debería fallar")
+	}
 
 	subtitulo("3.3 Múltiples refrescos")
 	ultimoRefresh := firstRefreshToken
 	for i := 1; i <= 3; i++ {
 		r, err := reg.RenovarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_refresh.ComandoRenovarSesion{RefreshToken: ultimoRefresh})
-		if err != nil { fail("Refresh %d falló: %v", i, err) } else { ok("Refresh %d exitoso", i); ultimoRefresh = r.RefreshToken }
+		if err != nil {
+			fail("Refresh %d falló: %v", i, err)
+		} else {
+			ok("Refresh %d exitoso", i)
+			ultimoRefresh = r.RefreshToken
+		}
 	}
 
 	subtitulo("3.4 Token inválido")
 	_, err = reg.RenovarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_refresh.ComandoRenovarSesion{RefreshToken: "token-invalido"})
-	if err != nil { ok("Token inválido rechazado") } else { fail("Token inválido debería fallar") }
+	if err != nil {
+		ok("Token inválido rechazado")
+	} else {
+		fail("Token inválido debería fallar")
+	}
 	_, err = reg.RenovarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_refresh.ComandoRenovarSesion{RefreshToken: ""})
-	if err != nil { ok("Token vacío rechazado") } else { fail("Token vacío debería fallar") }
+	if err != nil {
+		ok("Token vacío rechazado")
+	} else {
+		fail("Token vacío debería fallar")
+	}
 
 	// ─────────────────────────────────────────────────────────────────────────
 	// 4. LOGOUT (#28)
@@ -321,22 +374,38 @@ func main() {
 	loginForLogout, err := reg.IniciarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_login.ComandoIniciarSesion{
 		Email: "carlos.ramos@test.com", Password: "ClaveFuerte99@", IPOrigen: "10.10.10.10",
 	})
-	if err != nil { fail("Login previo falló: %v", err) } else { ok("Login previo → SesionID: %s", loginForLogout.SesionID) }
+	if err != nil {
+		fail("Login previo falló: %v", err)
+	} else {
+		ok("Login previo → SesionID: %s", loginForLogout.SesionID)
+	}
 
 	logoutResp, err := reg.CerrarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_logout.ComandoCerrarSesion{
 		SesionID: loginForLogout.SesionID, UsuarioID: loginForLogout.UsuarioID,
 	})
-	if err != nil { fail("Logout falló: %v", err) } else { ok("Logout exitoso → Revocadas: %d", logoutResp.SesionesRevocadas) }
+	if err != nil {
+		fail("Logout falló: %v", err)
+	} else {
+		ok("Logout exitoso → Revocadas: %d", logoutResp.SesionesRevocadas)
+	}
 
 	subtitulo("4.2 Refresh post-logout (debe fallar)")
 	_, err = reg.RenovarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_refresh.ComandoRenovarSesion{RefreshToken: loginForLogout.RefreshToken})
-	if err != nil { ok("Refresh post-logout bloqueado") } else { fail("Refresh post-logout debería fallar") }
+	if err != nil {
+		ok("Refresh post-logout bloqueado")
+	} else {
+		fail("Refresh post-logout debería fallar")
+	}
 
 	subtitulo("4.3 Re-login post-logout")
 	relogin, err := reg.IniciarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_login.ComandoIniciarSesion{
 		Email: "carlos.ramos@test.com", Password: "ClaveFuerte99@", IPOrigen: "10.10.10.10",
 	})
-	if err != nil { fail("Re-login falló: %v", err) } else { ok("Re-login exitoso → Nueva sesión: %s", relogin.SesionID) }
+	if err != nil {
+		fail("Re-login falló: %v", err)
+	} else {
+		ok("Re-login exitoso → Nueva sesión: %s", relogin.SesionID)
+	}
 
 	// ─────────────────────────────────────────────────────────────────────────
 	// 5. CRUD USUARIOS (casos #1-#5)
@@ -348,10 +417,14 @@ func main() {
 	subtitulo("5.1 Crear usuario (#1)")
 	createResp, err := reg.CrearUsuarioCasoDeUso.Ejecutar(ctx, &uc_createuser.ComandoCrearUsuario{
 		EjecutorID: sysAdminID,
-		Nombre: "Nuevo", Apellido: "Usuario", Correo: "nuevo@test.com",
+		Nombre:     "Nuevo", Apellido: "Usuario", Correo: "nuevo@test.com",
 		Password: "Passw0rd!",
 	})
-	if err != nil { fail("Crear usuario: %v", err) } else { ok("Usuario creado → ID: %s", createResp.ID) }
+	if err != nil {
+		fail("Crear usuario: %v", err)
+	} else {
+		ok("Usuario creado → ID: %s", createResp.ID)
+	}
 	nuevoUserID := createResp.ID
 
 	subtitulo("5.2 Listar usuarios (#2)")
@@ -359,38 +432,63 @@ func main() {
 		EjecutorID: sysAdminID, TenantID: "",
 		Paginacion: shared_domain.Paginacion{Pagina: 1, TamanoPagina: 10},
 	})
-	if err != nil { fail("Listar usuarios: %v", err) } else { ok("Usuarios listados: %d total", listUsers.Total) }
+	if err != nil {
+		fail("Listar usuarios: %v", err)
+	} else {
+		ok("Usuarios listados: %d total", listUsers.Total)
+	}
 
 	subtitulo("5.3 Modificar usuario (#3)")
 	_, err = reg.ModificarUsuarioCasoDeUso.Ejecutar(ctx, &uc_updateuser.ComandoModificarUsuario{
 		EjecutorID: sysAdminID, TenantID: "",
 		UsuarioID: nuevoUserID, Nombre: "Modificado", Apellido: "Editado",
 	})
-	if err != nil { fail("Modificar usuario: %v", err) } else { ok("Usuario modificado exitosamente") }
+	if err != nil {
+		fail("Modificar usuario: %v", err)
+	} else {
+		ok("Usuario modificado exitosamente")
+	}
 
 	subtitulo("5.4 Ver perfil propio (#22)")
 	perfil, err := reg.VerMiPerfilCasoDeUso.Ejecutar(ctx, &uc_viewmyprofile.ComandoVerMiPerfil{EjecutorID: nuevoUserID})
-	if err != nil { fail("Ver perfil: %v", err) } else { ok("Perfil visto: %s %s", perfil.Nombre, perfil.Apellido) }
+	if err != nil {
+		fail("Ver perfil: %v", err)
+	} else {
+		ok("Perfil visto: %s %s", perfil.Nombre, perfil.Apellido)
+	}
 
 	subtitulo("5.5 Modificar perfil propio (#23)")
 	_, err = reg.ModificarMiPerfilCasoDeUso.Ejecutar(ctx, &uc_updatemyprofile.ComandoModificarMiPerfil{
 		EjecutorID: nuevoUserID, Nombre: "AutoEditado", Apellido: "Perfil",
 	})
-	if err != nil { fail("Modificar perfil: %v", err) } else { ok("Perfil modificado exitosamente") }
+	if err != nil {
+		fail("Modificar perfil: %v", err)
+	} else {
+		ok("Perfil modificado exitosamente")
+	}
 
 	subtitulo("5.6 Dar de baja usuario (#4)")
 	_, err = reg.DarDeBajaUsuarioCasoDeUso.Ejecutar(ctx, &uc_deleteuser.ComandoDarDeBajaUsuario{
 		EjecutorID: sysAdminID, UsuarioID: nuevoUserID,
 	})
-	if err != nil { fail("Dar de baja: %v", err) } else { ok("Usuario dado de baja exitosamente") }
+	if err != nil {
+		fail("Dar de baja: %v", err)
+	} else {
+		ok("Usuario dado de baja exitosamente")
+	}
 
 	// Crear otro usuario para expulsión
 	createResp2, err := reg.CrearUsuarioCasoDeUso.Ejecutar(ctx, &uc_createuser.ComandoCrearUsuario{
 		EjecutorID: sysAdminID,
-		Nombre: "Expulsable", Apellido: "User", Correo: "expulso@test.com",
+		Nombre:     "Expulsable", Apellido: "User", Correo: "expulso@test.com",
 		Password: "Passw0rd!",
 	})
-	if err != nil { fail("Crear expulsable: %v", err) } else { nuevoUserID2 := createResp2.ID; _ = nuevoUserID2 }
+	if err != nil {
+		fail("Crear expulsable: %v", err)
+	} else {
+		nuevoUserID2 := createResp2.ID
+		_ = nuevoUserID2
+	}
 
 	nuevoUserID2 := createResp2.ID
 
@@ -398,7 +496,11 @@ func main() {
 	_, err = reg.ExpulsarUsuarioCasoDeUso.Ejecutar(ctx, &uc_expeluser.ComandoExpulsarUsuario{
 		EjecutorID: sysAdminID, TenantID: "", UsuarioID: nuevoUserID2,
 	})
-	if err != nil { fail("Expulsar usuario: %v", err) } else { ok("Usuario expulsado exitosamente") }
+	if err != nil {
+		fail("Expulsar usuario: %v", err)
+	} else {
+		ok("Usuario expulsado exitosamente")
+	}
 
 	// ─────────────────────────────────────────────────────────────────────────
 	// 6. CREDENCIALES Y SEGURIDAD (#6-#8, #20-#21, #24)
@@ -411,13 +513,21 @@ func main() {
 	_, err = reg.ConsultarCredencialesCasoDeUso.Ejecutar(ctx, &uc_viewcredentials.ComandoConsultarCredenciales{
 		EjecutorID: sysAdminID, TenantID: "", UsuarioID: sysAdminID,
 	})
-	if err != nil { fail("Consultar credenciales: %v", err) } else { ok("Credenciales consultadas exitosamente") }
+	if err != nil {
+		fail("Consultar credenciales: %v", err)
+	} else {
+		ok("Credenciales consultadas exitosamente")
+	}
 
 	subtitulo("6.2 Cambiar mi contraseña (#24)")
 	_, err = reg.CambiarMiContrasenaCasoDeUso.Ejecutar(ctx, &uc_changemypassword.ComandoCambiarMiContrasena{
 		EjecutorID: sysAdminID, PasswordActual: "SecurePass123!", NuevaPassword: "NuevaPass1@",
 	})
-	if err != nil { fail("Cambiar mi contraseña: %v", err) } else { ok("Contraseña cambiada exitosamente") }
+	if err != nil {
+		fail("Cambiar mi contraseña: %v", err)
+	} else {
+		ok("Contraseña cambiada exitosamente")
+	}
 
 	// Restaurar password para no romper tests posteriores
 	reg.CambiarMiContrasenaCasoDeUso.Ejecutar(ctx, &uc_changemypassword.ComandoCambiarMiContrasena{
@@ -429,7 +539,11 @@ func main() {
 		EjecutorID: sysAdminID, TenantID: "", UsuarioID: nuevoUserID,
 		NuevaPassword: "ResetPass123!",
 	})
-	if err != nil { fail("Resetear contraseña: %v", err) } else { ok("Contraseña reseteada exitosamente") }
+	if err != nil {
+		fail("Resetear contraseña: %v", err)
+	} else {
+		ok("Contraseña reseteada exitosamente")
+	}
 
 	subtitulo("6.4 Desbloquear cuenta (#8)")
 	// Primero forzar bloqueo (repositorio directo)
@@ -437,20 +551,32 @@ func main() {
 	_, err = reg.DesbloquearCuentaCasoDeUso.Ejecutar(ctx, &uc_unlockaccount.ComandoDesbloquearCuenta{
 		EjecutorID: sysAdminID, TenantID: "", UsuarioID: nuevoUserID,
 	})
-	if err != nil { fail("Desbloquear cuenta: %v", err) } else { ok("Cuenta desbloqueada exitosamente") }
+	if err != nil {
+		fail("Desbloquear cuenta: %v", err)
+	} else {
+		ok("Cuenta desbloqueada exitosamente")
+	}
 
 	subtitulo("6.5 Listar IPs bloqueadas (#20)")
 	_, err = reg.ListarIPsBloqueadasCasoDeUso.Ejecutar(ctx, &uc_listblockedips.ComandoListarIPsBloqueadas{
 		EjecutorID: sysAdminID, TenantID: "",
 	})
-	if err != nil { fail("Listar IPs bloqueadas: %v", err) } else { ok("IPs bloqueadas listadas") }
+	if err != nil {
+		fail("Listar IPs bloqueadas: %v", err)
+	} else {
+		ok("IPs bloqueadas listadas")
+	}
 
 	subtitulo("6.6 Desbloquear IP (#21)")
 	// IP que nunca ha sido usada en el flujo
 	_, err = reg.DesbloquearIPCasoDeUso.Ejecutar(ctx, &uc_unblockip.ComandoDesbloquearIP{
 		EjecutorID: sysAdminID, TenantID: "", IP: "203.0.113.99",
 	})
-	if err != nil { ok("Desbloquear IP (sin registro activo): %v", err) } else { fail("Desbloquear IP sin registro debería fallar") }
+	if err != nil {
+		ok("Desbloquear IP (sin registro activo): %v", err)
+	} else {
+		fail("Desbloquear IP sin registro debería fallar")
+	}
 
 	// ─────────────────────────────────────────────────────────────────────────
 	// 7. SESIONES (#17-#18)
@@ -464,13 +590,21 @@ func main() {
 		EjecutorID: sysAdminID,
 		Paginacion: shared_domain.Paginacion{},
 	})
-	if err != nil { fail("Listar sesiones: %v", err) } else { ok("Sesiones listadas exitosamente") }
+	if err != nil {
+		fail("Listar sesiones: %v", err)
+	} else {
+		ok("Sesiones listadas exitosamente")
+	}
 
 	subtitulo("7.2 Forzar cierre de sesión (#18)")
 	_, err = reg.ForzarCierreSesionCasoDeUso.Ejecutar(ctx, &uc_terminatesession.ComandoForzarCierreSesion{
 		EjecutorID: sysAdminID, TenantID: "", SesionID: loginResp.SesionID,
 	})
-	if err != nil { fail("Forzar cierre sesión: %v", err) } else { ok("Sesión terminada exitosamente") }
+	if err != nil {
+		fail("Forzar cierre sesión: %v", err)
+	} else {
+		ok("Sesión terminada exitosamente")
+	}
 
 	// ─────────────────────────────────────────────────────────────────────────
 	// 8. ROLES Y PERMISOS (#9-#16)
@@ -484,14 +618,22 @@ func main() {
 		EjecutorID: sysAdminID,
 		Paginacion: shared_domain.Paginacion{},
 	})
-	if err != nil { fail("Listar roles: %v", err) } else { ok("Roles listados: %d total", listRolesResp.Total) }
+	if err != nil {
+		fail("Listar roles: %v", err)
+	} else {
+		ok("Roles listados: %d total", listRolesResp.Total)
+	}
 
 	subtitulo("8.2 Crear rol (#10)")
 	createRolResp, err := reg.CrearRolCasoDeUso.Ejecutar(ctx, &uc_createrole.ComandoCrearRol{
 		EjecutorID: sysAdminID, TenantID: "",
 		Nombre: "RolPrueba", Descripcion: "Rol de prueba",
 	})
-	if err != nil { fail("Crear rol: %v", err) } else { ok("Rol creado → ID: %s", createRolResp.ID) }
+	if err != nil {
+		fail("Crear rol: %v", err)
+	} else {
+		ok("Rol creado → ID: %s", createRolResp.ID)
+	}
 	nuevoRolID := createRolResp.ID
 
 	subtitulo("8.3 Modificar rol (#11)")
@@ -499,42 +641,66 @@ func main() {
 		EjecutorID: sysAdminID, TenantID: "",
 		RolID: nuevoRolID, Descripcion: "Rol modificado",
 	})
-	if err != nil { fail("Modificar rol: %v", err) } else { ok("Rol modificado exitosamente") }
+	if err != nil {
+		fail("Modificar rol: %v", err)
+	} else {
+		ok("Rol modificado exitosamente")
+	}
 
 	subtitulo("8.4 Asignar permiso a rol (#15)")
 	_, err = reg.AsignarPermisoARolCasoDeUso.Ejecutar(ctx, &uc_assignpermissiontorole.ComandoAsignarPermisoARol{
 		EjecutorID: sysAdminID,
-		RolID: nuevoRolID, PermisoCodigo: rbac.PermisoUsuarioCrear,
+		RolID:      nuevoRolID, PermisoCodigo: rbac.PermisoUsuarioCrear,
 	})
-	if err != nil { fail("Asignar permiso a rol: %v", err) } else { ok("Permiso asignado al rol exitosamente") }
+	if err != nil {
+		fail("Asignar permiso a rol: %v", err)
+	} else {
+		ok("Permiso asignado al rol exitosamente")
+	}
 
 	subtitulo("8.5 Revocar permiso de rol (#16)")
 	_, err = reg.RevocarPermisoDeRolCasoDeUso.Ejecutar(ctx, &uc_revokepermissionfromrole.ComandoRevocarPermisoDeRol{
 		EjecutorID: sysAdminID,
-		RolID: nuevoRolID, PermisoCodigo: rbac.PermisoUsuarioCrear,
+		RolID:      nuevoRolID, PermisoCodigo: rbac.PermisoUsuarioCrear,
 	})
-	if err != nil { fail("Revocar permiso de rol: %v", err) } else { ok("Permiso revocado del rol exitosamente") }
+	if err != nil {
+		fail("Revocar permiso de rol: %v", err)
+	} else {
+		ok("Permiso revocado del rol exitosamente")
+	}
 
 	subtitulo("8.6 Asignar rol a usuario (#13)")
 	_, err = reg.AsignarRolCasoDeUso.Ejecutar(ctx, &uc_assignrole.ComandoAsignarRol{
 		EjecutorID: sysAdminID,
-		UsuarioID: nuevoUserID, RolID: nuevoRolID,
+		UsuarioID:  nuevoUserID, RolID: nuevoRolID,
 	})
-	if err != nil { fail("Asignar rol a usuario: %v", err) } else { ok("Rol asignado a usuario exitosamente") }
+	if err != nil {
+		fail("Asignar rol a usuario: %v", err)
+	} else {
+		ok("Rol asignado a usuario exitosamente")
+	}
 
 	subtitulo("8.7 Revocar rol de usuario (#14)")
 	_, err = reg.RevocarRolCasoDeUso.Ejecutar(ctx, &uc_revokerole.ComandoRevocarRol{
 		EjecutorID: sysAdminID,
-		UsuarioID: nuevoUserID, RolID: nuevoRolID,
+		UsuarioID:  nuevoUserID, RolID: nuevoRolID,
 	})
-	if err != nil { fail("Revocar rol de usuario: %v", err) } else { ok("Rol revocado de usuario exitosamente") }
+	if err != nil {
+		fail("Revocar rol de usuario: %v", err)
+	} else {
+		ok("Rol revocado de usuario exitosamente")
+	}
 
 	subtitulo("8.8 Eliminar rol (#12)")
 	_, err = reg.EliminarRolCasoDeUso.Ejecutar(ctx, &uc_deleterole.ComandoEliminarRol{
 		EjecutorID: sysAdminID, TenantID: "",
 		RolID: nuevoRolID,
 	})
-	if err != nil { fail("Eliminar rol: %v", err) } else { ok("Rol eliminado exitosamente") }
+	if err != nil {
+		fail("Eliminar rol: %v", err)
+	} else {
+		ok("Rol eliminado exitosamente")
+	}
 
 	// ─────────────────────────────────────────────────────────────────────────
 	// 9. TENANT (#19)
@@ -568,7 +734,11 @@ func main() {
 		EjecutorID: sysAdminID, TenantID: tenantID1,
 		Nombre: "Tenant Alpha Modificado", Slug: "tenant-alpha-mod",
 	})
-	if err != nil { fail("Configurar tenant: %v", err) } else { ok("Tenant configurado exitosamente") }
+	if err != nil {
+		fail("Configurar tenant: %v", err)
+	} else {
+		ok("Tenant configurado exitosamente")
+	}
 
 	// ─────────────────────────────────────────────────────────────────────────
 	// 10. VERIFICACIÓN DE CORREO (#29)
@@ -581,7 +751,11 @@ func main() {
 	_, err = reg.VerificarCorreoCasoDeUso.Solicitar(ctx, uc_verifyemail.ComandoSolicitarVerificacion{
 		UsuarioID: sysAdminID,
 	})
-	if err != nil { fail("Solicitar verificación: %v", err) } else { ok("Verificación solicitada (email enviado async)") }
+	if err != nil {
+		fail("Solicitar verificación: %v", err)
+	} else {
+		ok("Verificación solicitada (email enviado async)")
+	}
 
 	// ─────────────────────────────────────────────────────────────────────────
 	// 11. RECUPERACIÓN DE CONTRASEÑA (#30)
@@ -594,7 +768,11 @@ func main() {
 	_, err = reg.RecuperarContrasenaCasoDeUso.Solicitar(ctx, uc_forgotpassword.ComandoSolicitarRecuperacion{
 		Email: "ana.lopez@example.com",
 	})
-	if err != nil { fail("Solicitar recuperación: %v", err) } else { ok("Recuperación solicitada (email enviado async)") }
+	if err != nil {
+		fail("Solicitar recuperación: %v", err)
+	} else {
+		ok("Recuperación solicitada (email enviado async)")
+	}
 
 	// ─────────────────────────────────────────────────────────────────────────
 	// 12. FLUJO COMPLETO
@@ -608,31 +786,51 @@ func main() {
 		Correo: "flujo.completo@test.com", Password: "FlujoCompleto99@",
 		Nombre: "Flujo", Apellido: "Completo", Telefono: "600000000",
 	})
-	if err != nil { fail("Registro: %v", err) } else { ok("Usuario registrado: %s", fullUser.UsuarioID) }
+	if err != nil {
+		fail("Registro: %v", err)
+	} else {
+		ok("Usuario registrado: %s", fullUser.UsuarioID)
+	}
 
 	subtitulo("12.2 Login")
 	fullLogin, err := reg.IniciarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_login.ComandoIniciarSesion{
 		Email: "flujo.completo@test.com", Password: "FlujoCompleto99@", IPOrigen: "192.168.99.99",
 	})
-	if err != nil { fail("Login: %v", err) } else { ok("Login exitoso → SesionID: %s", fullLogin.SesionID) }
+	if err != nil {
+		fail("Login: %v", err)
+	} else {
+		ok("Login exitoso → SesionID: %s", fullLogin.SesionID)
+	}
 
 	subtitulo("12.3 Refresh")
 	fullRefresh, err := reg.RenovarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_refresh.ComandoRenovarSesion{
 		RefreshToken: fullLogin.RefreshToken,
 	})
-	if err != nil { fail("Refresh: %v", err) } else { ok("Refresh exitoso → misma sesión: %v", fullRefresh.SesionID == fullLogin.SesionID) }
+	if err != nil {
+		fail("Refresh: %v", err)
+	} else {
+		ok("Refresh exitoso → misma sesión: %v", fullRefresh.SesionID == fullLogin.SesionID)
+	}
 
 	subtitulo("12.4 Logout")
 	_, err = reg.CerrarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_logout.ComandoCerrarSesion{
 		SesionID: fullLogin.SesionID, UsuarioID: fullLogin.UsuarioID,
 	})
-	if err != nil { fail("Logout: %v", err) } else { ok("Logout exitoso") }
+	if err != nil {
+		fail("Logout: %v", err)
+	} else {
+		ok("Logout exitoso")
+	}
 
 	subtitulo("12.5 Re-login")
 	fullRelogin, err := reg.IniciarSesionCasoDeUso.Ejecutar(ctx, uc_sesiones_login.ComandoIniciarSesion{
 		Email: "flujo.completo@test.com", Password: "FlujoCompleto99@", IPOrigen: "192.168.99.99",
 	})
-	if err != nil { fail("Re-login: %v", err) } else { ok("Re-login exitoso → nueva sesión: %s", fullRelogin.SesionID) }
+	if err != nil {
+		fail("Re-login: %v", err)
+	} else {
+		ok("Re-login exitoso → nueva sesión: %s", fullRelogin.SesionID)
+	}
 
 	// ─────────────────────────────────────────────────────────────────────────
 	// 13. CASOS BORDE — PERMISO DENEGADO
@@ -646,15 +844,23 @@ func main() {
 		EjecutorID: nuevoUserID,
 		Paginacion: shared_domain.Paginacion{},
 	})
-	if err != nil { ok("Listar usuarios sin permiso denegado: %v", err) } else { fail("Listar usuarios sin permiso debería fallar") }
+	if err != nil {
+		ok("Listar usuarios sin permiso denegado: %v", err)
+	} else {
+		fail("Listar usuarios sin permiso debería fallar")
+	}
 
 	subtitulo("13.2 Crear usuario sin permiso (debe fallar)")
 	_, err = reg.CrearUsuarioCasoDeUso.Ejecutar(ctx, &uc_createuser.ComandoCrearUsuario{
 		EjecutorID: nuevoUserID,
-		Nombre: "Sin", Apellido: "Permiso", Correo: "sinpermiso@test.com",
+		Nombre:     "Sin", Apellido: "Permiso", Correo: "sinpermiso@test.com",
 		Password: "Passw0rd!",
 	})
-	if err != nil { ok("Crear usuario sin permiso denegado: %v", err) } else { fail("Crear usuario sin permiso debería fallar") }
+	if err != nil {
+		ok("Crear usuario sin permiso denegado: %v", err)
+	} else {
+		fail("Crear usuario sin permiso debería fallar")
+	}
 
 	// ─────────────────────────────────────────────────────────────────────────
 	// REPORTE FINAL

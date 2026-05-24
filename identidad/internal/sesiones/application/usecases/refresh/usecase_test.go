@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
-	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
-	"github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/refresh"
-	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
-	"github.com/stretchr/testify/mock"
+	"github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/refresh"
+	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
+	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	usuario_domain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
+	"github.com/stretchr/testify/mock"
 )
 
 type mockUnitOfWork struct {
@@ -34,19 +34,23 @@ func (m *mockUnitOfWork) Transaccional(ctx context.Context, fn func(tx sesiones_
 	}
 	return fn(m)
 }
-func (m *mockUnitOfWork) SesionRepositorio() sesiones_domain.SesionRepositorio             { return m.sesionRepo }
-func (m *mockUnitOfWork) CredencialesRepositorio() seguridad_domain.CredencialesRepositorio { return m.credRepo }
-func (m *mockUnitOfWork) UsuarioRepositorio() usuario_domain.UsuarioRepositorio             { return m.usuarioRepo }
-func (m *mockUnitOfWork) EncriptacionServicio() seguridad_domain.EncriptacionServicio       { return m.encriptacion }
-func (m *mockUnitOfWork) TokenServicio() sesiones_domain.TokenServicio                      { return m.tokenServicio }
-func (m *mockUnitOfWork) GeneradorID() shared_domain.GeneradorID                            { return m.generadorID }
+func (m *mockUnitOfWork) SesionRepositorio() sesiones_domain.SesionRepositorio { return m.sesionRepo }
+func (m *mockUnitOfWork) CredencialesRepositorio() seguridad_domain.CredencialesRepositorio {
+	return m.credRepo
+}
+func (m *mockUnitOfWork) UsuarioRepositorio() usuario_domain.UsuarioRepositorio { return m.usuarioRepo }
+func (m *mockUnitOfWork) EncriptacionServicio() seguridad_domain.EncriptacionServicio {
+	return m.encriptacion
+}
+func (m *mockUnitOfWork) TokenServicio() sesiones_domain.TokenServicio { return m.tokenServicio }
+func (m *mockUnitOfWork) GeneradorID() shared_domain.GeneradorID       { return m.generadorID }
 
 type mockSesionRepo struct {
 	mock.Mock
-	sesion    *sesiones_domain.Sesion
-	err       error
-	errInval  error
-	invocado  bool
+	sesion   *sesiones_domain.Sesion
+	err      error
+	errInval error
+	invocado bool
 }
 
 func (m *mockSesionRepo) Crear(ctx context.Context, s *sesiones_domain.Sesion) (*sesiones_domain.Sesion, error) {
@@ -78,11 +82,11 @@ func (m *mockSesionRepo) InvalidarTodasPorUsuarioID(ctx context.Context, usuario
 func (m *mockSesionRepo) Eliminar(ctx context.Context, id string) error { return nil }
 
 type mockTokenServicio struct {
-	claims    *sesiones_domain.TokenClaims
-	errValid  error
-	accessTok string
+	claims     *sesiones_domain.TokenClaims
+	errValid   error
+	accessTok  string
 	refreshTok string
-	expAccess time.Time
+	expAccess  time.Time
 	expRefresh time.Time
 }
 
@@ -117,14 +121,14 @@ func TestRenovarSesionExitoso(t *testing.T) {
 	ahora := time.Now()
 	sesion := sesionActiva()
 	tokenSvc := &mockTokenServicio{
-		claims: &sesiones_domain.TokenClaims{UsuarioID: "user-id-1", SesionID: "sesion-id"},
+		claims:    &sesiones_domain.TokenClaims{UsuarioID: "user-id-1", SesionID: "sesion-id"},
 		accessTok: "new-access", expAccess: ahora.Add(15 * time.Minute),
 		refreshTok: "new-refresh", expRefresh: ahora.Add(24 * time.Hour),
 	}
 	uow := &mockUnitOfWork{
-		sesionRepo:   &mockSesionRepo{sesion: sesion},
+		sesionRepo:    &mockSesionRepo{sesion: sesion},
 		tokenServicio: tokenSvc,
-		generadorID: &mockGeneradorID{},
+		generadorID:   &mockGeneradorID{},
 	}
 	uc := refresh.NewRenovarSesionCasoDeUso(uow, refresh.ConfigRefresh{MaxRefrescos: 10})
 	resp, err := uc.Ejecutar(context.Background(), refresh.ComandoRenovarSesion{RefreshToken: "valid-token"})
@@ -197,7 +201,7 @@ func TestRenovarSesionTimeoutAbsoluto(t *testing.T) {
 	ahora := time.Now()
 	sesion := sesionActiva()
 	tokenSvc := &mockTokenServicio{
-		claims: &sesiones_domain.TokenClaims{UsuarioID: "user-id-1", SesionID: "sesion-id"},
+		claims:    &sesiones_domain.TokenClaims{UsuarioID: "user-id-1", SesionID: "sesion-id"},
 		accessTok: "new-access", expAccess: ahora.Add(15 * time.Minute),
 		refreshTok: "new-refresh", expRefresh: ahora.Add(24 * time.Hour),
 	}

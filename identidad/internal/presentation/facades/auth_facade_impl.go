@@ -4,32 +4,32 @@ import (
 	"context"
 	"time"
 
-	svc_login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/login"
-	svc_logout "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/logout"
-	svc_refresh "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/refresh"
+	uc_sesiones_login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/login"
+	uc_sesiones_logout "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/logout"
+	uc_sesiones_refresh "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/refresh"
 	svc_registro "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/services/registro"
 )
 
 // authFacadeImpl implementa AuthFacade orquestando los servicios de aplicación.
 type authFacadeImpl struct {
 	servicioRegistro svc_registro.EjecutorRegistro
-	servicioLogin    svc_login.EjecutorLogin
-	servicioRefresh  *svc_refresh.ServicioRefresh
-	servicioLogout   *svc_logout.ServicioLogout
+	loginUseCase     LoginUseCase
+	refreshUseCase   RefreshUseCase
+	logoutUseCase    LogoutUseCase
 }
 
 // NewAuthFacade construye la implementación concreta de AuthFacade.
 func NewAuthFacade(
 	servicioRegistro svc_registro.EjecutorRegistro,
-	servicioLogin svc_login.EjecutorLogin,
-	servicioRefresh *svc_refresh.ServicioRefresh,
-	servicioLogout *svc_logout.ServicioLogout,
+	loginUseCase LoginUseCase,
+	refreshUseCase RefreshUseCase,
+	logoutUseCase LogoutUseCase,
 ) AuthFacade {
 	return &authFacadeImpl{
 		servicioRegistro: servicioRegistro,
-		servicioLogin:    servicioLogin,
-		servicioRefresh:  servicioRefresh,
-		servicioLogout:   servicioLogout,
+		loginUseCase:     loginUseCase,
+		refreshUseCase:   refreshUseCase,
+		logoutUseCase:    logoutUseCase,
 	}
 }
 
@@ -55,7 +55,7 @@ func (f *authFacadeImpl) Registrar(ctx context.Context, cmd ComandoRegistro) (*R
 
 // Login delega al ServicioLogin y traduce DTOs.
 func (f *authFacadeImpl) Login(ctx context.Context, cmd ComandoLogin) (*RespuestaLogin, error) {
-	respuesta, err := f.servicioLogin.Ejecutar(ctx, svc_login.ComandoLogin{
+	respuesta, err := f.loginUseCase.Ejecutar(ctx, uc_sesiones_login.ComandoIniciarSesion{
 		Email:    cmd.Email,
 		Password: cmd.Password,
 		IPOrigen: cmd.IPOrigen,
@@ -78,7 +78,7 @@ func (f *authFacadeImpl) Login(ctx context.Context, cmd ComandoLogin) (*Respuest
 
 // Refresh renueva la sesión usando el refresh token.
 func (f *authFacadeImpl) Refresh(ctx context.Context, cmd ComandoRefresh) (*RespuestaRefresh, error) {
-	respuesta, err := f.servicioRefresh.Ejecutar(ctx, svc_refresh.ComandoRefresh{
+	respuesta, err := f.refreshUseCase.Ejecutar(ctx, uc_sesiones_refresh.ComandoRenovarSesion{
 		RefreshToken: cmd.RefreshToken,
 	})
 	if err != nil {
@@ -98,7 +98,7 @@ func (f *authFacadeImpl) Refresh(ctx context.Context, cmd ComandoRefresh) (*Resp
 
 // Logout cierra una sesión específica del usuario autenticado.
 func (f *authFacadeImpl) Logout(ctx context.Context, cmd ComandoLogout) (*RespuestaLogout, error) {
-	respuesta, err := f.servicioLogout.Ejecutar(ctx, svc_logout.ComandoLogout{
+	respuesta, err := f.logoutUseCase.Ejecutar(ctx, uc_sesiones_logout.ComandoCerrarSesion{
 		SesionID:  cmd.SesionID,
 		UsuarioID: cmd.UsuarioID,
 	})
@@ -112,7 +112,7 @@ func (f *authFacadeImpl) Logout(ctx context.Context, cmd ComandoLogout) (*Respue
 
 // LogoutAll cierra todas las sesiones del usuario autenticado.
 func (f *authFacadeImpl) LogoutAll(ctx context.Context, cmd ComandoLogoutAll) (*RespuestaLogout, error) {
-	respuesta, err := f.servicioLogout.CerrarTodas(ctx, svc_logout.ComandoCerrarTodas{
+	respuesta, err := f.logoutUseCase.CerrarTodas(ctx, uc_sesiones_logout.ComandoCerrarTodasLasSesiones{
 		UsuarioID: cmd.UsuarioID,
 	})
 	if err != nil {

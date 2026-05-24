@@ -8,9 +8,9 @@ import (
 )
 
 type ListarRolesCasoDeUso struct {
-	rolRepo rbac.RolRepositorio
+	rolRepo     rbac.RolRepositorio
 	permisoRepo rbac.PermisoRepositorio
-	authSvc  rbac.AuthorizationService
+	authSvc     rbac.AuthorizationService
 }
 
 func NewListarRolesCasoDeUso(

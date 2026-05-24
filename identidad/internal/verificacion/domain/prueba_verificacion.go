@@ -55,7 +55,7 @@ func (p PruebaVerificacion) CoincideCon(tokenEnPlano string) bool {
 
 // Getters
 func (p PruebaVerificacion) SecretoHash() string { return p.secretoHash }
-func (p PruebaVerificacion) ExpiraEn() time.Time  { return p.expiraEn }
+func (p PruebaVerificacion) ExpiraEn() time.Time { return p.expiraEn }
 
 // HashearTokenPublico permite hashear un token desde fuera del dominio.
 func HashearToken(tokenEnPlano string) string {

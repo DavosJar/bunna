@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
+	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/logout"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
-	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
-	"github.com/stretchr/testify/mock"
+	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	usuario_domain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
+	"github.com/stretchr/testify/mock"
 )
 
 type mockUnitOfWork struct {
@@ -28,12 +28,14 @@ func (m *mockUnitOfWork) Transaccional(ctx context.Context, fn func(tx sesiones_
 	}
 	return fn(m)
 }
-func (m *mockUnitOfWork) SesionRepositorio() sesiones_domain.SesionRepositorio             { return m.sesionRepo }
-func (m *mockUnitOfWork) CredencialesRepositorio() seguridad_domain.CredencialesRepositorio { return nil }
-func (m *mockUnitOfWork) UsuarioRepositorio() usuario_domain.UsuarioRepositorio             { return nil }
-func (m *mockUnitOfWork) EncriptacionServicio() seguridad_domain.EncriptacionServicio       { return nil }
-func (m *mockUnitOfWork) TokenServicio() sesiones_domain.TokenServicio                      { return nil }
-func (m *mockUnitOfWork) GeneradorID() shared_domain.GeneradorID                            { return nil }
+func (m *mockUnitOfWork) SesionRepositorio() sesiones_domain.SesionRepositorio { return m.sesionRepo }
+func (m *mockUnitOfWork) CredencialesRepositorio() seguridad_domain.CredencialesRepositorio {
+	return nil
+}
+func (m *mockUnitOfWork) UsuarioRepositorio() usuario_domain.UsuarioRepositorio       { return nil }
+func (m *mockUnitOfWork) EncriptacionServicio() seguridad_domain.EncriptacionServicio { return nil }
+func (m *mockUnitOfWork) TokenServicio() sesiones_domain.TokenServicio                { return nil }
+func (m *mockUnitOfWork) GeneradorID() shared_domain.GeneradorID                      { return nil }
 
 type mockSesionRepo struct {
 	mock.Mock

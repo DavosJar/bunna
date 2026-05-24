@@ -51,6 +51,6 @@ func (uc *RevocarPermisoDeRolCasoDeUso) Ejecutar(ctx context.Context, cmd *Coman
 	return &RespuestaRevocarPermisoDeRol{
 		RolID:         cmd.RolID,
 		PermisoCodigo: cmd.PermisoCodigo,
-		RevocadoEn:   time.Now().Format("2006-01-02T15:04:05Z"),
+		RevocadoEn:    time.Now().Format("2006-01-02T15:04:05Z"),
 	}, nil
 }

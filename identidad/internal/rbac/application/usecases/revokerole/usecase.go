@@ -9,9 +9,9 @@ import (
 )
 
 type RevocarRolCasoDeUso struct {
-	usuarioRolRepo     rbac.UsuarioRolRepositorio
+	usuarioRolRepo       rbac.UsuarioRolRepositorio
 	usuarioTenantRolRepo rbac.UsuarioTenantRolRepositorio
-	authSvc            rbac.AuthorizationService
+	authSvc              rbac.AuthorizationService
 }
 
 func NewRevocarRolCasoDeUso(
@@ -20,9 +20,9 @@ func NewRevocarRolCasoDeUso(
 	authSvc rbac.AuthorizationService,
 ) *RevocarRolCasoDeUso {
 	return &RevocarRolCasoDeUso{
-		usuarioRolRepo:     usuarioRolRepo,
+		usuarioRolRepo:       usuarioRolRepo,
 		usuarioTenantRolRepo: usuarioTenantRolRepo,
-		authSvc:            authSvc,
+		authSvc:              authSvc,
 	}
 }
 

@@ -16,9 +16,9 @@ import (
 
 type mockIntentoIPRepo struct {
 	mock.Mock
-	intento    *seguridad_domain.IntentoPorIP
-	errObtener error
-	creado     *seguridad_domain.IntentoPorIP
+	intento     *seguridad_domain.IntentoPorIP
+	errObtener  error
+	creado      *seguridad_domain.IntentoPorIP
 	actualizado *seguridad_domain.IntentoPorIP
 }
 

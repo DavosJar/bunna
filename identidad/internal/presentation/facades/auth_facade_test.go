@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/facades"
-	svc_login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/login"
+	uc_sesiones_login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/login"
+	uc_sesiones_logout "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/logout"
+	uc_sesiones_refresh "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/refresh"
 	svc_registro "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/services/registro"
 )
 
@@ -22,18 +24,40 @@ func (m *mockEjecutorRegistro) Ejecutar(ctx context.Context, cmd *svc_registro.C
 	return m.respuesta, m.err
 }
 
-type mockEjecutorLogin struct {
-	respuesta *svc_login.RespuestaLogin
+type mockLoginUseCase struct {
+	respuesta *uc_sesiones_login.RespuestaIniciarSesion
 	err       error
 }
 
-func (m *mockEjecutorLogin) Ejecutar(ctx context.Context, cmd svc_login.ComandoLogin) (*svc_login.RespuestaLogin, error) {
+func (m *mockLoginUseCase) Ejecutar(ctx context.Context, cmd uc_sesiones_login.ComandoIniciarSesion) (*uc_sesiones_login.RespuestaIniciarSesion, error) {
 	return m.respuesta, m.err
 }
 
-// newAuthFacadeMock es un helper para tests que crea una AuthFacade con servicios nulos.
-func newAuthFacadeMock(reg svc_registro.EjecutorRegistro, login svc_login.EjecutorLogin) facades.AuthFacade {
-	return facades.NewAuthFacade(reg, login, nil, nil)
+type mockRefreshUseCase struct {
+	respuesta *uc_sesiones_refresh.RespuestaRenovarSesion
+	err       error
+}
+
+func (m *mockRefreshUseCase) Ejecutar(ctx context.Context, cmd uc_sesiones_refresh.ComandoRenovarSesion) (*uc_sesiones_refresh.RespuestaRenovarSesion, error) {
+	return m.respuesta, m.err
+}
+
+type mockLogoutUseCase struct {
+	respuesta *uc_sesiones_logout.RespuestaCerrarSesion
+	err       error
+}
+
+func (m *mockLogoutUseCase) Ejecutar(ctx context.Context, cmd uc_sesiones_logout.ComandoCerrarSesion) (*uc_sesiones_logout.RespuestaCerrarSesion, error) {
+	return m.respuesta, m.err
+}
+
+func (m *mockLogoutUseCase) CerrarTodas(ctx context.Context, cmd uc_sesiones_logout.ComandoCerrarTodasLasSesiones) (*uc_sesiones_logout.RespuestaCerrarSesion, error) {
+	return m.respuesta, m.err
+}
+
+// newAuthFacadeMock es un helper para tests que crea una AuthFacade con mocks.
+func newAuthFacadeMock(reg svc_registro.EjecutorRegistro, login facades.LoginUseCase, refresh facades.RefreshUseCase, logout facades.LogoutUseCase) facades.AuthFacade {
+	return facades.NewAuthFacade(reg, login, refresh, logout)
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -47,8 +71,8 @@ func respuestaRegistroValida() *svc_registro.DtoRespuestaRegistro {
 	}
 }
 
-func respuestaLoginValida() *svc_login.RespuestaLogin {
-	return &svc_login.RespuestaLogin{
+func respuestaLoginValida() *uc_sesiones_login.RespuestaIniciarSesion {
+	return &uc_sesiones_login.RespuestaIniciarSesion{
 		AccessToken:       "access-token",
 		RefreshToken:      "refresh-token",
 		ExpiracionAccess:  time.Now().Add(15 * time.Minute),
@@ -70,10 +94,10 @@ func (m *mockCapturadorRegistro) Ejecutar(ctx context.Context, cmd *svc_registro
 }
 
 type mockCapturadorLogin struct {
-	cmdRecibido svc_login.ComandoLogin
+	cmdRecibido uc_sesiones_login.ComandoIniciarSesion
 }
 
-func (m *mockCapturadorLogin) Ejecutar(ctx context.Context, cmd svc_login.ComandoLogin) (*svc_login.RespuestaLogin, error) {
+func (m *mockCapturadorLogin) Ejecutar(ctx context.Context, cmd uc_sesiones_login.ComandoIniciarSesion) (*uc_sesiones_login.RespuestaIniciarSesion, error) {
 	m.cmdRecibido = cmd
 	return respuestaLoginValida(), nil
 }
@@ -83,7 +107,9 @@ func (m *mockCapturadorLogin) Ejecutar(ctx context.Context, cmd svc_login.Comand
 func TestAuthFacade_Registrar_Exitoso(t *testing.T) {
 	facade := newAuthFacadeMock(
 		&mockEjecutorRegistro{respuesta: respuestaRegistroValida()},
-		&mockEjecutorLogin{},
+		&mockLoginUseCase{},
+		&mockRefreshUseCase{},
+		&mockLogoutUseCase{},
 	)
 
 	resp, err := facade.Registrar(context.Background(), facades.ComandoRegistro{
@@ -110,7 +136,7 @@ func TestAuthFacade_Registrar_Exitoso(t *testing.T) {
 
 func TestAuthFacade_Registrar_TraduccionComando(t *testing.T) {
 	captura := &mockCapturadorRegistro{}
-	facade := newAuthFacadeMock(captura, &mockEjecutorLogin{})
+	facade := newAuthFacadeMock(captura, &mockLoginUseCase{}, &mockRefreshUseCase{}, &mockLogoutUseCase{})
 
 	_, err := facade.Registrar(context.Background(), facades.ComandoRegistro{
 		Nombre:   "Ana",
@@ -138,7 +164,9 @@ func TestAuthFacade_Registrar_PropagaError(t *testing.T) {
 	errEsperado := errors.New("correo ya registrado")
 	facade := newAuthFacadeMock(
 		&mockEjecutorRegistro{err: errEsperado},
-		&mockEjecutorLogin{},
+		&mockLoginUseCase{},
+		&mockRefreshUseCase{},
+		&mockLogoutUseCase{},
 	)
 
 	resp, err := facade.Registrar(context.Background(), facades.ComandoRegistro{
@@ -162,7 +190,9 @@ func TestAuthFacade_Registrar_ContextoCancelado(t *testing.T) {
 	errEsperado := errors.New("context cancelado")
 	facade := newAuthFacadeMock(
 		&mockEjecutorRegistro{err: errEsperado},
-		&mockEjecutorLogin{},
+		&mockLoginUseCase{},
+		&mockRefreshUseCase{},
+		&mockLogoutUseCase{},
 	)
 
 	_, err := facade.Registrar(ctx, facades.ComandoRegistro{
@@ -181,7 +211,9 @@ func TestAuthFacade_Registrar_ContextoCancelado(t *testing.T) {
 func TestAuthFacade_Login_Exitoso(t *testing.T) {
 	facade := newAuthFacadeMock(
 		&mockEjecutorRegistro{},
-		&mockEjecutorLogin{respuesta: respuestaLoginValida()},
+		&mockLoginUseCase{respuesta: respuestaLoginValida()},
+		&mockRefreshUseCase{},
+		&mockLogoutUseCase{},
 	)
 
 	resp, err := facade.Login(context.Background(), facades.ComandoLogin{
@@ -217,7 +249,9 @@ func TestAuthFacade_Login_PropagaError(t *testing.T) {
 	errEsperado := errors.New("credenciales inválidas")
 	facade := newAuthFacadeMock(
 		&mockEjecutorRegistro{},
-		&mockEjecutorLogin{err: errEsperado},
+		&mockLoginUseCase{err: errEsperado},
+		&mockRefreshUseCase{},
+		&mockLogoutUseCase{},
 	)
 
 	resp, err := facade.Login(context.Background(), facades.ComandoLogin{
@@ -237,7 +271,7 @@ func TestAuthFacade_Login_ExpiresInEnSegundos(t *testing.T) {
 	expiracion := time.Now().Add(900 * time.Second)
 	facade := newAuthFacadeMock(
 		&mockEjecutorRegistro{},
-		&mockEjecutorLogin{respuesta: &svc_login.RespuestaLogin{
+		&mockLoginUseCase{respuesta: &uc_sesiones_login.RespuestaIniciarSesion{
 			AccessToken:       "token",
 			RefreshToken:      "refresh",
 			ExpiracionAccess:  expiracion,
@@ -245,6 +279,8 @@ func TestAuthFacade_Login_ExpiresInEnSegundos(t *testing.T) {
 			UsuarioID:         "uid",
 			SesionID:          "sid",
 		}},
+		&mockRefreshUseCase{},
+		&mockLogoutUseCase{},
 	)
 
 	resp, err := facade.Login(context.Background(), facades.ComandoLogin{
@@ -262,7 +298,7 @@ func TestAuthFacade_Login_ExpiresInEnSegundos(t *testing.T) {
 
 func TestAuthFacade_Login_TraduccionIPOrigen(t *testing.T) {
 	captura := &mockCapturadorLogin{}
-	facade := newAuthFacadeMock(&mockEjecutorRegistro{}, captura)
+	facade := newAuthFacadeMock(&mockEjecutorRegistro{}, captura, &mockRefreshUseCase{}, &mockLogoutUseCase{})
 
 	_, err := facade.Login(context.Background(), facades.ComandoLogin{
 		Email:    "test@correo.com",

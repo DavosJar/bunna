@@ -1,6 +1,6 @@
 package unblockip
 
 type RespuestaDesbloquearIP struct {
-	IP            string
+	IP             string
 	DesbloqueadoEn string
 }

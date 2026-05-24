@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
 	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
+	"github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
 )
 
 // ServicioTenant maneja los casos de uso de gestión de tenants

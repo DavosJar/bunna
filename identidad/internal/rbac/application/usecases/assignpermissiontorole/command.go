@@ -1,8 +1,8 @@
 package assignpermissiontorole
 
 type ComandoAsignarPermisoARol struct {
-	RolID        string
+	RolID         string
 	PermisoCodigo string
-	TenantID     string
-	EjecutorID   string
+	TenantID      string
+	EjecutorID    string
 }

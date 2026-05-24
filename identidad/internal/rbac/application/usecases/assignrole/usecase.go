@@ -9,10 +9,10 @@ import (
 )
 
 type AsignarRolCasoDeUso struct {
-	usuarioRolRepo     rbac.UsuarioRolRepositorio
+	usuarioRolRepo       rbac.UsuarioRolRepositorio
 	usuarioTenantRolRepo rbac.UsuarioTenantRolRepositorio
-	rolRepo            rbac.RolRepositorio
-	authSvc            rbac.AuthorizationService
+	rolRepo              rbac.RolRepositorio
+	authSvc              rbac.AuthorizationService
 }
 
 func NewAsignarRolCasoDeUso(
@@ -22,10 +22,10 @@ func NewAsignarRolCasoDeUso(
 	authSvc rbac.AuthorizationService,
 ) *AsignarRolCasoDeUso {
 	return &AsignarRolCasoDeUso{
-		usuarioRolRepo:     usuarioRolRepo,
+		usuarioRolRepo:       usuarioRolRepo,
 		usuarioTenantRolRepo: usuarioTenantRolRepo,
-		rolRepo:            rolRepo,
-		authSvc:            authSvc,
+		rolRepo:              rolRepo,
+		authSvc:              authSvc,
 	}
 }
 

@@ -30,7 +30,10 @@ func NewFinca(nombre, ubicacion, descripcion, usuarioID string) (*Finca, error) 
 	return f, nil
 }
 
-func NewFincaFromPersistence(id, nombre, ubicacion, descripcion, usuarioID string, tenantID *string, createdAt, updatedAt time.Time) *Finca {
+func NewFincaFromPersistence(
+	id, nombre, ubicacion, descripcion, usuarioID string,
+	tenantID *string, createdAt, updatedAt time.Time,
+) *Finca {
 	return &Finca{
 		ID:          id,
 		Nombre:      nombre,

@@ -6,21 +6,22 @@ import (
 )
 
 var (
-	ErrNombreFincaRequerido = errors.New("El nombre de la finca es requerido y debe tener entre 3 y 200 caracteres")
-	ErrNombreFincaLargo     = errors.New("El nombre de la finca no puede exceder 200 caracteres")
-	ErrUbicacionRequerida   = errors.New("La ubicación de la finca es requerida")
-	ErrUbicacionLarga       = errors.New("La ubicación no puede exceder 500 caracteres")
-	ErrDescripcionLarga     = errors.New("La descripción no puede exceder 1000 caracteres")
+	ErrNombreFincaRequerido = errors.New("el nombre de la finca es requerido y debe tener entre 3 y 200 caracteres")
+	ErrNombreFincaLargo     = errors.New("el nombre de la finca no puede exceder 200 caracteres")
+	ErrUbicacionRequerida   = errors.New("la ubicación de la finca es requerida")
+	ErrUbicacionLarga       = errors.New("la ubicación no puede exceder 500 caracteres")
+	ErrDescripcionLarga     = errors.New("la descripción no puede exceder 1000 caracteres")
+	ErrNoPropietario        = errors.New("el usuarioID de la finca es requerido")
 
-	ErrNombreLoteRequerido = errors.New("El nombre del lote es requerido y debe tener entre 3 y 200 caracteres")
-	ErrNombreLoteLargo     = errors.New("El nombre del lote no puede exceder 200 caracteres")
-	ErrAreaRequerida       = errors.New("El área del lote es requerida y debe ser mayor a 0")
+	ErrFincaIDRequerido   = errors.New("el ID de la finca es requerido")
+	ErrNombreLoteRequerido = errors.New("el nombre del lote es requerido y debe tener entre 3 y 200 caracteres")
+	ErrNombreLoteLargo     = errors.New("el nombre del lote no puede exceder 200 caracteres")
+	ErrAreaRequerida       = errors.New("el área del lote es requerida y debe ser mayor a 0")
 
-	ErrFincaNoEncontrada = errors.New("Finca no encontrada")
-	ErrLoteNoEncontrado  = errors.New("Lote no encontrado")
-	ErrNoPropietario     = errors.New("No tienes permisos sobre este recurso")
+	ErrFincaNoEncontrada = errors.New("finca no encontrada")
+	ErrLoteNoEncontrado  = errors.New("lote no encontrado")
 )
 
 func ErrFincaConLotes(count int) error {
-	return fmt.Errorf("La finca tiene %d lote(s) asociado(s). Confirma la eliminación con ?confirm=true", count)
+	return fmt.Errorf("la finca tiene %d lote(s) asociado(s). confirma la eliminación", count)
 }

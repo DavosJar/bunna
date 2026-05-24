@@ -29,7 +29,10 @@ func NewLote(fincaID, nombre string, area float64, descripcion string) (*Lote, e
 	return l, nil
 }
 
-func NewLoteFromPersistence(id, fincaID, nombre string, area float64, descripcion string, createdAt, updatedAt time.Time) *Lote {
+func NewLoteFromPersistence(
+	id, fincaID, nombre string, area float64, descripcion string,
+	createdAt, updatedAt time.Time,
+) *Lote {
 	return &Lote{
 		ID:          id,
 		FincaID:     fincaID,
@@ -55,7 +58,7 @@ func (l *Lote) validar() error {
 		return ErrDescripcionLarga
 	}
 	if l.FincaID == "" {
-		return ErrFincaNoEncontrada
+		return ErrFincaIDRequerido
 	}
 	return nil
 }

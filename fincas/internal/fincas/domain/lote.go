@@ -6,7 +6,7 @@ import "time"
 type EstadoLote string
 
 const (
-	LoteActivo   EstadoLote = "ACTIVO"
+	LoteActivo    EstadoLote = "ACTIVO"
 	LoteEliminado EstadoLote = "ELIMINADO"
 )
 
@@ -21,6 +21,7 @@ var transicionesLote = map[EstadoLote]map[EstadoLote]bool{
 type Lote struct {
 	id          string
 	fincaID     string
+	tenantID    string
 	nombre      string
 	area        float64
 	descripcion string
@@ -30,25 +31,29 @@ type Lote struct {
 }
 
 // NuevoLote crea un nuevo lote asociado a una finca. Sin validaciones de formato.
-func NuevoLote(fincaID, nombre string, area float64, descripcion string) *Lote {
+func NuevoLote(fincaID, nombre, tenantID string, area float64, descripcion string) *Lote {
 	return &Lote{
 		fincaID:     fincaID,
+		tenantID:    tenantID,
 		nombre:      nombre,
 		area:        area,
 		descripcion: descripcion,
 		estado:      LoteActivo,
+		createdAt:   time.Now(),
+		updatedAt:   time.Now(),
 	}
 }
 
 // Getters
-func (l *Lote) ID() string            { return l.id }
-func (l *Lote) FincaID() string       { return l.fincaID }
-func (l *Lote) Nombre() string        { return l.nombre }
-func (l *Lote) Area() float64         { return l.area }
-func (l *Lote) Descripcion() string   { return l.descripcion }
-func (l *Lote) Estado() EstadoLote    { return l.estado }
-func (l *Lote) CreatedAt() time.Time  { return l.createdAt }
-func (l *Lote) UpdatedAt() time.Time  { return l.updatedAt }
+func (l *Lote) ID() string           { return l.id }
+func (l *Lote) TenantID() string     { return l.tenantID }
+func (l *Lote) FincaID() string      { return l.fincaID }
+func (l *Lote) Nombre() string       { return l.nombre }
+func (l *Lote) Area() float64        { return l.area }
+func (l *Lote) Descripcion() string  { return l.descripcion }
+func (l *Lote) Estado() EstadoLote   { return l.estado }
+func (l *Lote) CreatedAt() time.Time { return l.createdAt }
+func (l *Lote) UpdatedAt() time.Time { return l.updatedAt }
 
 // Actualizar actualiza los datos del lote
 func (l *Lote) Actualizar(nombre string, area float64, descripcion string) {
@@ -68,7 +73,7 @@ func (l *Lote) CambiarEstado(siguiente EstadoLote) error {
 
 // NewLoteFromPersistence reconstruye un lote desde persistencia
 func NewLoteFromPersistence(
-	id, fincaID, nombre string, area float64, descripcion string,
+	id, fincaID, tenantID, nombre string, area float64, descripcion string,
 	estado EstadoLote, createdAt, updatedAt time.Time,
 ) *Lote {
 	return &Lote{

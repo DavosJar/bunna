@@ -9,6 +9,7 @@ import (
 type LoteModel struct {
 	ID          string    `gorm:"type:varchar(36);primaryKey;column:id"`
 	FincaID     string    `gorm:"column:finca_id;index"`
+	TenantID    string    `gorm:"column:tenant_id;index"`
 	Nombre      string    `gorm:"column:nombre"`
 	Area        float64   `gorm:"column:area"`
 	Descripcion string    `gorm:"column:descripcion"`
@@ -21,7 +22,7 @@ func (LoteModel) TableName() string { return "lotes" }
 
 func (m *LoteModel) ToDomain() *domain.Lote {
 	return domain.NewLoteFromPersistence(
-		m.ID, m.FincaID, m.Nombre, m.Area, m.Descripcion,
+		m.ID, m.FincaID, m.TenantID, m.Nombre, m.Area, m.Descripcion,
 		domain.EstadoLote(m.Estado), m.CreatedAt, m.UpdatedAt,
 	)
 }

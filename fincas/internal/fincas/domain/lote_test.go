@@ -8,7 +8,7 @@ import (
 )
 
 func TestNuevoLote_OK(t *testing.T) {
-	l := NuevoLote("fin-1", "Lote A", 15.5, "lote frente al río")
+	l := NuevoLote("fin-1", "Lote A", "tenant-1", 15.5, "lote frente al río")
 	assert.NotNil(t, l)
 	assert.Equal(t, "fin-1", l.FincaID())
 	assert.Equal(t, "Lote A", l.Nombre())
@@ -19,7 +19,7 @@ func TestNuevoLote_OK(t *testing.T) {
 }
 
 func TestLote_Actualizar(t *testing.T) {
-	l := NuevoLote("fin-1", "Lote A", 10, "desc")
+	l := NuevoLote("fin-1", "Lote A", "tenant-1", 10, "desc")
 
 	l.Actualizar("Lote B", 20.5, "nueva desc")
 	assert.Equal(t, "Lote B", l.Nombre())
@@ -28,7 +28,7 @@ func TestLote_Actualizar(t *testing.T) {
 }
 
 func TestLote_CambiarEstado_Valido(t *testing.T) {
-	l := NuevoLote("fin-1", "Lote A", 10, "")
+	l := NuevoLote("fin-1", "Lote A", "tenant-1", 10, "")
 	assert.Equal(t, LoteActivo, l.Estado())
 
 	err := l.CambiarEstado(LoteEliminado)
@@ -37,7 +37,7 @@ func TestLote_CambiarEstado_Valido(t *testing.T) {
 }
 
 func TestLote_CambiarEstado_Invalido(t *testing.T) {
-	l := NuevoLote("fin-1", "Lote A", 10, "")
+	l := NuevoLote("fin-1", "Lote A", "tenant-1", 10, "")
 
 	err := l.CambiarEstado(LoteActivo)
 	assert.ErrorIs(t, err, ErrTransicionEstadoNoPermitida)
@@ -45,7 +45,7 @@ func TestLote_CambiarEstado_Invalido(t *testing.T) {
 
 func TestNewLoteFromPersistence(t *testing.T) {
 	now := time.Now()
-	l := NewLoteFromPersistence("lot-1", "fin-1", "Lote A", 15.5, "desc", LoteActivo, now, now)
+	l := NewLoteFromPersistence("lot-1", "fin-1", "tenant-1", "Lote A", 15.5, "desc", LoteActivo, now, now)
 	assert.Equal(t, "lot-1", l.ID())
 	assert.Equal(t, "fin-1", l.FincaID())
 	assert.Equal(t, 15.5, l.Area())

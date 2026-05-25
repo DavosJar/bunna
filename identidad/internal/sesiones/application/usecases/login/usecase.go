@@ -21,6 +21,7 @@ var (
 	ErrEmailInvalido         = errors.New("el email no tiene un formato válido")
 	ErrPasswordRequerido     = errors.New("la contraseña es requerida")
 	ErrErrorGenerandoTokens  = errors.New("error al generar tokens")
+	ErrCorreoNoVerificado    = errors.New("debes verificar tu correo electrónico antes de iniciar sesión")
 )
 
 type IniciarSesionCasoDeUso struct {
@@ -98,6 +99,11 @@ func (uc *IniciarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoInici
 			passwordIncorrecto = true
 			return ErrCredencialesInvalidas
 		}
+
+				// Verificar que el correo esté verificado
+				if usuarios[0].EstadoVerificacionCorreo() != usuario_domain.VERIFICADO {
+					return ErrCorreoNoVerificado
+				}
 
 		sesionID, err := tx.GeneradorID().NextID(ctx)
 		if err != nil {

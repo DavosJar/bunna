@@ -17,6 +17,7 @@ type Config struct {
 	DBSSLMode  string
 
 	Port        string
+	FrontendURL string
 	CORSOrigins string
 
 	BcryptCost int
@@ -139,6 +140,7 @@ func LoadConfig() (*Config, error) {
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 
 		Port:        getEnv("PORT", "8080"),
+			FrontendURL: getEnv("FRONTEND_URL", "http://localhost:5173"),
 		CORSOrigins: getEnv("CORS_ORIGINS", "*"),
 
 		BcryptCost: bcryptCost,

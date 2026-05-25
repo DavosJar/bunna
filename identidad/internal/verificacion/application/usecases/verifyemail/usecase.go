@@ -14,6 +14,7 @@ type ConfigVerificacion struct {
 	TokenExpiracion time.Duration
 	MaxReenvios     int
 	VentanaReenvios time.Duration
+	FrontendURL     string
 }
 
 type VerificarCorreoCasoDeUso struct {
@@ -37,6 +38,9 @@ func NewVerificarCorreoCasoDeUso(
 	}
 	if config.VentanaReenvios == 0 {
 		config.VentanaReenvios = 24 * time.Hour
+	}
+	if config.FrontendURL == "" {
+		config.FrontendURL = "http://localhost:5173"
 	}
 	return &VerificarCorreoCasoDeUso{
 		repo:          repo,
@@ -69,12 +73,14 @@ func (uc *VerificarCorreoCasoDeUso) Solicitar(ctx context.Context, cmd ComandoSo
 	}
 
 	expiracionHoras := fmt.Sprintf("%.0f", uc.config.TokenExpiracion.Hours())
+	urlVerificacion := fmt.Sprintf("%s/verificar-correo?token=%s", uc.config.FrontendURL, token)
+
 	go func() {
 		if err := uc.emailServicio.EnviarTemplate(ctx, usuario.Correo,
 			notificaciones.TipoVerificacionCorreo,
 			map[string]string{
 				"nombre":           usuario.Nombre,
-				"token":            token,
+				"url_verificacion": urlVerificacion,
 				"expiracion_horas": expiracionHoras,
 			},
 		); err != nil {

@@ -2,38 +2,40 @@ package facades
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	uc_sesiones_login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/login"
 	uc_sesiones_logout "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/logout"
 	uc_sesiones_refresh "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/refresh"
 	svc_registro "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/services/registro"
+	uc_verifyemail "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/verifyemail"
 )
 
-// authFacadeImpl implementa AuthFacade orquestando los servicios de aplicación.
 type authFacadeImpl struct {
-	servicioRegistro svc_registro.EjecutorRegistro
-	loginUseCase     LoginUseCase
-	refreshUseCase   RefreshUseCase
-	logoutUseCase    LogoutUseCase
+	servicioRegistro    svc_registro.EjecutorRegistro
+	verificacionUseCase *uc_verifyemail.VerificarCorreoCasoDeUso
+	loginUseCase        LoginUseCase
+	refreshUseCase      RefreshUseCase
+	logoutUseCase       LogoutUseCase
 }
 
-// NewAuthFacade construye la implementación concreta de AuthFacade.
 func NewAuthFacade(
 	servicioRegistro svc_registro.EjecutorRegistro,
+	verificacionUseCase *uc_verifyemail.VerificarCorreoCasoDeUso,
 	loginUseCase LoginUseCase,
 	refreshUseCase RefreshUseCase,
 	logoutUseCase LogoutUseCase,
 ) AuthFacade {
 	return &authFacadeImpl{
-		servicioRegistro: servicioRegistro,
-		loginUseCase:     loginUseCase,
-		refreshUseCase:   refreshUseCase,
-		logoutUseCase:    logoutUseCase,
+		servicioRegistro:    servicioRegistro,
+		verificacionUseCase: verificacionUseCase,
+		loginUseCase:        loginUseCase,
+		refreshUseCase:      refreshUseCase,
+		logoutUseCase:       logoutUseCase,
 	}
 }
 
-// Registrar delega al ServicioRegistro y traduce DTOs.
 func (f *authFacadeImpl) Registrar(ctx context.Context, cmd ComandoRegistro) (*RespuestaRegistro, error) {
 	respuesta, err := f.servicioRegistro.Ejecutar(ctx, &svc_registro.ComandoRegistro{
 		Correo:   cmd.Correo,
@@ -46,6 +48,15 @@ func (f *authFacadeImpl) Registrar(ctx context.Context, cmd ComandoRegistro) (*R
 		return nil, err
 	}
 
+	// Post-registro: enviar email de verificación (best-effort)
+	go func() {
+		if _, err := f.verificacionUseCase.Solicitar(context.Background(), uc_verifyemail.ComandoSolicitarVerificacion{
+			UsuarioID: respuesta.UsuarioID,
+		}); err != nil {
+			fmt.Printf("[AuthFacade] Error al solicitar verificación: %v\n", err)
+		}
+	}()
+
 	return &RespuestaRegistro{
 		UsuarioID: respuesta.UsuarioID,
 		Correo:    respuesta.Correo,
@@ -53,7 +64,6 @@ func (f *authFacadeImpl) Registrar(ctx context.Context, cmd ComandoRegistro) (*R
 	}, nil
 }
 
-// Login delega al ServicioLogin y traduce DTOs.
 func (f *authFacadeImpl) Login(ctx context.Context, cmd ComandoLogin) (*RespuestaLogin, error) {
 	respuesta, err := f.loginUseCase.Ejecutar(ctx, uc_sesiones_login.ComandoIniciarSesion{
 		Email:    cmd.Email,
@@ -76,7 +86,6 @@ func (f *authFacadeImpl) Login(ctx context.Context, cmd ComandoLogin) (*Respuest
 	}, nil
 }
 
-// Refresh renueva la sesión usando el refresh token.
 func (f *authFacadeImpl) Refresh(ctx context.Context, cmd ComandoRefresh) (*RespuestaRefresh, error) {
 	respuesta, err := f.refreshUseCase.Ejecutar(ctx, uc_sesiones_refresh.ComandoRenovarSesion{
 		RefreshToken: cmd.RefreshToken,
@@ -96,7 +105,6 @@ func (f *authFacadeImpl) Refresh(ctx context.Context, cmd ComandoRefresh) (*Resp
 	}, nil
 }
 
-// Logout cierra una sesión específica del usuario autenticado.
 func (f *authFacadeImpl) Logout(ctx context.Context, cmd ComandoLogout) (*RespuestaLogout, error) {
 	respuesta, err := f.logoutUseCase.Ejecutar(ctx, uc_sesiones_logout.ComandoCerrarSesion{
 		SesionID:  cmd.SesionID,
@@ -110,7 +118,6 @@ func (f *authFacadeImpl) Logout(ctx context.Context, cmd ComandoLogout) (*Respue
 	}, nil
 }
 
-// LogoutAll cierra todas las sesiones del usuario autenticado.
 func (f *authFacadeImpl) LogoutAll(ctx context.Context, cmd ComandoLogoutAll) (*RespuestaLogout, error) {
 	respuesta, err := f.logoutUseCase.CerrarTodas(ctx, uc_sesiones_logout.ComandoCerrarTodasLasSesiones{
 		UsuarioID: cmd.UsuarioID,

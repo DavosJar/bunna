@@ -12,11 +12,34 @@ export default function LoginPage() {
   const location = useLocation();
   const mensajeBienvenida = location.state?.mensaje;
 
+  const [correoNoVerificado, setCorreoNoVerificado] = useState(false);
+  const [reenvioExitoso, setReenvioExitoso] = useState(false);
+  const [reenvioError, setReenvioError] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setCorreoNoVerificado(false);
     const result = await login(email, password);
     if (result.success) {
       navigate('/dashboard');
+    } else if (result.error?.includes('verificar tu correo')) {
+      setCorreoNoVerificado(true);
+    }
+  };
+
+  const handleReenviarVerificacion = async () => {
+    setReenvioExitoso(false);
+    setReenvioError(false);
+    try {
+      await fetch('/api/v1/verificacion/solicitar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      setReenvioExitoso(true);
+      setTimeout(() => setReenvioExitoso(false), 5000);
+    } catch {
+      setReenvioError(true);
+      setTimeout(() => setReenvioError(false), 5000);
     }
   };
 
@@ -63,7 +86,53 @@ export default function LoginPage() {
             </div>
           )}
 
-          {error && (
+          {correoNoVerificado && (
+            <div style={{
+              padding: '1rem',
+              marginBottom: '1rem',
+              background: '#fffbeb',
+              border: '1px solid #fcd34d',
+              borderRadius: '0.75rem',
+              color: '#92400e',
+              fontSize: '0.875rem',
+            }}>
+              <p style={{ margin: '0 0 0.75rem', fontWeight: 600 }}>
+                Debes verificar tu correo electrónico antes de iniciar sesión.
+              </p>
+              <p style={{ margin: '0 0 0.75rem', color: '#78350f' }}>
+                Revisa tu bandeja de entrada en <strong>{email.replace(/(.{2}).*(@.*)/, '$1***$2')}</strong>
+              </p>
+              <button
+                type="button"
+                onClick={handleReenviarVerificacion}
+                style={{
+                  background: '#d97706',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  width: '100%',
+                }}
+              >
+                Reenviar email de verificación
+              </button>
+              {reenvioExitoso && (
+                <p style={{ margin: '0.5rem 0 0', color: '#065f46', fontSize: '0.8rem', fontWeight: 500, textAlign: 'center' }}>
+                  Email reenviado. Revisa tu bandeja de entrada.
+                </p>
+              )}
+              {reenvioError && (
+                <p style={{ margin: '0.5rem 0 0', color: '#991b1b', fontSize: '0.8rem', fontWeight: 500, textAlign: 'center' }}>
+                  No se pudo reenviar. Intenta registrarte de nuevo.
+                </p>
+              )}
+            </div>
+          )}
+
+          {error && !correoNoVerificado && (
             <div className="auth-error" id="login-error">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"/>

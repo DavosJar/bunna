@@ -7,6 +7,7 @@ import (
 	uc_assignrole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignrole"
 	uc_createrole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/createrole"
 	uc_deleterole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/deleterole"
+	uc_listpermisos "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listpermisos"
 	uc_listroles "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listroles"
 	uc_revokepermissionfromrole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/revokepermissionfromrole"
 	uc_revokerole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/revokerole"
@@ -23,6 +24,11 @@ type RespuestaListarRoles struct {
 	Roles  []uc_listroles.RolDTO
 	Total  int
 	Pagina int
+}
+
+type RespuestaListarPermisos struct {
+	Permisos []uc_listpermisos.PermisoItem
+	Total    int
 }
 
 type ComandoCrearRol struct {
@@ -118,6 +124,7 @@ type RespuestaRevocarPermisoDeRol struct {
 
 type RbacFacade interface {
 	ListarRoles(ctx context.Context, cmd ComandoListarRoles) (*RespuestaListarRoles, error)
+	ListarPermisos(ctx context.Context, ejecutorID string) (*RespuestaListarPermisos, error)
 	CrearRol(ctx context.Context, cmd ComandoCrearRol) (*RespuestaCrearRol, error)
 	ModificarRol(ctx context.Context, cmd ComandoModificarRol) (*RespuestaModificarRol, error)
 	EliminarRol(ctx context.Context, cmd ComandoEliminarRol) (*RespuestaEliminarRol, error)
@@ -129,6 +136,7 @@ type RbacFacade interface {
 
 type rbacFacadeImpl struct {
 	listarRoles         *uc_listroles.ListarRolesCasoDeUso
+	listarPermisos      *uc_listpermisos.ListarPermisosCasoDeUso
 	crearRol            *uc_createrole.CrearRolCasoDeUso
 	modificarRol        *uc_updaterole.ModificarRolCasoDeUso
 	eliminarRol         *uc_deleterole.EliminarRolCasoDeUso
@@ -140,6 +148,7 @@ type rbacFacadeImpl struct {
 
 func NewRbacFacade(
 	listarRoles *uc_listroles.ListarRolesCasoDeUso,
+	listarPermisos *uc_listpermisos.ListarPermisosCasoDeUso,
 	crearRol *uc_createrole.CrearRolCasoDeUso,
 	modificarRol *uc_updaterole.ModificarRolCasoDeUso,
 	eliminarRol *uc_deleterole.EliminarRolCasoDeUso,
@@ -150,6 +159,7 @@ func NewRbacFacade(
 ) RbacFacade {
 	return &rbacFacadeImpl{
 		listarRoles:         listarRoles,
+		listarPermisos:      listarPermisos,
 		crearRol:            crearRol,
 		modificarRol:        modificarRol,
 		eliminarRol:         eliminarRol,
@@ -158,6 +168,17 @@ func NewRbacFacade(
 		asignarPermisoARol:  asignarPermisoARol,
 		revocarPermisoDeRol: revocarPermisoDeRol,
 	}
+}
+
+func (f *rbacFacadeImpl) ListarPermisos(ctx context.Context, ejecutorID string) (*RespuestaListarPermisos, error) {
+	resp, err := f.listarPermisos.Ejecutar(ctx, ejecutorID)
+	if err != nil {
+		return nil, err
+	}
+	return &RespuestaListarPermisos{
+		Permisos: resp.Permisos,
+		Total:    resp.Total,
+	}, nil
 }
 
 func (f *rbacFacadeImpl) ListarRoles(ctx context.Context, cmd ComandoListarRoles) (*RespuestaListarRoles, error) {

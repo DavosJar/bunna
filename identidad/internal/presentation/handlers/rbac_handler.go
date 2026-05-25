@@ -453,3 +453,56 @@ func (h *RevocarPermisoDeRolHandler) handle(ctx context.Context, input *RevocarP
 	})
 	return out, nil
 }
+
+// ── Listar Permisos ────────────────────────────────────────────────────────────
+type ListarPermisosOutput struct {
+	Body presentation.ApiResponse[dto.ListarPermisosResponse]
+}
+
+type ListarPermisosHandler struct {
+	facade facades.RbacFacade
+}
+
+func NewListarPermisosHandler(facade facades.RbacFacade) *ListarPermisosHandler {
+	return &ListarPermisosHandler{facade: facade}
+}
+
+func (h *ListarPermisosHandler) Register(api huma.API) {
+	huma.Register(api, huma.Operation{
+		OperationID: "listar-permisos",
+		Method:      http.MethodGet,
+		Path:        "/api/v1/permisos",
+		Summary:     "Listar permisos",
+		Description: "Lista todos los permisos disponibles en el sistema.",
+		Tags:        []string{"Roles"},
+	}, h.handle)
+}
+
+func (h *ListarPermisosHandler) handle(ctx context.Context, input *struct{}) (*ListarPermisosOutput, error) {
+	ejecutorID := middleware.GetUsuarioIDFromCtx(ctx)
+	if ejecutorID == "" {
+		return nil, huma.Error401Unauthorized("token requerido")
+	}
+
+	resp, err := h.facade.ListarPermisos(ctx, ejecutorID)
+	if err != nil {
+		return nil, presentation.MapearError(err)
+	}
+
+	items := make([]dto.PermisoItem, len(resp.Permisos))
+	for i, p := range resp.Permisos {
+		items[i] = dto.PermisoItem{
+			ID:          p.ID,
+			Codigo:      p.Codigo,
+			Nombre:      p.Nombre,
+			Descripcion: p.Descripcion,
+			Modulo:      p.Modulo,
+		}
+	}
+	out := &ListarPermisosOutput{}
+	out.Body = presentation.NewApiResponse(dto.ListarPermisosResponse{
+		Permisos: items,
+		Total:    resp.Total,
+	})
+	return out, nil
+}

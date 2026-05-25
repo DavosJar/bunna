@@ -154,3 +154,18 @@ export async function desbloquearIP(ip) {
   const res = await client.delete(`/api/v1/ips-bloqueadas/${ip}`);
   return res.data.data;
 }
+// ── Permisos de roles ──────────────────────────────────────────
+export async function getPermisos() {
+  const res = await client.get('/api/v1/permisos');
+  return res.data?.data || {};
+}
+
+export async function asignarPermisoARol(rolID, permisoCodigo) {
+  const res = await client.post(`/api/v1/roles/${rolID}/permisos`, { permiso_codigo: permisoCodigo });
+  return res.data?.data || {};
+}
+
+export async function revocarPermisoDeRol(rolID, permisoCodigo) {
+  const res = await client.delete(`/api/v1/roles/${rolID}/permisos/${permisoCodigo}`);
+  return res.data?.data || {};
+}

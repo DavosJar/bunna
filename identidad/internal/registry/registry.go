@@ -9,7 +9,8 @@ import (
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignrole"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/createrole"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/deleterole"
-	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listroles"
+	listroles "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listroles"
+	uc_listpermisos "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listpermisos"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/revokepermissionfromrole"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/revokerole"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/updaterole"
@@ -126,6 +127,7 @@ type Registry struct {
 
 	// Casos de uso — roles y permisos
 	ListarRolesCasoDeUso         *listroles.ListarRolesCasoDeUso
+	ListarPermisosCasoDeUso      *uc_listpermisos.ListarPermisosCasoDeUso
 	CrearRolCasoDeUso            *createrole.CrearRolCasoDeUso
 	ModificarRolCasoDeUso        *updaterole.ModificarRolCasoDeUso
 	EliminarRolCasoDeUso         *deleterole.EliminarRolCasoDeUso
@@ -292,6 +294,7 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		VerificarCorreoCasoDeUso: uc_verifyemail.NewVerificarCorreoCasoDeUso(
 			verificacionRepo, emailSvc, generadorID,
 			uc_verifyemail.ConfigVerificacion{
+					FrontendURL:     cfg.FrontendURL,
 				TokenExpiracion: cfg.VerificacionTokenExpiracion,
 				MaxReenvios:     cfg.VerificacionMaxReenvios,
 				VentanaReenvios: cfg.VerificacionVentanaReenvios,
@@ -309,6 +312,7 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 
 		// Casos de uso — roles y permisos
 		ListarRolesCasoDeUso:         listroles.NewListarRolesCasoDeUso(rolRepo, permisoRepo, authSvc),
+			ListarPermisosCasoDeUso:      uc_listpermisos.NewListarPermisosCasoDeUso(permisoRepo, authSvc),
 		CrearRolCasoDeUso:            createrole.NewCrearRolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc),
 		ModificarRolCasoDeUso:        updaterole.NewModificarRolCasoDeUso(rolRepo, authSvc),
 		EliminarRolCasoDeUso:         deleterole.NewEliminarRolCasoDeUso(rolRepo, authSvc),

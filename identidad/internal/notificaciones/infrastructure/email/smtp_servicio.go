@@ -130,7 +130,7 @@ func (s *SMTPServicio) enviarConCliente(client *smtp.Client, destinatario, asunt
 	defer w.Close()
 
 	mensaje := fmt.Sprintf(
-		"From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s",
+		"From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n%s",
 		s.config.From, destinatario, asunto, cuerpo,
 	)
 

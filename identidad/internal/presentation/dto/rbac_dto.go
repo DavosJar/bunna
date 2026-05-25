@@ -79,3 +79,16 @@ type RevocarPermisoResponse struct {
 	PermisoCodigo string `json:"permiso_codigo"  doc:"Código del permiso revocado"`
 	RevocadoEn    string `json:"revocado_en"     doc:"Fecha de revocación"`
 }
+
+type PermisoItem struct {
+	ID          string `json:"id"          doc:"ID del permiso"`
+	Codigo      string `json:"codigo"      doc:"Código del permiso"`
+	Nombre      string `json:"nombre"      doc:"Nombre del permiso"`
+	Descripcion string `json:"descripcion" doc:"Descripción del permiso"`
+	Modulo      string `json:"modulo"      doc:"Módulo al que pertenece"`
+}
+
+type ListarPermisosResponse struct {
+	Permisos []PermisoItem `json:"permisos" doc:"Lista de permisos"`
+	Total    int           `json:"total"    doc:"Total de resultados"`
+}

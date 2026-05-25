@@ -1,11 +1,18 @@
 package main
 
 import (
-	"fmt"
 	"log"
+
+	"github.com/davosjar/bunna/services/fincas/internal/registry"
 )
 
 func main() {
-	fmt.Println("Iniciando la aplicación de fincas...")
-	log.Println("Iniciando la aplicación de fincas...")
+	log.Println("Iniciando aplicación de fincas...")
+
+	r := registry.NewRegistry()
+	defer r.Close()
+
+	log.Println("Aplicación de fincas iniciada correctamente")
+
+	select {}
 }

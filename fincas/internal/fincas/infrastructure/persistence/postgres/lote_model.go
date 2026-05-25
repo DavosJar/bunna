@@ -31,6 +31,7 @@ func FromDomainLote(l *domain.Lote) *LoteModel {
 	return &LoteModel{
 		ID:          l.ID(),
 		FincaID:     l.FincaID(),
+		TenantID:    l.TenantID(),
 		Nombre:      l.Nombre(),
 		Area:        l.Area(),
 		Descripcion: l.Descripcion(),

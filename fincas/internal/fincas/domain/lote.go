@@ -79,6 +79,7 @@ func NewLoteFromPersistence(
 	return &Lote{
 		id:          id,
 		fincaID:     fincaID,
+		tenantID:    tenantID,
 		nombre:      nombre,
 		area:        area,
 		descripcion: descripcion,

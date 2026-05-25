@@ -1,4 +1,4 @@
-.PHONY: docker-up docker-down docker-logs docker-shell docker-clean build test run
+.PHONY: docker-up docker-down docker-logs docker-shell docker-clean build test run run-test
 
 include .env
 export
@@ -26,3 +26,6 @@ test:
 
 run:
 	go run ./cmd
+
+run-test:
+	go run ./cmd/test

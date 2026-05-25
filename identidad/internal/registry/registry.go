@@ -213,7 +213,7 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		User:     cfg.SMTPUser,
 		Password: cfg.SMTPPassword,
 		From:     cfg.SMTPFrom,
-		Async:    true,
+		Async:    false,
 	})
 
 	// Servicios de aplicación antiguos

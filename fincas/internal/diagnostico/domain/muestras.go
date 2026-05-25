@@ -59,6 +59,7 @@ func (m *Muestra) ID() string           { return m.id }
 func (m *Muestra) LoteID() string       { return m.loteID }
 func (m *Muestra) TenantID() string     { return m.tenantID }
 func (m *Muestra) Ubicacion() Ubicacion { return m.ubicacion }
+func (m *Muestra) CreatedAt() time.Time { return m.createdAt }
 
 func (u *Ubicacion) Latitud() float64  { return u.latitud }
 func (u *Ubicacion) Longitud() float64 { return u.longitud }

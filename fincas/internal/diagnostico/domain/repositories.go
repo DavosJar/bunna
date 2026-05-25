@@ -23,3 +23,10 @@ type MuestraRepositorio interface {
 	Eliminar(ctx context.Context, id string) error
 	Buscar(ctx context.Context, especificacion EspecificacionMuestra, paginacion shared.Paginacion) ([]Muestra, error)
 }
+
+type CandidatoReentrenamientoRepositorio interface {
+	Crear(ctx context.Context, candidato *CandidatoReentrenamiento) error
+	ObtenerPorDiagnosticoID(ctx context.Context, diagnosticoID string) (*CandidatoReentrenamiento, error)
+	ListarPendientes(ctx context.Context, limite int) ([]CandidatoReentrenamiento, error)
+}
+

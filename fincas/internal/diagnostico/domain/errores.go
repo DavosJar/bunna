@@ -20,4 +20,6 @@ var (
 	ErrUbicacionRequerida           = errors.New("la ubicacion es requerida")
 	ErrLatitudInvalida              = errors.New("la latitud es invalida")
 	ErrLongitudInvalida             = errors.New("la longitud es invalida")
+	ErrCandidatoNoEncontrado        = errors.New("candidato a reentrenamiento no encontrado")
+	ErrCandidatoDuplicado           = errors.New("ya existe un candidato para ese diagnóstico")
 )

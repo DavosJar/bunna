@@ -10,6 +10,7 @@ var ColumnasPermitidasDiagnostico = map[string]bool{
 	"nombre":    true,
 	"muestraID": true,
 	"tenantID":  true,
+	"estado":    true,
 }
 
 type EspecificacionMuestra struct {

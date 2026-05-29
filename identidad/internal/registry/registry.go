@@ -257,7 +257,13 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		ServicioRateLimit: rateLimitSvc,
 
 		// Casos de uso — auth
-		IniciarSesionCasoDeUso: uc_sesiones_login.NewIniciarSesionCasoDeUso(sesionUoW, bloqueoIPSvc, rateLimitSvc),
+		IniciarSesionCasoDeUso: uc_sesiones_login.NewIniciarSesionCasoDeUso(
+			sesionUoW, bloqueoIPSvc, rateLimitSvc,
+			uc_sesiones_login.ConfigLogin{
+				CuentaMaxIntentos:     cfg.CuentaBloqueoMaxIntentos,
+				CuentaBloqueoDuracion: cfg.CuentaBloqueoDuracion,
+			},
+		),
 		CerrarSesionCasoDeUso:  uc_sesiones_logout.NewCerrarSesionCasoDeUso(sesionUoW),
 		RenovarSesionCasoDeUso: uc_sesiones_refresh.NewRenovarSesionCasoDeUso(sesionUoW, uc_sesiones_refresh.ConfigRefresh{
 			MaxRefrescos:    cfg.SesionMaxRefrescos,

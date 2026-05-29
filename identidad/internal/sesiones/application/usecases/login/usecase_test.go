@@ -193,6 +193,11 @@ func (m *mockGeneradorIDBloqueo) NextID(ctx context.Context) (string, error) {
 	return "id-bloqueo", nil
 }
 
+var configuracionDefault = login.ConfigLogin{
+	CuentaMaxIntentos:     5,
+	CuentaBloqueoDuracion: 15 * time.Minute,
+}
+
 func usuarioValido() *usuario_domain.Usuario {
 	u, _ := usuario_domain.NuevoUsuario("user-id-1", "test@correo.com", "Juan", "Pérez", "0999999999")
 	return u
@@ -222,7 +227,7 @@ func TestIniciarSesionExitoso(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil, configuracionDefault)
 	resp, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{
 		Email: "test@correo.com", Password: "secreto",
 	})
@@ -238,7 +243,7 @@ func TestIniciarSesionExitoso(t *testing.T) {
 }
 
 func TestIniciarSesionEmailVacio(t *testing.T) {
-	uc := login.NewIniciarSesionCasoDeUso(&mockUnitOfWork{}, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(&mockUnitOfWork{}, nil, nil, configuracionDefault)
 	_, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{Email: "", Password: "secreto"})
 	if !errors.Is(err, login.ErrEmailRequerido) {
 		t.Errorf("esperaba ErrEmailRequerido, got %v", err)
@@ -246,7 +251,7 @@ func TestIniciarSesionEmailVacio(t *testing.T) {
 }
 
 func TestIniciarSesionEmailInvalido(t *testing.T) {
-	uc := login.NewIniciarSesionCasoDeUso(&mockUnitOfWork{}, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(&mockUnitOfWork{}, nil, nil, configuracionDefault)
 	_, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{Email: "invalido", Password: "secreto"})
 	if !errors.Is(err, login.ErrEmailInvalido) {
 		t.Errorf("esperaba ErrEmailInvalido, got %v", err)
@@ -254,7 +259,7 @@ func TestIniciarSesionEmailInvalido(t *testing.T) {
 }
 
 func TestIniciarSesionPasswordVacio(t *testing.T) {
-	uc := login.NewIniciarSesionCasoDeUso(&mockUnitOfWork{}, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(&mockUnitOfWork{}, nil, nil, configuracionDefault)
 	_, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{Email: "test@correo.com", Password: ""})
 	if !errors.Is(err, login.ErrPasswordRequerido) {
 		t.Errorf("esperaba ErrPasswordRequerido, got %v", err)
@@ -268,7 +273,7 @@ func TestIniciarSesionEmailNoRegistrado(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{}},
 		&mockTokenServicio{},
 	)
-	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil, configuracionDefault)
 	_, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{Email: "noexiste@correo.com", Password: "secreto"})
 	if !errors.Is(err, login.ErrCredencialesInvalidas) {
 		t.Errorf("esperaba ErrCredencialesInvalidas, got %v", err)
@@ -285,7 +290,7 @@ func TestIniciarSesionCuentaBloqueada(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil, configuracionDefault)
 	_, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{Email: "test@correo.com", Password: "secreto"})
 	if !errors.Is(err, login.ErrCuentaBloqueada) {
 		t.Errorf("esperaba ErrCuentaBloqueada, got %v", err)
@@ -302,7 +307,7 @@ func TestIniciarSesionCuentaInactiva(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil, configuracionDefault)
 	_, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{Email: "test@correo.com", Password: "secreto"})
 	if !errors.Is(err, login.ErrCuentaInactiva) {
 		t.Errorf("esperaba ErrCuentaInactiva, got %v", err)
@@ -317,7 +322,7 @@ func TestIniciarSesionPasswordIncorrecto(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil, configuracionDefault)
 	_, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{Email: "test@correo.com", Password: "incorrecta"})
 	if !errors.Is(err, login.ErrCredencialesInvalidas) {
 		t.Errorf("esperaba ErrCredencialesInvalidas, got %v", err)
@@ -334,7 +339,7 @@ func TestIniciarSesionFalloAlCrearSesion(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil, configuracionDefault)
 	_, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{Email: "test@correo.com", Password: "secreto"})
 	if err == nil {
 		t.Error("esperaba error al fallar la creación de sesión")
@@ -348,7 +353,7 @@ func TestIniciarSesionFalloAccessToken(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{failAccess: true},
 	)
-	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil, configuracionDefault)
 	_, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{Email: "test@correo.com", Password: "secreto"})
 	if !errors.Is(err, login.ErrErrorGenerandoTokens) {
 		t.Errorf("esperaba ErrErrorGenerandoTokens, got %v", err)
@@ -362,7 +367,7 @@ func TestIniciarSesionFalloRefreshToken(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{failRefresh: true},
 	)
-	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil, configuracionDefault)
 	_, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{Email: "test@correo.com", Password: "secreto"})
 	if !errors.Is(err, login.ErrErrorGenerandoTokens) {
 		t.Errorf("esperaba ErrErrorGenerandoTokens, got %v", err)
@@ -380,7 +385,7 @@ func TestIniciarSesionLoginTrasReintentos(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil, configuracionDefault)
 	resp, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{
 		Email: "test@correo.com", Password: "secreto",
 	})
@@ -405,7 +410,7 @@ func TestIniciarSesionBloqueoExpiradoPermiteLogin(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil, configuracionDefault)
 	resp, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{
 		Email: "test@correo.com", Password: "secreto",
 	})
@@ -427,7 +432,7 @@ func TestIniciarSesionCorreoNoVerificadoPermiteLogin(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil, configuracionDefault)
 	resp, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{
 		Email: "test@correo.com", Password: "secreto",
 	})
@@ -450,7 +455,7 @@ func TestIniciarSesion5toIntentoBloquea(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil, configuracionDefault)
 	_, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{
 		Email: "test@correo.com", Password: "incorrecta",
 	})
@@ -477,7 +482,7 @@ func TestIniciarSesionIntentoEnCuentaBloqueadaNoIncrementa(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil, configuracionDefault)
 	_, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{
 		Email: "test@correo.com", Password: "incorrecta",
 	})
@@ -510,7 +515,7 @@ func TestIniciarSesionIPBloqueada(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	uc := login.NewIniciarSesionCasoDeUso(uow, bloqueoSvc, nil)
+	uc := login.NewIniciarSesionCasoDeUso(uow, bloqueoSvc, nil, configuracionDefault)
 	_, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{
 		Email: "test@correo.com", Password: "secreto", IPOrigen: "10.0.0.1",
 	})
@@ -528,7 +533,7 @@ func TestIniciarSesionContextCancelado(t *testing.T) {
 		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
 		&mockTokenServicio{},
 	)
-	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil)
+	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil, configuracionDefault)
 	_, err := uc.Ejecutar(ctx, login.ComandoIniciarSesion{
 		Email: "test@correo.com", Password: "secreto",
 	})

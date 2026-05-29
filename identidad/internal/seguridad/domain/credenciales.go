@@ -37,10 +37,20 @@ func (c *CredencialesUsuario) VerificarPassword(passwordHash string) bool {
 	return c.passwordHash == passwordHash
 }
 
-func (c *CredencialesUsuario) MarcarIntentoFallido(ahora time.Time) {
+func (c *CredencialesUsuario) IncrementarIntentoFallido() {
 	c.intentosFallidos++
+}
+
+func (c *CredencialesUsuario) BloquearHasta(hasta time.Time) {
+	c.bloqueadoHasta = hasta
+}
+
+// MarcarIntentoFallido exists for backward compatibility.
+// New code should use IncrementarIntentoFallido + BloquearHasta directly.
+func (c *CredencialesUsuario) MarcarIntentoFallido(ahora time.Time) {
+	c.IncrementarIntentoFallido()
 	if c.intentosFallidos >= 5 {
-		c.bloqueadoHasta = ahora.Add(15 * time.Minute)
+		c.BloquearHasta(ahora.Add(15 * time.Minute))
 	}
 }
 

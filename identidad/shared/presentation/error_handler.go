@@ -8,9 +8,9 @@ import (
 	recuperacion "github.com/davosjar/bunna/services/identidad/internal/recuperacion/domain"
 	seguridad "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/bloqueo_ip"
 	rate_limiter "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/rate_limiter"
-	login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/login"
-	logout "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/logout"
-	refresh "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/refresh"
+	login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/login"
+	logout "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/logout"
+	refresh "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/refresh"
 	tenant "github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
 	usuario "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 	verificacion "github.com/davosjar/bunna/services/identidad/internal/verificacion/domain"
@@ -81,6 +81,7 @@ func MapearError(err error) error {
 	// 422 Unprocessable Entity
 	if esError(err,
 		login.ErrCuentaBloqueada, login.ErrCuentaInactiva,
+		login.ErrCorreoNoVerificado, login.ErrErrorGenerandoTokens,
 		refresh.ErrLimiteRefrescosAlcanzado, refresh.ErrSesionAbsolutaExpirada, refresh.ErrSesionNoValida,
 		seguridad.ErrIPBloqueada,
 		rate_limiter.ErrRateLimitExcedido,

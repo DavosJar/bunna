@@ -13,6 +13,7 @@ import (
 	"github.com/danielgtaylor/huma/v2/adapters/humagin"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/facades"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/handlers"
+	login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/login"
 	"github.com/gin-gonic/gin"
 )
 
@@ -226,7 +227,7 @@ func TestLoginHandler_IncluyeLinks(t *testing.T) {
 // AC-PRES-006: credenciales incorrectas → 401
 func TestLoginHandler_ErrorFacade_Retorna401(t *testing.T) {
 	facade := &mockAuthFacade{
-		loginErr: errors.New("credenciales inválidas"),
+		loginErr: login.ErrCredencialesInvalidas,
 	}
 	router, _ := setupRouter(facade)
 

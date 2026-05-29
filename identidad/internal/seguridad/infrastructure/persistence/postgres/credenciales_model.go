@@ -12,7 +12,7 @@ type CredencialesModel struct {
 	Activo           bool      `gorm:"column:activo;type:boolean;default:true"`
 	CorreoVerificado bool      `gorm:"column:correo_verificado;type:boolean;default:false"`
 	IntentosFallidos int       `gorm:"column:intentos_fallidos;type:int;default:0"`
-	BloqueadoHasta   time.Time `gorm:"column:bloqueado_hasta;type:timestamp;default:null"`
+	BloqueadoHasta   time.Time `gorm:"column:bloqueado_hasta;type:timestamptz;default:null"`
 }
 
 func (CredencialesModel) TableName() string {

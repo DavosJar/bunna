@@ -24,21 +24,29 @@ var (
 	ErrCorreoNoVerificado    = errors.New("debes verificar tu correo electrónico antes de iniciar sesión")
 )
 
+type ConfigLogin struct {
+	CuentaMaxIntentos     int
+	CuentaBloqueoDuracion time.Duration
+}
+
 type IniciarSesionCasoDeUso struct {
 	uow         sesiones_domain.UnitOfWork
 	bloqueoIP   *bloqueo_ip.ServicioBloqueoIP
 	rateLimiter *rate_limiter.ServicioRateLimit
+	config      ConfigLogin
 }
 
 func NewIniciarSesionCasoDeUso(
 	uow sesiones_domain.UnitOfWork,
 	bloqueoIP *bloqueo_ip.ServicioBloqueoIP,
 	rateLimiter *rate_limiter.ServicioRateLimit,
+	config ConfigLogin,
 ) *IniciarSesionCasoDeUso {
 	return &IniciarSesionCasoDeUso{
 		uow:         uow,
 		bloqueoIP:   bloqueoIP,
 		rateLimiter: rateLimiter,
+		config:      config,
 	}
 }
 
@@ -60,7 +68,7 @@ func (uc *IniciarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoInici
 	}
 
 	var respuesta *RespuestaIniciarSesion
-	var passwordIncorrecto bool
+	var requiereRegistroIP bool
 
 	err := uc.uow.Transaccional(ctx, func(tx sesiones_domain.UnitOfWork) error {
 		ahora := time.Now()
@@ -74,36 +82,43 @@ func (uc *IniciarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoInici
 			domain.Paginacion{Pagina: 1, TamanoPagina: 1},
 		)
 		if err != nil || len(usuarios) == 0 {
+			requiereRegistroIP = true
 			return ErrCredencialesInvalidas
 		}
 		usuarioID := usuarios[0].ID()
 
 		credenciales, err := tx.CredencialesRepositorio().ObtenerPorUsuarioID(ctx, usuarioID)
 		if err != nil {
+			requiereRegistroIP = true
 			return ErrCredencialesInvalidas
 		}
 
 		if credenciales.EstaBloqueado(ahora) {
+			requiereRegistroIP = true
 			return ErrCuentaBloqueada
 		}
 
 		if !credenciales.Activo() {
+			requiereRegistroIP = true
 			return ErrCuentaInactiva
 		}
 
 		if !tx.EncriptacionServicio().Verificar(cmd.Password, credenciales.PasswordHash()) {
-			credenciales.MarcarIntentoFallido(ahora)
+			credenciales.IncrementarIntentoFallido()
+			if credenciales.IntentosFallidos() >= uc.config.CuentaMaxIntentos {
+				credenciales.BloquearHasta(ahora.Add(uc.config.CuentaBloqueoDuracion))
+			}
 			if _, err := tx.CredencialesRepositorio().Actualizar(ctx, credenciales); err != nil {
 				return err
 			}
-			passwordIncorrecto = true
+			requiereRegistroIP = true
 			return ErrCredencialesInvalidas
 		}
 
-				// Verificar que el correo esté verificado
-				if usuarios[0].EstadoVerificacionCorreo() != usuario_domain.VERIFICADO {
-					return ErrCorreoNoVerificado
-				}
+		// Verificar que el correo esté verificado
+		if usuarios[0].EstadoVerificacionCorreo() != usuario_domain.VERIFICADO {
+			return ErrCorreoNoVerificado
+		}
 
 		sesionID, err := tx.GeneradorID().NextID(ctx)
 		if err != nil {
@@ -157,7 +172,7 @@ func (uc *IniciarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoInici
 		return nil
 	})
 
-	if passwordIncorrecto && uc.bloqueoIP != nil && cmd.IPOrigen != "" {
+	if requiereRegistroIP && uc.bloqueoIP != nil && cmd.IPOrigen != "" {
 		_ = uc.bloqueoIP.RegistrarIntentoFallido(ctx, cmd.IPOrigen)
 	}
 

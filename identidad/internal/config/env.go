@@ -38,6 +38,9 @@ type Config struct {
 	RateLimitMaxRequests int
 	RateLimitVentana     time.Duration
 
+	CuentaBloqueoMaxIntentos int
+	CuentaBloqueoDuracion    time.Duration
+
 	SMTPHost     string
 	SMTPPort     string
 	SMTPUser     string
@@ -131,6 +134,15 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	cuentaBloqueoMaxIntentos, err := parsarEnteroSinRango("CUENTA_BLOQUEO_MAX_INTENTOS", "5")
+	if err != nil {
+		return nil, err
+	}
+	cuentaBloqueoDuracion, err := parsarDuracion("CUENTA_BLOQUEO_DURACION", "15m")
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := &Config{
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     getEnv("DB_PORT", "5432"),
@@ -160,6 +172,9 @@ func LoadConfig() (*Config, error) {
 
 		RateLimitMaxRequests: rateLimitMaxRequests,
 		RateLimitVentana:     rateLimitVentana,
+
+		CuentaBloqueoMaxIntentos: cuentaBloqueoMaxIntentos,
+		CuentaBloqueoDuracion:    cuentaBloqueoDuracion,
 
 		SMTPHost:     getEnv("SMTP_HOST", ""),
 		SMTPPort:     getEnv("SMTP_PORT", "587"),

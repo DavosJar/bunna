@@ -125,7 +125,7 @@ func (uc *IniciarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoInici
 			return err
 		}
 
-		accessToken, expiracionAccess, err := tx.TokenServicio().GenerarAccessToken(usuarioID, sesionID, nil)
+		accessToken, expiracionAccess, err := tx.TokenServicio().GenerarAccessToken(usuarioID, sesionID, "", "")
 		if err != nil {
 			return ErrErrorGenerandoTokens
 		}

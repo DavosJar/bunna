@@ -14,6 +14,8 @@ import (
 const (
 	ClaveUsuarioID = "usuarioID"
 	ClaveSesionID  = "sesionID"
+	ClaveTenantID  = "tenantID"
+	ClaveRol       = "rol"
 )
 
 // ctxKeyUsuarioID y ctxKeySesionID son claves con tipo para context.Context (evita colisiones).
@@ -22,6 +24,8 @@ type ctxKey string
 const (
 	ctxKeyUsuarioID ctxKey = "usuarioID"
 	ctxKeySesionID  ctxKey = "sesionID"
+	ctxKeyTenantID  ctxKey = "tenantID"
+	ctxKeyRol       ctxKey = "rol"
 )
 
 // GetUsuarioIDFromCtx extrae el usuarioID del context.Context (útil para handlers Huma).
@@ -35,6 +39,22 @@ func GetUsuarioIDFromCtx(ctx context.Context) string {
 // GetSesionIDFromCtx extrae el sesionID del context.Context (útil para handlers Huma).
 func GetSesionIDFromCtx(ctx context.Context) string {
 	if v, ok := ctx.Value(ctxKeySesionID).(string); ok {
+		return v
+	}
+	return ""
+}
+
+// GetTenantIDFromCtx extrae el tenantID del context.Context (útil para handlers Huma).
+func GetTenantIDFromCtx(ctx context.Context) string {
+	if v, ok := ctx.Value(ctxKeyTenantID).(string); ok {
+		return v
+	}
+	return ""
+}
+
+// GetRolFromCtx extrae el rol del context.Context (útil para handlers Huma).
+func GetRolFromCtx(ctx context.Context) string {
+	if v, ok := ctx.Value(ctxKeyRol).(string); ok {
 		return v
 	}
 	return ""
@@ -79,10 +99,14 @@ func JWTMiddleware(tokenSvc sesiones_domain.TokenServicio) gin.HandlerFunc {
 		// Inyectar claims en contexto Gin para handlers gin nativos
 		c.Set(ClaveUsuarioID, claims.UsuarioID)
 		c.Set(ClaveSesionID, claims.SesionID)
+		c.Set(ClaveTenantID, claims.TenantID)
+		c.Set(ClaveRol, claims.Rol)
 
 		// Inyectar claims en context.Context para handlers Huma
 		reqCtx := context.WithValue(c.Request.Context(), ctxKeyUsuarioID, claims.UsuarioID)
 		reqCtx = context.WithValue(reqCtx, ctxKeySesionID, claims.SesionID)
+		reqCtx = context.WithValue(reqCtx, ctxKeyTenantID, claims.TenantID)
+		reqCtx = context.WithValue(reqCtx, ctxKeyRol, claims.Rol)
 		c.Request = c.Request.WithContext(reqCtx)
 
 		c.Next()

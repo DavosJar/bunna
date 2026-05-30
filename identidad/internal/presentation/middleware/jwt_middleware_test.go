@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/middleware"
-	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 	"github.com/gin-gonic/gin"
 )
@@ -20,7 +19,7 @@ type mockTokenServicio struct {
 	err    error
 }
 
-func (m *mockTokenServicio) GenerarAccessToken(usuarioID, sesionID string, claims *rbac.UsuarioClaims) (string, time.Time, error) {
+func (m *mockTokenServicio) GenerarAccessToken(usuarioID, sesionID string, tenantID string, rol string) (string, time.Time, error) {
 	return "", time.Time{}, nil
 }
 func (m *mockTokenServicio) GenerarRefreshToken(usuarioID, sesionID string) (string, time.Time, error) {

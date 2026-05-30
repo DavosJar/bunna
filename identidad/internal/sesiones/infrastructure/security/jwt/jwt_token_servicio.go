@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -18,10 +17,10 @@ type ConfigJWT struct {
 }
 
 type claimsJWT struct {
-	SesionID string                       `json:"sid"`
-	Tipo     string                       `json:"typ"`
-	Global   bool                         `json:"global"`
-	Tenants  map[string]rbac.TenantClaims `json:"tenants,omitempty"`
+	SesionID string `json:"sid"`
+	Tipo     string `json:"typ"`
+	TenantID string `json:"tenant_id,omitempty"`
+	Rol      string `json:"rol,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -33,22 +32,14 @@ func NewJWTTokenServicio(config ConfigJWT) sesiones_domain.TokenServicio {
 	return &JWTTokenServicio{config: config}
 }
 
-func (s *JWTTokenServicio) GenerarAccessToken(usuarioID, sesionID string, claims *rbac.UsuarioClaims) (string, time.Time, error) {
+func (s *JWTTokenServicio) GenerarAccessToken(usuarioID, sesionID string, tenantID string, rol string) (string, time.Time, error) {
 	expira := time.Now().Add(s.config.ExpiracionAccess)
-
-	global := false
-	var tenants map[string]rbac.TenantClaims
-
-	if claims != nil {
-		global = claims.Global
-		tenants = claims.Tenants
-	}
 
 	jwtClaims := claimsJWT{
 		SesionID: sesionID,
 		Tipo:     "access",
-		Global:   global,
-		Tenants:  tenants,
+		TenantID: tenantID,
+		Rol:      rol,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   usuarioID,
 			Issuer:    s.config.Issuer,
@@ -122,7 +113,7 @@ func (s *JWTTokenServicio) validarToken(tokenString, tipoEsperado string) (*sesi
 		SesionID:  claims.SesionID,
 		Tipo:      claims.Tipo,
 		Expira:    claims.ExpiresAt.Time,
-		Global:    claims.Global,
-		Tenants:   claims.Tenants,
+		TenantID:  claims.TenantID,
+		Rol:       claims.Rol,
 	}, nil
 }

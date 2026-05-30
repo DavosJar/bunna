@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/refresh"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
@@ -90,7 +89,7 @@ type mockTokenServicio struct {
 	expRefresh time.Time
 }
 
-func (m *mockTokenServicio) GenerarAccessToken(usuarioID, sesionID string, claims *rbac.UsuarioClaims) (string, time.Time, error) {
+func (m *mockTokenServicio) GenerarAccessToken(usuarioID, sesionID string, tenantID string, rol string) (string, time.Time, error) {
 	return m.accessTok, m.expAccess, nil
 }
 func (m *mockTokenServicio) GenerarRefreshToken(usuarioID, sesionID string) (string, time.Time, error) {

@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/bloqueo_ip"
 	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/login"
@@ -142,7 +141,7 @@ type mockTokenServicio struct {
 	failRefresh bool
 }
 
-func (m *mockTokenServicio) GenerarAccessToken(usuarioID, sesionID string, claims *rbac.UsuarioClaims) (string, time.Time, error) {
+func (m *mockTokenServicio) GenerarAccessToken(usuarioID, sesionID string, tenantID string, rol string) (string, time.Time, error) {
 	if m.failAccess {
 		return "", time.Time{}, errors.New("fallo access token")
 	}

@@ -77,7 +77,7 @@ func (uc *RenovarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoRenov
 			return ErrLimiteRefrescosAlcanzado
 		}
 
-		nuevoAccessToken, expiracionAccess, err := tx.TokenServicio().GenerarAccessToken(claims.UsuarioID, sesion.ID(), nil)
+		nuevoAccessToken, expiracionAccess, err := tx.TokenServicio().GenerarAccessToken(claims.UsuarioID, sesion.ID(), claims.TenantID, claims.Rol)
 		if err != nil {
 			return ErrErrorGenerandoTokens
 		}

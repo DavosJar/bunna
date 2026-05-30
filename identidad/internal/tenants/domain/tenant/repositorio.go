@@ -18,4 +18,5 @@ type MembresiaRepositorio interface {
 	Eliminar(ctx context.Context, usuarioID, tenantID string) error
 	ExisteMiembro(ctx context.Context, usuarioID, tenantID string) (bool, error)
 	ListarUsuariosPorTenant(ctx context.Context, tenantID string) ([]string, error)
+	ListarTenantsPorUsuario(ctx context.Context, usuarioID string) ([]string, error)
 }

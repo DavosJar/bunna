@@ -61,13 +61,14 @@ export function AuthProvider({ children }) {
         id: data.usuario_id,
         email: correo,
         nombre: correo.split('@')[0],
-        rol: 'caficultor',
+        tenantID: data.tenant_id,
+        rol: data.rol || 'caficultor',
         sessionId: payload?.sid,
       };
 
       saveSession(data.access_token, data.refresh_token, userData);
       setUser(userData);
-      return { success: true };
+      return { success: true, user: userData };
     } catch (err) {
       const msg = err.response?.data?.detail || 'Error al iniciar sesión';
       setError(msg);

@@ -6,10 +6,12 @@ import (
 	"net/mail"
 	"time"
 
+	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/bloqueo_ip"
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/rate_limiter"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/shared/domain"
+	"github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
 	usuario_domain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 )
 
@@ -30,10 +32,12 @@ type ConfigLogin struct {
 }
 
 type IniciarSesionCasoDeUso struct {
-	uow         sesiones_domain.UnitOfWork
-	bloqueoIP   *bloqueo_ip.ServicioBloqueoIP
-	rateLimiter *rate_limiter.ServicioRateLimit
-	config      ConfigLogin
+	uow                  sesiones_domain.UnitOfWork
+	bloqueoIP            *bloqueo_ip.ServicioBloqueoIP
+	rateLimiter          *rate_limiter.ServicioRateLimit
+	config               ConfigLogin
+	membresiaRepo        tenant.MembresiaRepositorio
+	usuarioTenantRolRepo rbac.UsuarioTenantRolRepositorio
 }
 
 func NewIniciarSesionCasoDeUso(
@@ -41,12 +45,16 @@ func NewIniciarSesionCasoDeUso(
 	bloqueoIP *bloqueo_ip.ServicioBloqueoIP,
 	rateLimiter *rate_limiter.ServicioRateLimit,
 	config ConfigLogin,
+	membresiaRepo tenant.MembresiaRepositorio,
+	usuarioTenantRolRepo rbac.UsuarioTenantRolRepositorio,
 ) *IniciarSesionCasoDeUso {
 	return &IniciarSesionCasoDeUso{
-		uow:         uow,
-		bloqueoIP:   bloqueoIP,
-		rateLimiter: rateLimiter,
-		config:      config,
+		uow:                  uow,
+		bloqueoIP:            bloqueoIP,
+		rateLimiter:          rateLimiter,
+		config:               config,
+		membresiaRepo:        membresiaRepo,
+		usuarioTenantRolRepo: usuarioTenantRolRepo,
 	}
 }
 
@@ -120,12 +128,23 @@ func (uc *IniciarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoInici
 			return ErrCorreoNoVerificado
 		}
 
+		tenantID := ""
+		rol := ""
+		tenants, err := uc.membresiaRepo.ListarTenantsPorUsuario(ctx, usuarioID)
+		if err == nil && len(tenants) > 0 {
+			tenantID = tenants[0]
+			roles, err := uc.usuarioTenantRolRepo.ListarRolesPorUsuarioEnTenant(ctx, usuarioID, tenantID)
+			if err == nil && len(roles) > 0 {
+				rol = roles[0].Nombre
+			}
+		}
+
 		sesionID, err := tx.GeneradorID().NextID(ctx)
 		if err != nil {
 			return err
 		}
 
-		accessToken, expiracionAccess, err := tx.TokenServicio().GenerarAccessToken(usuarioID, sesionID, "", "")
+		accessToken, expiracionAccess, err := tx.TokenServicio().GenerarAccessToken(usuarioID, sesionID, tenantID, rol)
 		if err != nil {
 			return ErrErrorGenerandoTokens
 		}
@@ -168,6 +187,8 @@ func (uc *IniciarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoInici
 			ExpiracionRefresh: expiracionRefresh,
 			UsuarioID:         usuarioID,
 			SesionID:          sesionID,
+			TenantID:          tenantID,
+			Rol:               rol,
 		}
 		return nil
 	})

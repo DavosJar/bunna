@@ -173,7 +173,7 @@ func main() {
 		Email: regCmd1.Correo, Password: regCmd1.Password, IPOrigen: "seed",
 	})
 	// Registramos con el caso de uso
-	r1reg, err := uc_register.NewRegistrarUsuarioCasoDeUso(reg.UsuarioUnitOfWork()).Ejecutar(ctx, &regCmd1)
+	r1reg, err := reg.GetRegistrarUsuarioCasoDeUso().Ejecutar(ctx, &regCmd1)
 	if err != nil {
 		fail("Registro ana.lopez@example.com: %v", err)
 	} else {
@@ -184,7 +184,7 @@ func main() {
 		Correo: "jose.martinez@demo.com", Password: "Passw0rd!",
 		Nombre: "José", Apellido: "Mártinez", Telefono: "6005544332",
 	}
-	r2reg, err := uc_register.NewRegistrarUsuarioCasoDeUso(reg.UsuarioUnitOfWork()).Ejecutar(ctx, &regCmd2)
+	r2reg, err := reg.GetRegistrarUsuarioCasoDeUso().Ejecutar(ctx, &regCmd2)
 	if err != nil {
 		fail("Registro jose.martinez@demo.com: %v", err)
 	} else {
@@ -195,7 +195,7 @@ func main() {
 		Correo: "carlos.ramos@test.com", Password: "ClaveFuerte99@",
 		Nombre: "Carlos", Apellido: "Ramos", Telefono: "+598991234567",
 	}
-	r3reg, err := uc_register.NewRegistrarUsuarioCasoDeUso(reg.UsuarioUnitOfWork()).Ejecutar(ctx, &regCmd3)
+	r3reg, err := reg.GetRegistrarUsuarioCasoDeUso().Ejecutar(ctx, &regCmd3)
 	if err != nil {
 		fail("Registro carlos.ramos@test.com: %v", err)
 	} else {
@@ -207,7 +207,7 @@ func main() {
 
 	subtitulo("1.2 Validaciones (deben fallar)")
 
-	_, err = uc_register.NewRegistrarUsuarioCasoDeUso(reg.UsuarioUnitOfWork()).Ejecutar(ctx, &uc_register.ComandoRegistrarUsuario{
+	_, err = reg.GetRegistrarUsuarioCasoDeUso().Ejecutar(ctx, &uc_register.ComandoRegistrarUsuario{
 		Correo: "ana.lopez@example.com", Password: "OtraPass1@", Nombre: "Ana", Apellido: "López",
 	})
 	if err != nil {
@@ -216,7 +216,7 @@ func main() {
 		fail("Email duplicado debería fallar")
 	}
 
-	_, err = uc_register.NewRegistrarUsuarioCasoDeUso(reg.UsuarioUnitOfWork()).Ejecutar(ctx, &uc_register.ComandoRegistrarUsuario{
+	_, err = reg.GetRegistrarUsuarioCasoDeUso().Ejecutar(ctx, &uc_register.ComandoRegistrarUsuario{
 		Correo: "invalido", Password: "Passw0rd@", Nombre: "T", Apellido: "U",
 	})
 	if err != nil {
@@ -225,7 +225,7 @@ func main() {
 		fail("Email inválido debería fallar")
 	}
 
-	_, err = uc_register.NewRegistrarUsuarioCasoDeUso(reg.UsuarioUnitOfWork()).Ejecutar(ctx, &uc_register.ComandoRegistrarUsuario{
+	_, err = reg.GetRegistrarUsuarioCasoDeUso().Ejecutar(ctx, &uc_register.ComandoRegistrarUsuario{
 		Correo: "", Password: "Passw0rd@", Nombre: "T", Apellido: "U",
 	})
 	if err != nil {
@@ -782,7 +782,7 @@ func main() {
 	fmt.Printf("%s══════════════════════════════════════════════════════════════%s\n", verde, reset)
 
 	subtitulo("12.1 Registro")
-	fullUser, err := uc_register.NewRegistrarUsuarioCasoDeUso(reg.UsuarioUnitOfWork()).Ejecutar(ctx, &uc_register.ComandoRegistrarUsuario{
+	fullUser, err := reg.GetRegistrarUsuarioCasoDeUso().Ejecutar(ctx, &uc_register.ComandoRegistrarUsuario{
 		Correo: "flujo.completo@test.com", Password: "FlujoCompleto99@",
 		Nombre: "Flujo", Apellido: "Completo", Telefono: "600000000",
 	})

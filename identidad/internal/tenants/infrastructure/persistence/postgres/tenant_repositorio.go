@@ -161,3 +161,18 @@ func (r *membresiaRepositorio) ListarUsuariosPorTenant(ctx context.Context, tena
 	}
 	return ids, nil
 }
+
+func (r *membresiaRepositorio) ListarTenantsPorUsuario(ctx context.Context, usuarioID string) ([]string, error) {
+	var models []MembresiaModel
+	result := r.db.WithContext(ctx).
+		Where("usuario_id = ?", usuarioID).
+		Find(&models)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	ids := make([]string, len(models))
+	for i, m := range models {
+		ids[i] = m.TenantID
+	}
+	return ids, nil
+}

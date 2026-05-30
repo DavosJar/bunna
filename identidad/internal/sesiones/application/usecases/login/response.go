@@ -9,4 +9,6 @@ type RespuestaIniciarSesion struct {
 	ExpiracionRefresh time.Time
 	UsuarioID         string
 	SesionID          string
+	TenantID          string
+	Rol               string
 }

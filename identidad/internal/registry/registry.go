@@ -45,6 +45,7 @@ import (
 	tenant_domain "github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
 	tenant_postgres "github.com/davosjar/bunna/services/identidad/internal/tenants/infrastructure/persistence/postgres"
 	"github.com/davosjar/bunna/services/identidad/internal/usuarios/application/services/registro"
+	uc_register "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/register"
 	uc_createuser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/createuser"
 	uc_deleteuser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/deleteuser"
 	uc_expeluser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/expeluser"
@@ -91,7 +92,8 @@ type Registry struct {
 	ServicioLogout  *logout.ServicioLogout
 
 	// Servicios de aplicación — registro
-	servicioRegistro *registro.ServicioRegistro
+	servicioRegistro             *registro.ServicioRegistro
+	RegistrarUsuarioCasoDeUso    *uc_register.RegistrarUsuarioCasoDeUso
 
 	// Servicios de aplicación — seguridad perimetral
 	ServicioBloqueoIP *bloqueo_ip.ServicioBloqueoIP
@@ -226,6 +228,16 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 	})
 	logoutSvc := logout.NuevoServicioLogout(sesionUoW)
 	registroSvc := registro.NuevoServicioRegistro(usuarioUoW)
+	registroUseCase := uc_register.NewRegistrarUsuarioCasoDeUso(
+		usuarioRepo,
+		credencialesRepo,
+		encriptacion,
+		generadorID,
+		tenantRepo,
+		membresiaRepo,
+		rolRepo,
+		usuarioTenantRolRepo,
+	)
 
 	return &Registry{
 		usuarioRepository:      usuarioRepo,
@@ -252,7 +264,8 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		ServicioLogin:     loginSvc,
 		ServicioRefresh:   refreshSvc,
 		ServicioLogout:    logoutSvc,
-		servicioRegistro:  registroSvc,
+		servicioRegistro:             registroSvc,
+		RegistrarUsuarioCasoDeUso:    registroUseCase,
 		ServicioBloqueoIP: bloqueoIPSvc,
 		ServicioRateLimit: rateLimitSvc,
 
@@ -263,6 +276,8 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 				CuentaMaxIntentos:     cfg.CuentaBloqueoMaxIntentos,
 				CuentaBloqueoDuracion: cfg.CuentaBloqueoDuracion,
 			},
+			membresiaRepo,
+			usuarioTenantRolRepo,
 		),
 		CerrarSesionCasoDeUso:  uc_sesiones_logout.NewCerrarSesionCasoDeUso(sesionUoW),
 		RenovarSesionCasoDeUso: uc_sesiones_refresh.NewRenovarSesionCasoDeUso(sesionUoW, uc_sesiones_refresh.ConfigRefresh{
@@ -340,5 +355,12 @@ func (r *Registry) EncriptacionServicio() seguridad_domain.EncriptacionServicio 
 func (r *Registry) UsuarioUnitOfWork() usuario_domain.UnitOfWork    { return r.usuarioUnitOfWork }
 func (r *Registry) TokenServicio() sesiones_domain.TokenServicio    { return r.tokenServicio }
 func (r *Registry) GetServicioRegistro() *registro.ServicioRegistro { return r.servicioRegistro }
+func (r *Registry) GetRegistrarUsuarioCasoDeUso() *uc_register.RegistrarUsuarioCasoDeUso {
+	return r.RegistrarUsuarioCasoDeUso
+}
+func (r *Registry) TenantRepository() tenant_domain.TenantRepositorio { return r.tenantRepository }
+func (r *Registry) MembresiaRepository() tenant_domain.MembresiaRepositorio {
+	return r.membresiaRepository
+}
 func (r *Registry) AuthService() *autorizacion.ServicioAutorizacion { return r.authService }
 func (r *Registry) EmailServicio() notificaciones.EmailServicio     { return r.emailServicio }

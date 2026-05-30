@@ -8,12 +8,12 @@ import (
 	uc_sesiones_login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/login"
 	uc_sesiones_logout "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/logout"
 	uc_sesiones_refresh "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/refresh"
-	svc_registro "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/services/registro"
+	uc_register "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/register"
 	uc_verifyemail "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/verifyemail"
 )
 
 type authFacadeImpl struct {
-	servicioRegistro    svc_registro.EjecutorRegistro
+	registroUseCase     RegistroUseCase
 	verificacionUseCase *uc_verifyemail.VerificarCorreoCasoDeUso
 	loginUseCase        LoginUseCase
 	refreshUseCase      RefreshUseCase
@@ -21,14 +21,14 @@ type authFacadeImpl struct {
 }
 
 func NewAuthFacade(
-	servicioRegistro svc_registro.EjecutorRegistro,
+	registroUseCase RegistroUseCase,
 	verificacionUseCase *uc_verifyemail.VerificarCorreoCasoDeUso,
 	loginUseCase LoginUseCase,
 	refreshUseCase RefreshUseCase,
 	logoutUseCase LogoutUseCase,
 ) AuthFacade {
 	return &authFacadeImpl{
-		servicioRegistro:    servicioRegistro,
+		registroUseCase:     registroUseCase,
 		verificacionUseCase: verificacionUseCase,
 		loginUseCase:        loginUseCase,
 		refreshUseCase:      refreshUseCase,
@@ -37,7 +37,7 @@ func NewAuthFacade(
 }
 
 func (f *authFacadeImpl) Registrar(ctx context.Context, cmd ComandoRegistro) (*RespuestaRegistro, error) {
-	respuesta, err := f.servicioRegistro.Ejecutar(ctx, &svc_registro.ComandoRegistro{
+	respuesta, err := f.registroUseCase.Ejecutar(ctx, &uc_register.ComandoRegistrarUsuario{
 		Correo:   cmd.Correo,
 		Password: cmd.Password,
 		Nombre:   cmd.Nombre,
@@ -83,6 +83,8 @@ func (f *authFacadeImpl) Login(ctx context.Context, cmd ComandoLogin) (*Respuest
 		TokenType:    "Bearer",
 		UsuarioID:    respuesta.UsuarioID,
 		SesionID:     respuesta.SesionID,
+		TenantID:     respuesta.TenantID,
+		Rol:          respuesta.Rol,
 	}, nil
 }
 

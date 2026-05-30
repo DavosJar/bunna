@@ -16,7 +16,7 @@ type AllFacades struct {
 func NewAllFacades(reg *registry.Registry) *AllFacades {
 	return &AllFacades{
 		Auth: NewAuthFacade(
-			reg.GetServicioRegistro(),
+			reg.GetRegistrarUsuarioCasoDeUso(),
 			reg.VerificarCorreoCasoDeUso,
 			reg.IniciarSesionCasoDeUso,
 			reg.RenovarSesionCasoDeUso,

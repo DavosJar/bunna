@@ -8,6 +8,7 @@ import (
 	uc_sesiones_login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/login"
 	uc_sesiones_logout "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/logout"
 	uc_sesiones_refresh "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/refresh"
+	uc_register "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/register"
 )
 
 // ComandoRegistro contiene los datos necesarios para registrar un nuevo usuario.
@@ -41,6 +42,13 @@ type RespuestaLogin struct {
 	TokenType    string
 	UsuarioID    string
 	SesionID     string
+	TenantID     string
+	Rol          string
+}
+
+// RegistroUseCase define el contrato del caso de uso de registro de usuario.
+type RegistroUseCase interface {
+	Ejecutar(ctx context.Context, cmd *uc_register.ComandoRegistrarUsuario) (*uc_register.RespuestaRegistrarUsuario, error)
 }
 
 // AuthFacade es la interfaz que expone los casos de uso de autenticación.

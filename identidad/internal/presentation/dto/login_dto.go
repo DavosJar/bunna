@@ -13,4 +13,6 @@ type LoginResponse struct {
 	ExpiresIn    int64  `json:"expires_in"    doc:"Segundos hasta expiración del access" example:"900"`
 	TokenType    string `json:"token_type"    doc:"Tipo de token, siempre Bearer"        example:"Bearer"`
 	UsuarioID    string `json:"usuario_id"    doc:"ID del usuario autenticado"           example:"01926b1e-dead-beef-cafe-000000000001"`
+	TenantID     string `json:"tenant_id"     doc:"ID del tenant del usuario"            example:"01926b1e-dead-beef-cafe-000000000002"`
+	Rol          string `json:"rol"           doc:"Rol del usuario en el tenant"         example:"administrador"`
 }

@@ -21,7 +21,8 @@ export default function LoginPage() {
     setCorreoNoVerificado(false);
     const result = await login(email, password);
     if (result.success) {
-      navigate('/dashboard');
+      const destino = result.user?.rol === 'administrador' ? '/admin' : '/dashboard';
+      navigate(destino);
     } else if (result.error?.includes('verificar tu correo')) {
       setCorreoNoVerificado(true);
     }

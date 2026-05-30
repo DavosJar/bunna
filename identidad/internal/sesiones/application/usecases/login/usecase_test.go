@@ -199,6 +199,7 @@ var configuracionDefault = login.ConfigLogin{
 
 func usuarioValido() *usuario_domain.Usuario {
 	u, _ := usuario_domain.NuevoUsuario("user-id-1", "test@correo.com", "Juan", "Pérez", "0999999999")
+	u.VerificarCorreo()
 	return u
 }
 
@@ -421,25 +422,26 @@ func TestIniciarSesionBloqueoExpiradoPermiteLogin(t *testing.T) {
 	}
 }
 
-func TestIniciarSesionCorreoNoVerificadoPermiteLogin(t *testing.T) {
+func TestIniciarSesionCorreoNoVerificadoFalla(t *testing.T) {
 	creds := seguridad_domain.NuevaCredencialesUsuarioDesdeBD(
 		"user-id-1", "hash:secreto", true, false, 0, time.Time{},
 	)
+	
+	// Crear un usuario explícitamente no verificado
+	uNoVerificado, _ := usuario_domain.NuevoUsuario("user-id-1", "test@correo.com", "Juan", "Pérez", "0999999999")
+
 	uow := uowValido(
 		&mockSesionRepo{},
 		&mockCredencialesRepo{credenciales: creds},
-		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{usuarioValido()}},
+		&mockUsuarioRepo{usuarios: []*usuario_domain.Usuario{uNoVerificado}},
 		&mockTokenServicio{},
 	)
 	uc := login.NewIniciarSesionCasoDeUso(uow, nil, nil, configuracionDefault, nil, nil)
-	resp, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{
+	_, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{
 		Email: "test@correo.com", Password: "secreto",
 	})
-	if err != nil {
-		t.Fatalf("esperaba login permitido con correo no verificado, got %v", err)
-	}
-	if resp.AccessToken == "" {
-		t.Error("esperaba access token en respuesta")
+	if err != login.ErrCorreoNoVerificado {
+		t.Fatalf("esperaba error ErrCorreoNoVerificado, got %v", err)
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/bloqueo_ip"
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/rate_limiter"
+	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
@@ -81,6 +82,8 @@ func (uc *IniciarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoInici
 	err := uc.uow.Transaccional(ctx, func(tx sesiones_domain.UnitOfWork) error {
 		ahora := time.Now()
 
+		var credsError error
+
 		usuarios, err := tx.UsuarioRepositorio().Listar(ctx,
 			usuario_domain.EspecificacionUsuario{
 				ListaLiltros: []domain.CriterioFiltro{
@@ -90,28 +93,42 @@ func (uc *IniciarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoInici
 			domain.Paginacion{Pagina: 1, TamanoPagina: 1},
 		)
 		if err != nil || len(usuarios) == 0 {
-			requiereRegistroIP = true
-			return ErrCredencialesInvalidas
-		}
-		usuarioID := usuarios[0].ID()
-
-		credenciales, err := tx.CredencialesRepositorio().ObtenerPorUsuarioID(ctx, usuarioID)
-		if err != nil {
-			requiereRegistroIP = true
-			return ErrCredencialesInvalidas
+			credsError = ErrCredencialesInvalidas
 		}
 
-		if credenciales.EstaBloqueado(ahora) {
-			requiereRegistroIP = true
-			return ErrCuentaBloqueada
+		var usuarioID string
+		var credenciales *seguridad_domain.CredencialesUsuario
+		if credsError == nil {
+			usuarioID = usuarios[0].ID()
+			credenciales, err = tx.CredencialesRepositorio().ObtenerPorUsuarioID(ctx, usuarioID)
+			if err != nil {
+				credsError = ErrCredencialesInvalidas
+			}
 		}
 
-		if !credenciales.Activo() {
-			requiereRegistroIP = true
-			return ErrCuentaInactiva
+		if credsError == nil && credenciales.EstaBloqueado(ahora) {
+			credsError = ErrCuentaBloqueada
 		}
 
-		if !tx.EncriptacionServicio().Verificar(cmd.Password, credenciales.PasswordHash()) {
+		if credsError == nil && !credenciales.Activo() {
+			credsError = ErrCuentaInactiva
+		}
+
+		// Prevenir user enumeration (ataque de timing) asegurando que siempre se gaste el mismo tiempo computacional
+		var passwordCorrecto bool
+		if credsError != nil {
+			// Simular el tiempo de verificación hasheando el password ingresado
+			_, _ = tx.EncriptacionServicio().Hashear(cmd.Password)
+		} else {
+			passwordCorrecto = tx.EncriptacionServicio().Verificar(cmd.Password, credenciales.PasswordHash())
+		}
+
+		if credsError != nil {
+			requiereRegistroIP = true
+			return credsError
+		}
+
+		if !passwordCorrecto {
 			credenciales.IncrementarIntentoFallido()
 			if credenciales.IntentosFallidos() >= uc.config.CuentaMaxIntentos {
 				credenciales.BloquearHasta(ahora.Add(uc.config.CuentaBloqueoDuracion))
@@ -130,12 +147,14 @@ func (uc *IniciarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoInici
 
 		tenantID := ""
 		rol := ""
-		tenants, err := uc.membresiaRepo.ListarTenantsPorUsuario(ctx, usuarioID)
-		if err == nil && len(tenants) > 0 {
-			tenantID = tenants[0]
-			roles, err := uc.usuarioTenantRolRepo.ListarRolesPorUsuarioEnTenant(ctx, usuarioID, tenantID)
-			if err == nil && len(roles) > 0 {
-				rol = roles[0].Nombre
+		if uc.membresiaRepo != nil && uc.usuarioTenantRolRepo != nil {
+			tenants, err := uc.membresiaRepo.ListarTenantsPorUsuario(ctx, usuarioID)
+			if err == nil && len(tenants) > 0 {
+				tenantID = tenants[0]
+				roles, err := uc.usuarioTenantRolRepo.ListarRolesPorUsuarioEnTenant(ctx, usuarioID, tenantID)
+				if err == nil && len(roles) > 0 {
+					rol = roles[0].Nombre
+				}
 			}
 		}
 

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_AUTH_API_URL || '/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 const authClient = axios.create({
   baseURL: API_BASE,
@@ -16,7 +16,7 @@ export async function registrarUsuario({ nombre, apellido, correo, password, tel
   const body = { nombre, apellido, correo, password };
   if (telefono) body.telefono = telefono;
 
-  const response = await authClient.post('/v1/auth/register', body);
+  const response = await authClient.post('/api/v1/auth/register', body);
   return response.data;
 }
 
@@ -25,7 +25,7 @@ export async function registrarUsuario({ nombre, apellido, correo, password, tel
  * POST /api/v1/auth/login
  */
 export async function loginUsuario({ correo, password }) {
-  const response = await authClient.post('/v1/auth/login', { correo, password });
+  const response = await authClient.post('/api/v1/auth/login', { correo, password });
   return response.data;
 }
 

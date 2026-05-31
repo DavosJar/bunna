@@ -4,7 +4,7 @@ import (
 	"github.com/davosjar/bunna/services/identidad/internal/config"
 	notificaciones "github.com/davosjar/bunna/services/identidad/internal/notificaciones/domain"
 	notificaciones_email "github.com/davosjar/bunna/services/identidad/internal/notificaciones/infrastructure/email"
-	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/services/autorizacion"
+	checkpermission "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/checkpermission"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignpermissiontorole"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignrole"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/createrole"
@@ -79,7 +79,7 @@ type Registry struct {
 	// Servicios de dominio
 	encriptacionServicio seguridad_domain.EncriptacionServicio
 	tokenServicio        sesiones_domain.TokenServicio
-	authService          *autorizacion.ServicioAutorizacion
+	authService          *checkpermission.VerificarPermisoCasoDeUso
 	emailServicio        notificaciones.EmailServicio
 
 	// Unit of Work
@@ -209,7 +209,7 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		},
 	)
 
-	authSvc := autorizacion.NewServicioAutorizacion(usuarioRolRepo, permisoRepo)
+	authSvc := checkpermission.NewVerificarPermisoCasoDeUso(usuarioRolRepo, usuarioTenantRolRepo, permisoRepo)
 
 	emailSvc := notificaciones_email.NewSMTPServicio(notificaciones_email.ConfigSMTP{
 		Host:     cfg.SMTPHost,
@@ -362,5 +362,5 @@ func (r *Registry) TenantRepository() tenant_domain.TenantRepositorio { return r
 func (r *Registry) MembresiaRepository() tenant_domain.MembresiaRepositorio {
 	return r.membresiaRepository
 }
-func (r *Registry) AuthService() *autorizacion.ServicioAutorizacion { return r.authService }
+func (r *Registry) AuthService() *checkpermission.VerificarPermisoCasoDeUso { return r.authService }
 func (r *Registry) EmailServicio() notificaciones.EmailServicio     { return r.emailServicio }

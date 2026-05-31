@@ -28,39 +28,10 @@ func (s *ServicioAutorizacion) TienePermiso(ctx context.Context, usuarioID, tena
 	}
 
 	for _, rol := range roles {
-		if tienePermisoEnRol(ctx, s.permisoRepo, rol, codigoPermiso) {
+		if rbac.TienePermisoEnRol(ctx, s.permisoRepo, rol, codigoPermiso) {
 			return true, nil
 		}
 	}
 
 	return false, nil
-}
-
-func tienePermisoEnRol(ctx context.Context, permisoRepo rbac.PermisoRepositorio, rol *rbac.RolDB, codigoPermiso string) bool {
-	if rol.EsSistema {
-		for _, sistema := range rbac.RolesDeSistema {
-			if sistema.Nombre == rol.Nombre {
-				for _, permiso := range sistema.Permisos {
-					if permiso == codigoPermiso {
-						return true
-					}
-				}
-				break
-			}
-		}
-		return false
-	}
-
-	permisos, err := permisoRepo.ListarPorRol(ctx, rol.ID)
-	if err != nil {
-		return false
-	}
-
-	for _, p := range permisos {
-		if p.Codigo == codigoPermiso {
-			return true
-		}
-	}
-
-	return false
 }

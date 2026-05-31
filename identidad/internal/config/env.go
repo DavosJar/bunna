@@ -20,6 +20,8 @@ type Config struct {
 	FrontendURL string
 	CORSOrigins string
 
+	APIGatewayEnabled bool
+
 	BcryptCost int
 
 	JWTSecret            string
@@ -134,6 +136,11 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	apiGatewayEnabled, err := strconv.ParseBool(getEnv("API_GATEWAY_ENABLED", "false"))
+	if err != nil {
+		return nil, fmt.Errorf("API_GATEWAY_ENABLED debe ser un booleano válido: %w", err)
+	}
+
 	cuentaBloqueoMaxIntentos, err := parsarEnteroSinRango("CUENTA_BLOQUEO_MAX_INTENTOS", "5")
 	if err != nil {
 		return nil, err
@@ -154,6 +161,8 @@ func LoadConfig() (*Config, error) {
 		Port:        getEnv("PORT", "8080"),
 			FrontendURL: getEnv("FRONTEND_URL", "http://localhost:5173"),
 		CORSOrigins: getEnv("CORS_ORIGINS", "*"),
+
+		APIGatewayEnabled: apiGatewayEnabled,
 
 		BcryptCost: bcryptCost,
 

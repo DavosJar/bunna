@@ -37,9 +37,10 @@ func main() {
 	reg := registry.NewRegistry(db, cfg)
 	allFacades := facades.NewAllFacades(reg)
 	r := router.New(allFacades, router.Config{
-		Version:     "1.0.0",
-		CORSOrigins: []string{cfg.CORSOrigins},
-		TokenSvc:    reg.TokenServicio(),
+		Version:           "1.0.0",
+		CORSOrigins:       []string{cfg.CORSOrigins},
+		APIGatewayEnabled: cfg.APIGatewayEnabled,
+		TokenSvc:          reg.TokenServicio(),
 	})
 
 	log.Printf("Server starting on :%s", cfg.Port)

@@ -16,9 +16,10 @@ import (
 
 // Config contiene la configuración del router.
 type Config struct {
-	Version     string
-	CORSOrigins []string
-	TokenSvc    sesiones_domain.TokenServicio
+	Version           string
+	CORSOrigins       []string
+	APIGatewayEnabled bool
+	TokenSvc          sesiones_domain.TokenServicio
 }
 
 // jwtIfRequired es un wrapper del middleware JWT que lo omite para rutas públicas.
@@ -52,7 +53,7 @@ func New(all *facades.AllFacades, cfg Config) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
-	router.Use(corsMiddleware(cfg.CORSOrigins))
+	router.Use(corsMiddleware(cfg))
 
 	// Aplicar JWT middleware condicionalmente
 	if cfg.TokenSvc != nil {
@@ -122,14 +123,34 @@ func New(all *facades.AllFacades, cfg Config) *gin.Engine {
 	return router
 }
 
-// corsMiddleware configura CORS con los orígenes permitidos.
-func corsMiddleware(origins []string) gin.HandlerFunc {
-	allowed := "*"
-	if len(origins) > 0 {
-		allowed = origins[0]
+// corsMiddleware configura CORS basado en la configuración del router.
+// Si API Gateway está habilitado, el gateway maneja CORS y este middleware
+// solo agrega headers si hay orígenes explícitamente configurados.
+// Si API Gateway está deshabilitado, permite todos los orígenes (*).
+func corsMiddleware(cfg Config) gin.HandlerFunc {
+	if cfg.APIGatewayEnabled {
+		// El API Gateway maneja CORS; solo agregar headers si hay orígenes configurados.
+		if len(cfg.CORSOrigins) == 0 {
+			return func(c *gin.Context) {
+				c.Next()
+			}
+		}
+		allowed := cfg.CORSOrigins[0]
+		return func(c *gin.Context) {
+			c.Header("Access-Control-Allow-Origin", allowed)
+			c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			if c.Request.Method == "OPTIONS" {
+				c.AbortWithStatus(204)
+				return
+			}
+			c.Next()
+		}
 	}
+
+	// Sin API Gateway: permitir todos los orígenes.
 	return func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", allowed)
+		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		if c.Request.Method == "OPTIONS" {

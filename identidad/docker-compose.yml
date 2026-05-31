@@ -1,28 +1,48 @@
 services:
-  postgres:
-    image: postgres:18-alpine
-    container_name: identidad-postgres
+  identidad-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: identidad-app
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "${PORT:-8080}:8080"
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    volumes:
-      - postgres_data:/var/lib/postgresql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - identidad-network
-
-networks:
-  identidad-network:
-    driver: bridge
-
-volumes:
-  postgres_data:
-    driver: local
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_SSLMODE=${DB_SSLMODE:-require}
+      - PORT=${PORT:-8080}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ISSUER=${JWT_ISSUER:-ServicioIdentidad}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - API_GATEWAY_ENABLED=${API_GATEWAY_ENABLED:-false}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - BCRYPT_COST=${BCRYPT_COST:-12}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
+      - JWT_ACCESS_EXPIRACION=${JWT_ACCESS_EXPIRACION:-15m}
+      - JWT_REFRESH_EXPIRACION=${JWT_REFRESH_EXPIRACION:-24h}
+      - SESION_TIMEOUT_INACTIVIDAD=${SESION_TIMEOUT_INACTIVIDAD:-30m}
+      - SESION_TIMEOUT_ABSOLUTO=${SESION_TIMEOUT_ABSOLUTO:-168h}
+      - SESION_MAX_REFRESCOS=${SESION_MAX_REFRESCOS:-0}
+      - BLOQUEO_IP_MAX_INTENTOS=${BLOQUEO_IP_MAX_INTENTOS:-20}
+      - BLOQUEO_IP_VENTANA=${BLOQUEO_IP_VENTANA:-15m}
+      - BLOQUEO_IP_DURACION=${BLOQUEO_IP_DURACION:-30m}
+      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-10}
+      - RATE_LIMIT_VENTANA=${RATE_LIMIT_VENTANA:-1m}
+      - CUENTA_BLOQUEO_MAX_INTENTOS=${CUENTA_BLOQUEO_MAX_INTENTOS:-5}
+      - CUENTA_BLOQUEO_DURACION=${CUENTA_BLOQUEO_DURACION:-15m}
+      - VERIFICACION_TOKEN_EXPIRACION=${VERIFICACION_TOKEN_EXPIRACION:-24h}
+      - VERIFICACION_MAX_REENVIOS=${VERIFICACION_MAX_REENVIOS:-5}
+      - VERIFICACION_VENTANA_REENVIOS=${VERIFICACION_VENTANA_REENVIOS:-24h}
+      - RECUPERACION_TOKEN_EXPIRACION=${RECUPERACION_TOKEN_EXPIRACION:-1h}
+      - RECUPERACION_RATE_LIMIT_IP_MAX=${RECUPERACION_RATE_LIMIT_IP_MAX:-3}
+      - RECUPERACION_RATE_LIMIT_USUARIO_MAX=${RECUPERACION_RATE_LIMIT_USUARIO_MAX:-1}
+      - RECUPERACION_RATE_LIMIT_VENTANA=${RECUPERACION_RATE_LIMIT_VENTANA:-15m}
+      - EMAIL_ASYNC=${EMAIL_ASYNC:-true}
+    restart: unless-stopped

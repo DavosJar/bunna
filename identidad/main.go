@@ -22,12 +22,7 @@ func main() {
 	}
 
 	reg := registry.NewRegistry(db, cfg)
-
-	// Construir facade con interfaces — nunca structs concretos
-	authFacade := facades.NewAuthFacade(
-		reg.GetServicioRegistro(),
-		reg.ServicioLogin,
-	)
+	allFacades := facades.NewAllFacades(reg)
 
 	// Parsear orígenes CORS
 	corsOrigins := []string{}
@@ -35,7 +30,7 @@ func main() {
 		corsOrigins = strings.Split(cfg.CORSOrigins, ",")
 	}
 
-	r := router.New(authFacade, router.Config{
+	r := router.New(allFacades, router.Config{
 		Version:     "1.0.0",
 		CORSOrigins: corsOrigins,
 	})

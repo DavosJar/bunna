@@ -6,20 +6,20 @@ import "time"
 // IntentoPorIP registra los intentos de login fallidos desde una dirección IP.
 // Se usa para implementar bloqueo por IP independiente del bloqueo por usuario.
 type IntentoPorIP struct {
-	id           string
-	ip           string
-	contador     int
-	ventanaInicio time.Time
+	id             string
+	ip             string
+	contador       int
+	ventanaInicio  time.Time
 	bloqueadoHasta time.Time
 }
 
 // NuevoIntentoPorIP crea un nuevo registro de intento para una IP.
 func NuevoIntentoPorIP(id, ip string, ahora time.Time) *IntentoPorIP {
 	return &IntentoPorIP{
-		id:            id,
-		ip:            ip,
-		contador:      1,
-		ventanaInicio: ahora,
+		id:             id,
+		ip:             ip,
+		contador:       1,
+		ventanaInicio:  ahora,
 		bloqueadoHasta: time.Time{},
 	}
 }
@@ -43,6 +43,11 @@ func (i *IntentoPorIP) IncrementarContador() {
 // Bloquear establece el tiempo de bloqueo para esta IP.
 func (i *IntentoPorIP) Bloquear(hasta time.Time) {
 	i.bloqueadoHasta = hasta
+}
+
+// Desbloquear elimina el bloqueo de esta IP.
+func (i *IntentoPorIP) Desbloquear() {
+	i.bloqueadoHasta = time.Time{}
 }
 
 // EstaBloqueada retorna true si la IP está bloqueada en el momento dado.

@@ -8,10 +8,11 @@ import (
 
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/bloqueo_ip"
 	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
-	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/login"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
+	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	usuario_domain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
+	"github.com/stretchr/testify/mock"
 )
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
@@ -31,12 +32,16 @@ func (m *mockUnitOfWork) Transaccional(ctx context.Context, fn func(tx sesiones_
 	}
 	return fn(m)
 }
-func (m *mockUnitOfWork) SesionRepositorio() sesiones_domain.SesionRepositorio             { return m.sesionRepo }
-func (m *mockUnitOfWork) CredencialesRepositorio() seguridad_domain.CredencialesRepositorio { return m.credRepo }
-func (m *mockUnitOfWork) UsuarioRepositorio() usuario_domain.UsuarioRepositorio             { return m.usuarioRepo }
-func (m *mockUnitOfWork) EncriptacionServicio() seguridad_domain.EncriptacionServicio       { return m.encriptacion }
-func (m *mockUnitOfWork) TokenServicio() sesiones_domain.TokenServicio                      { return m.tokenServicio }
-func (m *mockUnitOfWork) GeneradorID() shared_domain.GeneradorID                            { return m.generadorID }
+func (m *mockUnitOfWork) SesionRepositorio() sesiones_domain.SesionRepositorio { return m.sesionRepo }
+func (m *mockUnitOfWork) CredencialesRepositorio() seguridad_domain.CredencialesRepositorio {
+	return m.credRepo
+}
+func (m *mockUnitOfWork) UsuarioRepositorio() usuario_domain.UsuarioRepositorio { return m.usuarioRepo }
+func (m *mockUnitOfWork) EncriptacionServicio() seguridad_domain.EncriptacionServicio {
+	return m.encriptacion
+}
+func (m *mockUnitOfWork) TokenServicio() sesiones_domain.TokenServicio { return m.tokenServicio }
+func (m *mockUnitOfWork) GeneradorID() shared_domain.GeneradorID       { return m.generadorID }
 
 // mockUsuarioRepo
 type mockUsuarioRepo struct {
@@ -54,7 +59,7 @@ func (m *mockUsuarioRepo) Eliminar(ctx context.Context, id string) error { retur
 func (m *mockUsuarioRepo) ObtenerPorID(ctx context.Context, id string) (*usuario_domain.Usuario, error) {
 	return nil, nil
 }
-func (m *mockUsuarioRepo) Listar(ctx context.Context, spec usuario_domain.EspecificacionUsuario, pag usuario_domain.Paginacion) ([]*usuario_domain.Usuario, error) {
+func (m *mockUsuarioRepo) Listar(ctx context.Context, spec usuario_domain.EspecificacionUsuario, pag shared_domain.Paginacion) ([]*usuario_domain.Usuario, error) {
 	return m.usuarios, m.err
 }
 
@@ -80,12 +85,13 @@ func (m *mockCredencialesRepo) ObtenerPorUsuarioID(ctx context.Context, id strin
 	return m.credenciales, m.err
 }
 func (m *mockCredencialesRepo) Eliminar(ctx context.Context, id string) error { return nil }
-func (m *mockCredencialesRepo) Find(ctx context.Context, spec seguridad_domain.EspecificacionCredenciales, pag seguridad_domain.Paginacion) ([]*seguridad_domain.CredencialesUsuario, error) {
+func (m *mockCredencialesRepo) Find(ctx context.Context, spec seguridad_domain.EspecificacionCredenciales, pag shared_domain.Paginacion) ([]*seguridad_domain.CredencialesUsuario, error) {
 	return nil, nil
 }
 
 // mockSesionRepo
 type mockSesionRepo struct {
+	mock.Mock
 	err error
 }
 
@@ -106,6 +112,13 @@ func (m *mockSesionRepo) ObtenerPorRefreshTokenHash(ctx context.Context, hash st
 }
 func (m *mockSesionRepo) ListarActivasPorUsuarioID(ctx context.Context, usuarioID string, ahora time.Time) ([]*sesiones_domain.Sesion, error) {
 	return nil, nil
+}
+func (m *mockSesionRepo) Listar(ctx context.Context, spec sesiones_domain.EspecificacionSesion, pag shared_domain.Paginacion) ([]*sesiones_domain.Sesion, error) {
+	args := m.Called(ctx, spec, pag)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*sesiones_domain.Sesion), args.Error(1)
 }
 func (m *mockSesionRepo) InvalidarTodasPorUsuarioID(ctx context.Context, usuarioID string) error {
 	return nil
@@ -128,7 +141,7 @@ type mockTokenServicio struct {
 	failRefresh bool
 }
 
-func (m *mockTokenServicio) GenerarAccessToken(usuarioID, sesionID string) (string, time.Time, error) {
+func (m *mockTokenServicio) GenerarAccessToken(usuarioID, sesionID string, tenantID string, rol string) (string, time.Time, error) {
 	if m.failAccess {
 		return "", time.Time{}, errors.New("fallo access token")
 	}
@@ -157,6 +170,7 @@ func (m *mockGeneradorID) NextID(ctx context.Context) (string, error) {
 
 // mockIntentoIPBloqueoRepo
 type mockIntentoIPBloqueoRepo struct {
+	mock.Mock
 	intento    *seguridad_domain.IntentoPorIP
 	errObtener error
 }
@@ -169,6 +183,13 @@ func (m *mockIntentoIPBloqueoRepo) Crear(ctx context.Context, i *seguridad_domai
 }
 func (m *mockIntentoIPBloqueoRepo) Actualizar(ctx context.Context, i *seguridad_domain.IntentoPorIP) (*seguridad_domain.IntentoPorIP, error) {
 	return i, nil
+}
+func (m *mockIntentoIPBloqueoRepo) Listar(ctx context.Context, spec seguridad_domain.EspecificacionIntentoIP, pag shared_domain.Paginacion) ([]*seguridad_domain.IntentoPorIP, error) {
+	args := m.Called(ctx, spec, pag)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*seguridad_domain.IntentoPorIP), args.Error(1)
 }
 func (m *mockIntentoIPBloqueoRepo) EliminarExpirados(ctx context.Context, ahora time.Time, ventana time.Duration) error {
 	return nil

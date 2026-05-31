@@ -38,12 +38,6 @@ func TestPuedeTransicionarDeDesdeFormatos(t *testing.T) {
 			valido:  true,
 		},
 		{
-			nombre:  "PENDIENTE a VERIFICACION_FALLIDA",
-			origen:  PENDIENTE_VERIFICACION,
-			destino: VERIFICACION_FALLIDA,
-			valido:  true,
-		},
-		{
 			nombre:  "PENDIENTE a REENVIO_SOLICITADO",
 			origen:  PENDIENTE_VERIFICACION,
 			destino: REENVIO_SOLICITADO,
@@ -62,18 +56,6 @@ func TestPuedeTransicionarDeDesdeFormatos(t *testing.T) {
 			valido:  false,
 		},
 		{
-			nombre:  "VERIFICACION_FALLIDA a REENVIO_SOLICITADO",
-			origen:  VERIFICACION_FALLIDA,
-			destino: REENVIO_SOLICITADO,
-			valido:  true,
-		},
-		{
-			nombre:  "VERIFICACION_FALLIDA a VERIFICADO (inválido)",
-			origen:  VERIFICACION_FALLIDA,
-			destino: VERIFICADO,
-			valido:  false,
-		},
-		{
 			nombre:  "REENVIO_SOLICITADO a VERIFICADO",
 			origen:  REENVIO_SOLICITADO,
 			destino: VERIFICADO,
@@ -86,21 +68,21 @@ func TestPuedeTransicionarDeDesdeFormatos(t *testing.T) {
 			valido:  true,
 		},
 		{
-			nombre:  "REENVIO_SOLICITADO a VERIFICACION_FALLIDA",
-			origen:  REENVIO_SOLICITADO,
-			destino: VERIFICACION_FALLIDA,
-			valido:  true,
-		},
-		{
 			nombre:  "VERIFICADO es terminal (no puede ir a PENDIENTE)",
 			origen:  VERIFICADO,
 			destino: PENDIENTE_VERIFICACION,
 			valido:  false,
 		},
 		{
-			nombre:  "VERIFICADO es terminal (no puede ir a nada)",
+			nombre:  "VERIFICADO es terminal (no puede ir a ENLACE_EXPIRADO)",
 			origen:  VERIFICADO,
 			destino: ENLACE_EXPIRADO,
+			valido:  false,
+		},
+		{
+			nombre:  "VERIFICADO es terminal (no puede ir a REENVIO_SOLICITADO)",
+			origen:  VERIFICADO,
+			destino: REENVIO_SOLICITADO,
 			valido:  false,
 		},
 	}
@@ -126,16 +108,14 @@ func TestPuedeTransicionarConEstadoInvalido(t *testing.T) {
 }
 
 func TestTransicionesVerificacionMapaCompleto(t *testing.T) {
-	// Verificar que el mapa de transiciones existe
-	if len(TransicionesVerificacion) == 0 {
-		t.Fatal("TransicionesVerificacion map está vacío")
+	// El mapa debe tener exactamente 4 estados (sin VERIFICACION_FALLIDA)
+	if len(TransicionesVerificacion) != 4 {
+		t.Fatalf("Se esperaban 4 estados en TransicionesVerificacion, obtuvo %d", len(TransicionesVerificacion))
 	}
 
-	// Verificar estados conocidos
 	estadosEsperados := []EstadoVerificacionCorreo{
 		PENDIENTE_VERIFICACION,
 		ENLACE_EXPIRADO,
-		VERIFICACION_FALLIDA,
 		REENVIO_SOLICITADO,
 		VERIFICADO,
 	}
@@ -148,7 +128,6 @@ func TestTransicionesVerificacionMapaCompleto(t *testing.T) {
 }
 
 func TestVerificadoEsTerminal(t *testing.T) {
-	// VERIFICADO debe ser terminal (sin transiciones posibles)
 	transiciones, existe := TransicionesVerificacion[VERIFICADO]
 
 	if !existe {
@@ -159,11 +138,9 @@ func TestVerificadoEsTerminal(t *testing.T) {
 		t.Errorf("VERIFICADO debería ser terminal (0 transiciones), obtuvo %d", len(transiciones))
 	}
 
-	// Verificar que no puede transicionar a ningún estado
 	estadosVerificacion := []EstadoVerificacionCorreo{
 		PENDIENTE_VERIFICACION,
 		ENLACE_EXPIRADO,
-		VERIFICACION_FALLIDA,
 		REENVIO_SOLICITADO,
 	}
 

@@ -1,4 +1,3 @@
-// Package jwt implementa TokenServicio usando HMAC-SHA256 (HS256).
 package jwt
 
 import (
@@ -10,48 +9,45 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// ConfigJWT contiene la configuración para generar y validar tokens JWT.
 type ConfigJWT struct {
-	// Secret es la clave HMAC-SHA256 para firmar los tokens.
-	Secret string
-
-	// ExpiracionAccess es la duración del access token.
-	ExpiracionAccess time.Duration
-
-	// ExpiracionRefresh es la duración del refresh token.
+	Secret            string
+	Issuer            string
+	ExpiracionAccess  time.Duration
 	ExpiracionRefresh time.Duration
 }
 
-// claimsJWT define la estructura de claims del JWT.
 type claimsJWT struct {
 	SesionID string `json:"sid"`
 	Tipo     string `json:"typ"`
+	TenantID string `json:"tenant_id,omitempty"`
+	Rol      string `json:"rol,omitempty"`
 	jwt.RegisteredClaims
 }
 
-// JWTTokenServicio implementa la interfaz TokenServicio usando JWT HS256.
 type JWTTokenServicio struct {
 	config ConfigJWT
 }
 
-// NewJWTTokenServicio crea una nueva instancia de JWTTokenServicio.
 func NewJWTTokenServicio(config ConfigJWT) sesiones_domain.TokenServicio {
 	return &JWTTokenServicio{config: config}
 }
 
-// GenerarAccessToken genera un JWT de tipo access para el usuario y sesión dados.
-func (s *JWTTokenServicio) GenerarAccessToken(usuarioID, sesionID string) (string, time.Time, error) {
+func (s *JWTTokenServicio) GenerarAccessToken(usuarioID, sesionID string, tenantID string, rol string) (string, time.Time, error) {
 	expira := time.Now().Add(s.config.ExpiracionAccess)
-	claims := claimsJWT{
+
+	jwtClaims := claimsJWT{
 		SesionID: sesionID,
 		Tipo:     "access",
+		TenantID: tenantID,
+		Rol:      rol,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   usuarioID,
+			Issuer:    s.config.Issuer,
 			ExpiresAt: jwt.NewNumericDate(expira),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwtClaims)
 	tokenString, err := token.SignedString([]byte(s.config.Secret))
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("error al firmar access token: %w", err)
@@ -59,7 +55,6 @@ func (s *JWTTokenServicio) GenerarAccessToken(usuarioID, sesionID string) (strin
 	return tokenString, expira, nil
 }
 
-// GenerarRefreshToken genera un JWT de tipo refresh para el usuario y sesión dados.
 func (s *JWTTokenServicio) GenerarRefreshToken(usuarioID, sesionID string) (string, time.Time, error) {
 	expira := time.Now().Add(s.config.ExpiracionRefresh)
 	claims := claimsJWT{
@@ -67,6 +62,7 @@ func (s *JWTTokenServicio) GenerarRefreshToken(usuarioID, sesionID string) (stri
 		Tipo:     "refresh",
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   usuarioID,
+			Issuer:    s.config.Issuer,
 			ExpiresAt: jwt.NewNumericDate(expira),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -79,24 +75,19 @@ func (s *JWTTokenServicio) GenerarRefreshToken(usuarioID, sesionID string) (stri
 	return tokenString, expira, nil
 }
 
-// ValidarAccessToken valida un access token y retorna sus claims si es válido.
 func (s *JWTTokenServicio) ValidarAccessToken(tokenString string) (*sesiones_domain.TokenClaims, error) {
 	return s.validarToken(tokenString, "access")
 }
 
-// ValidarRefreshToken valida un refresh token y retorna sus claims si es válido.
 func (s *JWTTokenServicio) ValidarRefreshToken(tokenString string) (*sesiones_domain.TokenClaims, error) {
 	return s.validarToken(tokenString, "refresh")
 }
 
-// HashearToken genera un hash SHA-256 del token para almacenamiento seguro.
-// El token en plano nunca se persiste en la base de datos.
 func (s *JWTTokenServicio) HashearToken(tokenString string) string {
 	hash := sha256.Sum256([]byte(tokenString))
 	return fmt.Sprintf("%x", hash)
 }
 
-// validarToken parsea y valida un JWT verificando firma, expiración y tipo.
 func (s *JWTTokenServicio) validarToken(tokenString, tipoEsperado string) (*sesiones_domain.TokenClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &claimsJWT{}, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -122,5 +113,7 @@ func (s *JWTTokenServicio) validarToken(tokenString, tipoEsperado string) (*sesi
 		SesionID:  claims.SesionID,
 		Tipo:      claims.Tipo,
 		Expira:    claims.ExpiresAt.Time,
+		TenantID:  claims.TenantID,
+		Rol:       claims.Rol,
 	}, nil
 }

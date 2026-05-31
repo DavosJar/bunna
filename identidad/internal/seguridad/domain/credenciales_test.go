@@ -91,15 +91,14 @@ func TestVerificarPassword_Incorrecto(t *testing.T) {
 	}
 }
 
-func TestMarcarIntentoFallido_IncrementaContador(t *testing.T) {
+func TestIncrementarIntentoFallido_IncrementaContador(t *testing.T) {
 	// Arrange
 	cred := NuevaCredencialesUsuario("user1", "hash")
-	ahora := time.Now()
 
 	// Act
-	cred.MarcarIntentoFallido(ahora)
-	cred.MarcarIntentoFallido(ahora)
-	cred.MarcarIntentoFallido(ahora)
+	cred.IncrementarIntentoFallido()
+	cred.IncrementarIntentoFallido()
+	cred.IncrementarIntentoFallido()
 
 	// Assert
 	if cred.intentosFallidos != 3 {
@@ -110,22 +109,23 @@ func TestMarcarIntentoFallido_IncrementaContador(t *testing.T) {
 	}
 }
 
-func TestMarcarIntentoFallido_BloqueaDespues5Intentos(t *testing.T) {
+func TestIncrementarIntentoFallido_BloqueoExplicito(t *testing.T) {
 	// Arrange
 	cred := NuevaCredencialesUsuario("user1", "hash")
 	ahora := time.Now()
 
-	// Act - marcar 5 intentos fallidos
+	// Act - incrementar 5 intentos y luego bloquear explícitamente
 	for i := 0; i < 5; i++ {
-		cred.MarcarIntentoFallido(ahora)
+		cred.IncrementarIntentoFallido()
 	}
+	cred.BloquearHasta(ahora.Add(15 * time.Minute))
 
 	// Assert
 	if cred.intentosFallidos != 5 {
 		t.Errorf("expected intentosFallidos 5, got %d", cred.intentosFallidos)
 	}
 	if cred.bloqueadoHasta.IsZero() {
-		t.Error("expected bloqueadoHasta to be set after 5 intentos")
+		t.Error("expected bloqueadoHasta to be set after explicit BloquearHasta")
 	}
 	// Verificar que el bloqueo es aproximadamente 15 minutos desde ahora
 	expectedMin := ahora.Add(14 * time.Minute)
@@ -140,8 +140,9 @@ func TestResetearIntentos_LimpiaBloqueoyContador(t *testing.T) {
 	cred := NuevaCredencialesUsuario("user1", "hash")
 	ahora := time.Now()
 	for i := 0; i < 5; i++ {
-		cred.MarcarIntentoFallido(ahora)
+		cred.IncrementarIntentoFallido()
 	}
+	cred.BloquearHasta(ahora.Add(15 * time.Minute))
 	if cred.intentosFallidos != 5 {
 		t.Fatal("expected intentosFallidos to be 5 before reset")
 	}

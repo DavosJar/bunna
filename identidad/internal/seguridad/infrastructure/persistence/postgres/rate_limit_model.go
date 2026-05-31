@@ -10,12 +10,12 @@ import (
 // Separado de IntentoIPModel para evitar conflictos entre el rate limiter
 // (cuenta requests totales) y el bloqueo por IP (cuenta intentos fallidos).
 type RateLimitIPModel struct {
-	ID             string    `gorm:"column:id;primaryKey;type:varchar(36)"`
-	IP             string    `gorm:"column:ip;type:varchar(45);not null;index"`
-	Contador       int       `gorm:"column:contador;type:int;not null;default:1"`
-	VentanaInicio  time.Time `gorm:"column:ventana_inicio;not null"`
-	BloqueadoHasta time.Time `gorm:"column:bloqueado_hasta"`
-	FechaCreacion  time.Time `gorm:"column:fecha_creacion;not null"`
+	ID                 string    `gorm:"column:id;primaryKey;type:varchar(36)"`
+	IP                 string    `gorm:"column:ip;type:varchar(45);not null;index"`
+	Contador           int       `gorm:"column:contador;type:int;not null;default:1"`
+	VentanaInicio      time.Time `gorm:"column:ventana_inicio;not null"`
+	BloqueadoHasta     time.Time `gorm:"column:bloqueado_hasta"`
+	FechaCreacion      time.Time `gorm:"column:fecha_creacion;not null"`
 	FechaActualizacion time.Time `gorm:"column:fecha_actualizacion;not null"`
 }
 
@@ -36,12 +36,12 @@ func (m *RateLimitIPModel) ToDomain() *seguridad_domain.IntentoPorIP {
 func RateLimitIPFromDomain(i *seguridad_domain.IntentoPorIP) *RateLimitIPModel {
 	ahora := time.Now()
 	return &RateLimitIPModel{
-		ID:             i.ID(),
-		IP:             i.IP(),
-		Contador:       i.Contador(),
-		VentanaInicio:  i.VentanaInicio(),
-		BloqueadoHasta: i.BloqueadoHasta(),
-		FechaCreacion:  ahora,
+		ID:                 i.ID(),
+		IP:                 i.IP(),
+		Contador:           i.Contador(),
+		VentanaInicio:      i.VentanaInicio(),
+		BloqueadoHasta:     i.BloqueadoHasta(),
+		FechaCreacion:      ahora,
 		FechaActualizacion: ahora,
 	}
 }

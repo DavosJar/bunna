@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 	"gorm.io/gorm"
 )
@@ -82,7 +83,7 @@ func (r *usuarioRepositorio) ObtenerPorID(ctx context.Context, id string) (*usua
 	return model.ToDomain(), nil
 }
 
-func (r *usuarioRepositorio) Listar(ctx context.Context, spec usuario.EspecificacionUsuario, pag usuario.Paginacion) ([]*usuario.Usuario, error) {
+func (r *usuarioRepositorio) Listar(ctx context.Context, spec usuario.EspecificacionUsuario, pag domain.Paginacion) ([]*usuario.Usuario, error) {
 	query := r.db.WithContext(ctx).Model(&UsuarioModel{})
 
 	mapeoColumnas := map[string]string{
@@ -132,7 +133,7 @@ func (r *usuarioRepositorio) Listar(ctx context.Context, spec usuario.Especifica
 		}
 
 		orden := "ASC"
-		if ord.Tipo == usuario.DESC {
+		if ord.Tipo == domain.DESC {
 			orden = "DESC"
 		}
 		query = query.Order(columnaDB + " " + orden)

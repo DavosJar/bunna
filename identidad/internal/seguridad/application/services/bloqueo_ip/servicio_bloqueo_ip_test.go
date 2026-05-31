@@ -8,14 +8,17 @@ import (
 
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/bloqueo_ip"
 	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
+	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
+	"github.com/stretchr/testify/mock"
 )
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
 type mockIntentoIPRepo struct {
-	intento    *seguridad_domain.IntentoPorIP
-	errObtener error
-	creado     *seguridad_domain.IntentoPorIP
+	mock.Mock
+	intento     *seguridad_domain.IntentoPorIP
+	errObtener  error
+	creado      *seguridad_domain.IntentoPorIP
 	actualizado *seguridad_domain.IntentoPorIP
 }
 
@@ -29,6 +32,13 @@ func (m *mockIntentoIPRepo) Crear(ctx context.Context, i *seguridad_domain.Inten
 func (m *mockIntentoIPRepo) Actualizar(ctx context.Context, i *seguridad_domain.IntentoPorIP) (*seguridad_domain.IntentoPorIP, error) {
 	m.actualizado = i
 	return i, nil
+}
+func (m *mockIntentoIPRepo) Listar(ctx context.Context, spec seguridad_domain.EspecificacionIntentoIP, pag shared_domain.Paginacion) ([]*seguridad_domain.IntentoPorIP, error) {
+	args := m.Called(ctx, spec, pag)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*seguridad_domain.IntentoPorIP), args.Error(1)
 }
 func (m *mockIntentoIPRepo) EliminarExpirados(ctx context.Context, ahora time.Time, ventana time.Duration) error {
 	return nil

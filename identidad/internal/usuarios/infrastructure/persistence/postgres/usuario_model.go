@@ -25,14 +25,17 @@ func (UsuarioModel) TableName() string {
 }
 
 func (m *UsuarioModel) ToDomain() *usuario.Usuario {
+	correoVO := usuario.NuevoCorreoElectronicoDesdeBD(
+		m.Correo,
+		usuario.EstadoVerificacionCorreo(m.EstadoVerificacionCorreo),
+	)
 	return usuario.NewUsuarioFromPersistence(
 		m.ID.String(),
 		m.Nombre,
 		m.Apellido,
-		m.Correo,
+		correoVO,
 		m.Telefono,
 		usuario.EstadoUsuario(m.Estado),
-		usuario.EstadoVerificacionCorreo(m.EstadoVerificacionCorreo),
 		m.FechaCreacion,
 		m.FechaActualizacion,
 	)

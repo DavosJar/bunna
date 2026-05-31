@@ -17,11 +17,13 @@ type Config struct {
 	DBSSLMode  string
 
 	Port        string
+	FrontendURL string
 	CORSOrigins string
 
 	BcryptCost int
 
 	JWTSecret            string
+	JWTIssuer            string
 	JWTAccessExpiracion  time.Duration
 	JWTRefreshExpiracion time.Duration
 
@@ -35,6 +37,24 @@ type Config struct {
 
 	RateLimitMaxRequests int
 	RateLimitVentana     time.Duration
+
+	CuentaBloqueoMaxIntentos int
+	CuentaBloqueoDuracion    time.Duration
+
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUser     string
+	SMTPPassword string
+	SMTPFrom     string
+
+	VerificacionTokenExpiracion time.Duration
+	VerificacionMaxReenvios     int
+	VerificacionVentanaReenvios time.Duration
+
+	RecuperacionTokenExpiracion     time.Duration
+	RecuperacionRateLimitIPMax      int
+	RecuperacionRateLimitUsuarioMax int
+	RecuperacionRateLimitVentana    time.Duration
 }
 
 // LoadConfig carga y valida todas las variables de entorno.
@@ -84,6 +104,45 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	verificacionTokenExpiracion, err := parsarDuracion("VERIFICACION_TOKEN_EXPIRACION", "24h")
+	if err != nil {
+		return nil, err
+	}
+	verificacionMaxReenvios, err := parsarEnteroSinRango("VERIFICACION_MAX_REENVIOS", "5")
+	if err != nil {
+		return nil, err
+	}
+	verificacionVentanaReenvios, err := parsarDuracion("VERIFICACION_VENTANA_REENVIOS", "24h")
+	if err != nil {
+		return nil, err
+	}
+
+	recuperacionTokenExpiracion, err := parsarDuracion("RECUPERACION_TOKEN_EXPIRACION", "1h")
+	if err != nil {
+		return nil, err
+	}
+	recuperacionRateLimitIPMax, err := parsarEnteroSinRango("RECUPERACION_RATE_LIMIT_IP_MAX", "3")
+	if err != nil {
+		return nil, err
+	}
+	recuperacionRateLimitUsuarioMax, err := parsarEnteroSinRango("RECUPERACION_RATE_LIMIT_USUARIO_MAX", "1")
+	if err != nil {
+		return nil, err
+	}
+	recuperacionRateLimitVentana, err := parsarDuracion("RECUPERACION_RATE_LIMIT_VENTANA", "15m")
+	if err != nil {
+		return nil, err
+	}
+
+	cuentaBloqueoMaxIntentos, err := parsarEnteroSinRango("CUENTA_BLOQUEO_MAX_INTENTOS", "5")
+	if err != nil {
+		return nil, err
+	}
+	cuentaBloqueoDuracion, err := parsarDuracion("CUENTA_BLOQUEO_DURACION", "15m")
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := &Config{
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     getEnv("DB_PORT", "5432"),
@@ -93,11 +152,13 @@ func LoadConfig() (*Config, error) {
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 
 		Port:        getEnv("PORT", "8080"),
+			FrontendURL: getEnv("FRONTEND_URL", "http://localhost:5173"),
 		CORSOrigins: getEnv("CORS_ORIGINS", "*"),
 
 		BcryptCost: bcryptCost,
 
 		JWTSecret:            getEnv("JWT_SECRET", ""),
+		JWTIssuer:            getEnv("JWT_ISSUER", "ServicioIdentidad"),
 		JWTAccessExpiracion:  jwtAccessExpiracion,
 		JWTRefreshExpiracion: jwtRefreshExpiracion,
 
@@ -111,6 +172,24 @@ func LoadConfig() (*Config, error) {
 
 		RateLimitMaxRequests: rateLimitMaxRequests,
 		RateLimitVentana:     rateLimitVentana,
+
+		CuentaBloqueoMaxIntentos: cuentaBloqueoMaxIntentos,
+		CuentaBloqueoDuracion:    cuentaBloqueoDuracion,
+
+		SMTPHost:     getEnv("SMTP_HOST", ""),
+		SMTPPort:     getEnv("SMTP_PORT", "587"),
+		SMTPUser:     getEnv("SMTP_USER", ""),
+		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
+		SMTPFrom:     getEnv("SMTP_FROM", ""),
+
+		VerificacionTokenExpiracion: verificacionTokenExpiracion,
+		VerificacionMaxReenvios:     verificacionMaxReenvios,
+		VerificacionVentanaReenvios: verificacionVentanaReenvios,
+
+		RecuperacionTokenExpiracion:     recuperacionTokenExpiracion,
+		RecuperacionRateLimitIPMax:      recuperacionRateLimitIPMax,
+		RecuperacionRateLimitUsuarioMax: recuperacionRateLimitUsuarioMax,
+		RecuperacionRateLimitVentana:    recuperacionRateLimitVentana,
 	}
 
 	if cfg.DBPassword == "" {

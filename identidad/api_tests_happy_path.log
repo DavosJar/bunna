@@ -1,0 +1,10 @@
+Iniciando pruebas de la API (Ruta Feliz)...
+=====================================
+=====================================
+⚙️ TEST: GET /health
+✅ ÉXITO (Status: 200)
+{"$schema":"http://localhost:8080/schemas/HealthOutputBody.json","status":"ok"}
+=====================================
+⚙️ TEST: POST /api/v1/auth/register
+✅ ÉXITO (Status: 201)
+{"$schema":"http://localhost:8080/schemas/ApiResponseRegisterResponse.json","data":{"usuario_id":"019e573a-d847-74b2-9d26-e13dfb35bfa4","correo":"test_1779579934@bunna.com","estado":"NO_VERIFICADO"},"_links":{"self":{"href":"/api/v1/usuarios/019e573a-d847-74b2-9d26-e13dfb35bfa4","method":"GET"}}}

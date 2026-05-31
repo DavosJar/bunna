@@ -51,7 +51,7 @@ func (h *LoginHandler) handle(ctx context.Context, input *LoginInput) (*LoginOut
 		IPOrigen: input.RealIP,
 	})
 	if err != nil {
-		return nil, huma.Error401Unauthorized(err.Error())
+		return nil, presentation.MapearError(err)
 	}
 
 	// CON-PRES-005: links HATEOAS los construye el handler
@@ -73,6 +73,8 @@ func (h *LoginHandler) handle(ctx context.Context, input *LoginInput) (*LoginOut
 		ExpiresIn:    resp.ExpiresIn,
 		TokenType:    resp.TokenType,
 		UsuarioID:    resp.UsuarioID,
+		TenantID:     resp.TenantID,
+		Rol:          resp.Rol,
 	}, links)
 
 	return out, nil

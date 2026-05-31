@@ -2,7 +2,6 @@ package usuario
 
 import "errors"
 
-// Errores de validación de usuario
 var (
 	ErrIDRequerido                       = errors.New("id requerido")
 	ErrNombreRequerido                   = errors.New("nombre requerido")

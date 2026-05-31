@@ -42,7 +42,6 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Clear error after 5s
   useEffect(() => {
     if (error) {
       const t = setTimeout(() => setError(null), 5000);
@@ -62,13 +61,14 @@ export function AuthProvider({ children }) {
         id: data.usuario_id,
         email: correo,
         nombre: correo.split('@')[0],
-        rol: 'caficultor',
+        tenantID: data.tenant_id,
+        rol: data.rol || 'caficultor',
         sessionId: payload?.sid,
       };
 
       saveSession(data.access_token, data.refresh_token, userData);
       setUser(userData);
-      return { success: true };
+      return { success: true, user: userData };
     } catch (err) {
       const msg = err.response?.data?.detail || 'Error al iniciar sesión';
       setError(msg);
@@ -83,22 +83,7 @@ export function AuthProvider({ children }) {
     setError(null);
     try {
       await registrarUsuario({ nombre, apellido, correo, password, telefono });
-      // Auto-login after successful registration
-      const loginRes = await loginUsuario({ correo, password });
-      const data = loginRes.data;
-      const payload = parseJWT(data.access_token);
-
-      const userData = {
-        id: data.usuario_id,
-        email: correo,
-        nombre: `${nombre} ${apellido}`.trim(),
-        rol: 'caficultor',
-        sessionId: payload?.sid,
-      };
-
-      saveSession(data.access_token, data.refresh_token, userData);
-      setUser(userData);
-      return { success: true };
+      return { success: true, correo };
     } catch (err) {
       const detail = err.response?.data?.detail || '';
       let msg = 'Error al registrarse';

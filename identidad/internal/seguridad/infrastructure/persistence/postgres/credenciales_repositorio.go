@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
+	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	"gorm.io/gorm"
 )
 
@@ -79,7 +80,7 @@ func (r *credencialesRepositorio) Eliminar(ctx context.Context, usuarioID string
 }
 
 // Método Find implementa búsqueda avanzada con filtros y paginación
-func (r *credencialesRepositorio) Find(ctx context.Context, spec domain.EspecificacionCredenciales, pag domain.Paginacion) ([]*domain.CredencialesUsuario, error) {
+func (r *credencialesRepositorio) Find(ctx context.Context, spec domain.EspecificacionCredenciales, pag shareddomain.Paginacion) ([]*domain.CredencialesUsuario, error) {
 	query := r.db.WithContext(ctx).Model(&CredencialesModel{})
 
 	mapeoColumnas := map[string]string{
@@ -129,7 +130,7 @@ func (r *credencialesRepositorio) Find(ctx context.Context, spec domain.Especifi
 		}
 
 		orden := "ASC"
-		if ord.Tipo == domain.DESC {
+		if ord.Tipo == shareddomain.DESC {
 			orden = "DESC"
 		}
 		query = query.Order(columnaDB + " " + orden)

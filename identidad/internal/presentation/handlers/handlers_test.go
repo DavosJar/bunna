@@ -11,9 +11,10 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humagin"
-	"github.com/gin-gonic/gin"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/facades"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/handlers"
+	login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/login"
+	"github.com/gin-gonic/gin"
 )
 
 // ── Mock AuthFacade ───────────────────────────────────────────────────────────
@@ -31,6 +32,18 @@ func (m *mockAuthFacade) Registrar(ctx context.Context, cmd facades.ComandoRegis
 
 func (m *mockAuthFacade) Login(ctx context.Context, cmd facades.ComandoLogin) (*facades.RespuestaLogin, error) {
 	return m.loginResp, m.loginErr
+}
+
+func (m *mockAuthFacade) Refresh(ctx context.Context, cmd facades.ComandoRefresh) (*facades.RespuestaRefresh, error) {
+	return nil, nil
+}
+
+func (m *mockAuthFacade) Logout(ctx context.Context, cmd facades.ComandoLogout) (*facades.RespuestaLogout, error) {
+	return nil, nil
+}
+
+func (m *mockAuthFacade) LogoutAll(ctx context.Context, cmd facades.ComandoLogoutAll) (*facades.RespuestaLogout, error) {
+	return nil, nil
 }
 
 // ── Helper ────────────────────────────────────────────────────────────────────
@@ -214,7 +227,7 @@ func TestLoginHandler_IncluyeLinks(t *testing.T) {
 // AC-PRES-006: credenciales incorrectas → 401
 func TestLoginHandler_ErrorFacade_Retorna401(t *testing.T) {
 	facade := &mockAuthFacade{
-		loginErr: errors.New("credenciales inválidas"),
+		loginErr: login.ErrCredencialesInvalidas,
 	}
 	router, _ := setupRouter(facade)
 

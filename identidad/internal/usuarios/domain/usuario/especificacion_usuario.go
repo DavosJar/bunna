@@ -1,31 +1,9 @@
 package usuario
 
+import "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
+
 type EspecificacionUsuario struct {
-	ListaLiltros []CriterioFiltro
-}
-
-type CriterioFiltro struct {
-	Campo    string
-	Operador string
-	Valor    any
-}
-
-type Paginacion struct {
-	Pagina       int
-	TamanoPagina int
-	Ordenaciones []Ordenacion
-}
-
-type TipoOrdenacion string
-
-const (
-	ASC  TipoOrdenacion = "ASC"
-	DESC TipoOrdenacion = "DESC"
-)
-
-type Ordenacion struct {
-	Campo string
-	Tipo  TipoOrdenacion
+	ListaLiltros []domain.CriterioFiltro
 }
 
 var ColumnasPermitidas = map[string]bool{
@@ -39,5 +17,5 @@ var ColumnasPermitidas = map[string]bool{
 	"estadoVerificacionCorreo": true,
 }
 
-//en la capa de infraestructura se validará que los campos de filtro y ordenación
-//con un if !ColumnasPermitidas[campo] para evitar inyecciones SQL
+// en la capa de infraestructura se validará que los campos de filtro y ordenación
+// con un if !ColumnasPermitidas[campo] para evitar inyecciones SQL

@@ -1,0 +1,171 @@
+import axios from 'axios';
+
+const API_BASE = import.meta.env.VITE_AUTH_API_URL || 'http://localhost:8080';
+
+const client = axios.create({
+  baseURL: API_BASE,
+  timeout: 15000,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// Interceptor para agregar token automáticamente
+client.interceptors.request.use((config) => {
+  const token = localStorage.getItem('bunna_access_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// ── Mi Perfil ──────────────────────────────────────────────
+export async function getMiPerfil() {
+  const res = await client.get('/api/v1/mi-perfil');
+  return res.data.data;
+}
+
+export async function updateMiPerfil({ nombre, apellido }) {
+  const res = await client.put('/api/v1/mi-perfil', { nombre, apellido });
+  return res.data.data;
+}
+
+export async function updateMiPassword({ password_actual, nueva_password }) {
+  const res = await client.put('/api/v1/mi-password', { password_actual, nueva_password });
+  return res.data.data;
+}
+
+// ── Recuperación de contraseña ─────────────────────────────
+export async function solicitarRecuperacion({ correo }) {
+  const res = await client.post('/api/v1/recuperacion/solicitar', { correo });
+  return res.data.data;
+}
+
+export async function validarTokenRecuperacion({ token }) {
+  const res = await client.post('/api/v1/recuperacion/validar', { token });
+  return res.data.data;
+}
+
+export async function confirmarRecuperacion({ token, nueva_password }) {
+  const res = await client.post('/api/v1/recuperacion/confirmar', { token, nueva_password });
+  return res.data.data;
+}
+
+// ── Verificación de correo ─────────────────────────────────
+export async function solicitarVerificacion() {
+  const res = await client.post('/api/v1/verificacion/solicitar');
+  return res.data.data;
+}
+
+export async function confirmarVerificacion({ token }) {
+  const res = await client.post('/api/v1/verificacion/confirmar', { token });
+  return res.data.data;
+}
+
+export async function reenviarVerificacion() {
+  const res = await client.post('/api/v1/verificacion/reenviar');
+  return res.data.data;
+}
+
+// ── Usuarios (admin) ───────────────────────────────────────
+export async function getUsuarios({ pagina = 1, tamano = 20, correo = '', estado = '' } = {}) {
+  const params = { pagina, tamano };
+  if (correo) params.correo = correo;
+  if (estado) params.estado = estado;
+  const res = await client.get('/api/v1/usuarios', { params });
+  return res.data.data;
+}
+
+export async function createUsuario({ correo, nombre, apellido, password }) {
+  const res = await client.post('/api/v1/usuarios', { correo, nombre, apellido, password });
+  return res.data.data;
+}
+
+export async function updateUsuario(usuarioID, { nombre, apellido }) {
+  const res = await client.put(`/api/v1/usuarios/${usuarioID}`, { nombre, apellido });
+  return res.data.data;
+}
+
+export async function bajaUsuario(usuarioID, motivo = '') {
+  const res = await client.delete(`/api/v1/usuarios/${usuarioID}`, { data: { motivo } });
+  return res.data.data;
+}
+
+export async function expulsarUsuario(usuarioID) {
+  const res = await client.post(`/api/v1/usuarios/${usuarioID}/expulsar`);
+  return res.data.data;
+}
+
+export async function unlockUsuario(usuarioID) {
+  const res = await client.post(`/api/v1/usuarios/${usuarioID}/unlock`);
+  return res.data.data;
+}
+
+export async function resetPasswordUsuario(usuarioID, nueva_password) {
+  const res = await client.post(`/api/v1/usuarios/${usuarioID}/reset-password`, { nueva_password });
+  return res.data.data;
+}
+
+// ── Roles (admin) ──────────────────────────────────────────
+export async function getRoles({ pagina = 1, tamano = 20 } = {}) {
+  const res = await client.get('/api/v1/roles', { params: { pagina, tamano } });
+  return res.data.data;
+}
+
+export async function createRol({ nombre, descripcion, permisos = [] }) {
+  const res = await client.post('/api/v1/roles', { nombre, descripcion, permisos });
+  return res.data.data;
+}
+
+export async function updateRol(rolID, { nombre, descripcion }) {
+  const res = await client.put(`/api/v1/roles/${rolID}`, { nombre, descripcion });
+  return res.data.data;
+}
+
+export async function deleteRol(rolID) {
+  const res = await client.delete(`/api/v1/roles/${rolID}`);
+  return res.data.data;
+}
+
+export async function asignarRol(usuarioID, { rol_id, tenant_id = '' }) {
+  const res = await client.post(`/api/v1/usuarios/${usuarioID}/roles`, { rol_id, tenant_id });
+  return res.data.data;
+}
+
+export async function revocarRol(usuarioID, rolID) {
+  const res = await client.delete(`/api/v1/usuarios/${usuarioID}/roles/${rolID}`);
+  return res.data.data;
+}
+
+// ── Sesiones (admin) ───────────────────────────────────────
+export async function getSesiones({ pagina = 1, tamano = 20 } = {}) {
+  const res = await client.get('/api/v1/sesiones', { params: { pagina, tamano } });
+  return res.data.data;
+}
+
+export async function cerrarSesion(sesionID) {
+  const res = await client.delete(`/api/v1/sesiones/${sesionID}`);
+  return res.data.data;
+}
+
+// ── IPs bloqueadas (admin) ─────────────────────────────────
+export async function getIPsBloqueadas({ pagina = 1, tamano = 20 } = {}) {
+  const res = await client.get('/api/v1/ips-bloqueadas', { params: { pagina, tamano } });
+  return res.data.data;
+}
+
+export async function desbloquearIP(ip) {
+  const res = await client.delete(`/api/v1/ips-bloqueadas/${ip}`);
+  return res.data.data;
+}
+// ── Permisos de roles ──────────────────────────────────────────
+export async function getPermisos() {
+  const res = await client.get('/api/v1/permisos');
+  return res.data?.data || {};
+}
+
+export async function asignarPermisoARol(rolID, permisoCodigo) {
+  const res = await client.post(`/api/v1/roles/${rolID}/permisos`, { permiso_codigo: permisoCodigo });
+  return res.data?.data || {};
+}
+
+export async function revocarPermisoDeRol(rolID, permisoCodigo) {
+  const res = await client.delete(`/api/v1/roles/${rolID}/permisos/${permisoCodigo}`);
+  return res.data?.data || {};
+}

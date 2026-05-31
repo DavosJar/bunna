@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
+	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	postgresdriver "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -56,7 +57,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"").Error; err != nil {
 		t.Fatalf("Failed to create uuid-ossp extension: %v", err)
 	}
-	
+
 	if err := db.AutoMigrate(&CredencialesModel{}); err != nil {
 		t.Fatalf("Failed to migrate database: %v", err)
 	}
@@ -125,7 +126,7 @@ func TestCrearMultipleCredenciales(t *testing.T) {
 	}
 
 	// Verify all were created
-	all, err := repo.Find(ctx, domain.EspecificacionCredenciales{}, domain.Paginacion{
+	all, err := repo.Find(ctx, domain.EspecificacionCredenciales{}, shareddomain.Paginacion{
 		Pagina:       1,
 		TamanoPagina: 100,
 	})
@@ -334,7 +335,7 @@ func TestFindSinFiltros(t *testing.T) {
 	}
 
 	// Act
-	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{}, domain.Paginacion{
+	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{}, shareddomain.Paginacion{
 		Pagina:       1,
 		TamanoPagina: 100,
 	})
@@ -371,10 +372,10 @@ func TestFindConFiltroActivo(t *testing.T) {
 
 	// Act - Filter for active = true
 	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{
-		ListaFiltros: []domain.CriterioFiltro{
+		ListaFiltros: []shareddomain.CriterioFiltro{
 			{Campo: "activo", Operador: "=", Valor: true},
 		},
-	}, domain.Paginacion{
+	}, shareddomain.Paginacion{
 		Pagina:       1,
 		TamanoPagina: 100,
 	})
@@ -416,10 +417,10 @@ func TestFindConFiltroInactivo(t *testing.T) {
 
 	// Act
 	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{
-		ListaFiltros: []domain.CriterioFiltro{
+		ListaFiltros: []shareddomain.CriterioFiltro{
 			{Campo: "activo", Operador: "=", Valor: false},
 		},
-	}, domain.Paginacion{
+	}, shareddomain.Paginacion{
 		Pagina:       1,
 		TamanoPagina: 100,
 	})
@@ -454,10 +455,10 @@ func TestFindConFiltroNegacion(t *testing.T) {
 
 	// Act - Find all that are NOT inactive (i.e., active)
 	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{
-		ListaFiltros: []domain.CriterioFiltro{
+		ListaFiltros: []shareddomain.CriterioFiltro{
 			{Campo: "activo", Operador: "!=", Valor: false},
 		},
-	}, domain.Paginacion{
+	}, shareddomain.Paginacion{
 		Pagina:       1,
 		TamanoPagina: 100,
 	})
@@ -487,11 +488,11 @@ func TestFindOrdenacionASC(t *testing.T) {
 	}
 
 	// Act - Find with ASC ordering on usuarioID
-	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{}, domain.Paginacion{
+	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{}, shareddomain.Paginacion{
 		Pagina:       1,
 		TamanoPagina: 100,
-		Ordenaciones: []domain.Ordenacion{
-			{Campo: "usuarioID", Tipo: domain.ASC},
+		Ordenaciones: []shareddomain.Ordenacion{
+			{Campo: "usuarioID", Tipo: shareddomain.ASC},
 		},
 	})
 
@@ -528,11 +529,11 @@ func TestFindOrdenacionDESC(t *testing.T) {
 	}
 
 	// Act
-	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{}, domain.Paginacion{
+	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{}, shareddomain.Paginacion{
 		Pagina:       1,
 		TamanoPagina: 100,
-		Ordenaciones: []domain.Ordenacion{
-			{Campo: "usuarioID", Tipo: domain.DESC},
+		Ordenaciones: []shareddomain.Ordenacion{
+			{Campo: "usuarioID", Tipo: shareddomain.DESC},
 		},
 	})
 
@@ -566,7 +567,7 @@ func TestFindPaginacionPrimeraPage(t *testing.T) {
 	}
 
 	// Act - First page with size 3
-	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{}, domain.Paginacion{
+	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{}, shareddomain.Paginacion{
 		Pagina:       1,
 		TamanoPagina: 3,
 	})
@@ -596,11 +597,11 @@ func TestFindPaginacionSegundaPage(t *testing.T) {
 	}
 
 	// Act - Get second page with size 3, ordered by usuarioID
-	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{}, domain.Paginacion{
+	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{}, shareddomain.Paginacion{
 		Pagina:       2,
 		TamanoPagina: 3,
-		Ordenaciones: []domain.Ordenacion{
-			{Campo: "usuarioID", Tipo: domain.ASC},
+		Ordenaciones: []shareddomain.Ordenacion{
+			{Campo: "usuarioID", Tipo: shareddomain.ASC},
 		},
 	})
 
@@ -629,7 +630,7 @@ func TestFindPaginacionUltimaPage(t *testing.T) {
 	}
 
 	// Act - Last page with size 3 (should have 1 item)
-	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{}, domain.Paginacion{
+	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{}, shareddomain.Paginacion{
 		Pagina:       3,
 		TamanoPagina: 3,
 	})
@@ -679,14 +680,14 @@ func TestFindCompoundFiltersAndOrdering(t *testing.T) {
 
 	// Act - Find active credentials, ordered by usuarioID DESC
 	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{
-		ListaFiltros: []domain.CriterioFiltro{
+		ListaFiltros: []shareddomain.CriterioFiltro{
 			{Campo: "activo", Operador: "=", Valor: true},
 		},
-	}, domain.Paginacion{
+	}, shareddomain.Paginacion{
 		Pagina:       1,
 		TamanoPagina: 100,
-		Ordenaciones: []domain.Ordenacion{
-			{Campo: "usuarioID", Tipo: domain.DESC},
+		Ordenaciones: []shareddomain.Ordenacion{
+			{Campo: "usuarioID", Tipo: shareddomain.DESC},
 		},
 	})
 
@@ -730,10 +731,10 @@ func TestFindConIntentosFallidos(t *testing.T) {
 
 	// Act - Find credentials with intentosFallidos = 3
 	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{
-		ListaFiltros: []domain.CriterioFiltro{
+		ListaFiltros: []shareddomain.CriterioFiltro{
 			{Campo: "intentosFallidos", Operador: "=", Valor: 3},
 		},
-	}, domain.Paginacion{
+	}, shareddomain.Paginacion{
 		Pagina:       1,
 		TamanoPagina: 100,
 	})
@@ -773,10 +774,10 @@ func TestFindConCorreoVerificado(t *testing.T) {
 
 	// Act
 	result, err := repo.Find(ctx, domain.EspecificacionCredenciales{
-		ListaFiltros: []domain.CriterioFiltro{
+		ListaFiltros: []shareddomain.CriterioFiltro{
 			{Campo: "correoVerificado", Operador: "=", Valor: true},
 		},
-	}, domain.Paginacion{
+	}, shareddomain.Paginacion{
 		Pagina:       1,
 		TamanoPagina: 100,
 	})

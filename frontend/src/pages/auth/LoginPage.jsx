@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { solicitarVerificacion } from '../../services/identidadApi';
 import './Auth.css';
 
 export default function LoginPage() {
@@ -32,10 +33,7 @@ export default function LoginPage() {
     setReenvioExitoso(false);
     setReenvioError(false);
     try {
-      await fetch('/api/v1/verificacion/solicitar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      await solicitarVerificacion();
       setReenvioExitoso(true);
       setTimeout(() => setReenvioExitoso(false), 5000);
     } catch {

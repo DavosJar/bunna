@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -60,6 +61,15 @@ func NuevoRateLimitMiddleware(maxRequests int, ventana time.Duration) gin.Handle
 
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
+
+		log.Printf("[RATE_LIMIT_DEBUG] ClientIP=%q | RemoteAddr=%q | X-Forwarded-For=%q | X-Real-IP=%q | Path=%s",
+			ip,
+			c.Request.RemoteAddr,
+			c.GetHeader("X-Forwarded-For"),
+			c.GetHeader("X-Real-IP"),
+			c.Request.URL.Path,
+		)
+
 		if !counter.allow(ip) {
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
 				"error":   "Demasiadas solicitudes. Intente más tarde.",

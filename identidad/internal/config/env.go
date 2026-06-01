@@ -57,6 +57,10 @@ type Config struct {
 	RecuperacionRateLimitIPMax      int
 	RecuperacionRateLimitUsuarioMax int
 	RecuperacionRateLimitVentana    time.Duration
+
+	// Rate limiting middleware (IP)
+	RateLimitIPMaxRequests int
+	RateLimitIPVentana     time.Duration
 }
 
 // LoadConfig carga y valida todas las variables de entorno.
@@ -150,6 +154,15 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	rateLimitIPMaxRequests, err := parsarEnteroSinRango("RATE_LIMIT_IP_MAX_REQUESTS", "10")
+	if err != nil {
+		return nil, err
+	}
+	rateLimitIPVentana, err := parsarDuracion("RATE_LIMIT_IP_VENTANA", "1s")
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := &Config{
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     getEnv("DB_PORT", "5432"),
@@ -199,6 +212,9 @@ func LoadConfig() (*Config, error) {
 		RecuperacionRateLimitIPMax:      recuperacionRateLimitIPMax,
 		RecuperacionRateLimitUsuarioMax: recuperacionRateLimitUsuarioMax,
 		RecuperacionRateLimitVentana:    recuperacionRateLimitVentana,
+
+		RateLimitIPMaxRequests: rateLimitIPMaxRequests,
+		RateLimitIPVentana:     rateLimitIPVentana,
 	}
 
 	if cfg.DBPassword == "" {

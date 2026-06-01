@@ -3,6 +3,7 @@ package router
 
 import (
 	"strings"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humagin"
@@ -20,6 +21,8 @@ type Config struct {
 	CORSOrigins       []string
 	APIGatewayEnabled bool
 	TokenSvc          sesiones_domain.TokenServicio
+	RateLimitIPMaxRequests int
+	RateLimitIPVentana     time.Duration
 }
 
 // jwtIfRequired es un wrapper del middleware JWT que lo omite para rutas públicas.
@@ -54,6 +57,20 @@ func New(all *facades.AllFacades, cfg Config) *gin.Engine {
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 	router.Use(corsMiddleware(cfg))
+	router.Use(middleware.NuevoRateLimitMiddleware(
+		cfg.RateLimitIPMaxRequests,
+		cfg.RateLimitIPVentana,
+	))
+
+	// Cuando está detrás de API Gateway, confiar en el proxy
+	// y usar X-Forwarded-For para la IP real del cliente
+	if cfg.APIGatewayEnabled {
+		router.SetTrustedProxies([]string{"0.0.0.0/0"})
+		router.Use(func(c *gin.Context) {
+			c.Request.Header.Set("X-Real-IP", c.ClientIP())
+			c.Next()
+		})
+	}
 
 	// Aplicar JWT middleware condicionalmente
 	if cfg.TokenSvc != nil {

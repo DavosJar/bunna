@@ -41,6 +41,8 @@ func main() {
 		CORSOrigins:       []string{cfg.CORSOrigins},
 		APIGatewayEnabled: cfg.APIGatewayEnabled,
 		TokenSvc:          reg.TokenServicio(),
+		RateLimitIPMaxRequests: cfg.RateLimitIPMaxRequests,
+		RateLimitIPVentana:     cfg.RateLimitIPVentana,
 	})
 
 	log.Printf("Server starting on :%s", cfg.Port)

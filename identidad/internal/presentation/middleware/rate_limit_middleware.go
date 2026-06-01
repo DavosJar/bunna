@@ -60,10 +60,14 @@ func NuevoRateLimitMiddleware(maxRequests int, ventana time.Duration) gin.Handle
 	})
 
 	return func(c *gin.Context) {
-		ip := c.ClientIP()
+		ip := c.GetHeader("X-Client-IP")
+		if ip == "" {
+			ip = c.ClientIP()
+		}
 
-		log.Printf("[RATE_LIMIT_DEBUG] ClientIP=%q | RemoteAddr=%q | X-Forwarded-For=%q | X-Real-IP=%q | Path=%s",
+		log.Printf("[RATE_LIMIT_DEBUG] ClientIP=%q | X-Client-IP=%q | RemoteAddr=%q | X-Forwarded-For=%q | X-Real-IP=%q | Path=%s",
 			ip,
+			c.GetHeader("X-Client-IP"),
 			c.Request.RemoteAddr,
 			c.GetHeader("X-Forwarded-For"),
 			c.GetHeader("X-Real-IP"),

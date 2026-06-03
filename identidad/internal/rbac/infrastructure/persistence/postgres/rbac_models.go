@@ -8,6 +8,7 @@ type RolModel struct {
 	Nombre             string    `gorm:"column:nombre;uniqueIndex"`
 	Descripcion        string    `gorm:"column:descripcion"`
 	EsSistema          bool      `gorm:"column:es_sistema;default:false"`
+	TenantID           string    `gorm:"column:tenant_id;default:''"`
 	FechaCreacion      time.Time `gorm:"column:created_at;autoCreateTime"`
 	FechaActualizacion time.Time `gorm:"column:updated_at;autoUpdateTime"`
 }

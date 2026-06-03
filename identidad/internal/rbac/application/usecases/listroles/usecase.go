@@ -30,14 +30,16 @@ func (uc *ListarRolesCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoListar
 		return nil, rbac.ErrPermisoDenegado
 	}
 
-	dbRoles, err := uc.rolRepo.Listar(ctx, rbac.EspecificacionRol{}, cmd.Paginacion)
+	dbRoles, err := uc.rolRepo.Listar(ctx, rbac.EspecificacionRol{
+		TenantID: cmd.TenantID,
+	}, cmd.Paginacion)
 	if err != nil {
 		return nil, fmt.Errorf("error al listar roles: %w", err)
 	}
 
 	dtoList := make([]RolDTO, 0, len(dbRoles))
 	for _, r := range dbRoles {
-		permisos, err := uc.permisoRepo.ListarPorRol(ctx, r.ID)
+		permisos, err := uc.permisoRepo.ListarPorRol(ctx, r.ID, cmd.TenantID)
 		if err != nil {
 			return nil, fmt.Errorf("error al listar permisos del rol %s: %w", r.ID, err)
 		}

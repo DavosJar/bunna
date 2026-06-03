@@ -18,6 +18,7 @@ type ConfigRecuperacion struct {
 	RateLimitIPMax      int
 	RateLimitUsuarioMax int
 	RateLimitVentana    time.Duration
+	FrontendURL         string
 }
 
 type RecuperarContrasenaCasoDeUso struct {
@@ -98,6 +99,7 @@ func (uc *RecuperarContrasenaCasoDeUso) Solicitar(ctx context.Context, cmd Coman
 	}
 
 	expiracionHoras := fmt.Sprintf("%.0f", uc.config.TokenExpiracion.Hours())
+	urlRecuperacion := fmt.Sprintf("%s/reset-password?token=%s", uc.config.FrontendURL, tokenPlano)
 	go func() {
 		if err := uc.emailServicio.EnviarTemplate(ctx, usuario.Correo,
 			notificaciones.TipoRecuperacionContrasena,
@@ -105,6 +107,7 @@ func (uc *RecuperarContrasenaCasoDeUso) Solicitar(ctx context.Context, cmd Coman
 				"nombre":           usuario.Nombre,
 				"token":            tokenPlano,
 				"expiracion_horas": expiracionHoras,
+				"url_recuperacion": urlRecuperacion,
 			},
 		); err != nil {
 			fmt.Printf("[RecuperarContrasenaCasoDeUso] Error al enviar email: %v\n", err)

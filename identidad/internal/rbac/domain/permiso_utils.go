@@ -26,14 +26,14 @@ func permisosSistemaInit() {
 // TienePermisoEnRol verifica si un rol tiene un permiso específico.
 // Para roles de sistema usa un mapa en memoria (O(1)).
 // Para roles personalizados consulta el repositorio.
-func TienePermisoEnRol(ctx context.Context, permisoRepo PermisoRepositorio, rol *RolDB, codigoPermiso string) bool {
+func TienePermisoEnRol(ctx context.Context, permisoRepo PermisoRepositorio, rol *RolDB, codigoPermiso string, tenantID string) bool {
 	if rol.EsSistema {
 		permisosSistemaInit()
 		perms, ok := permisosSistemaMap[rol.Nombre]
 		return ok && perms[codigoPermiso]
 	}
 
-	permisos, err := permisoRepo.ListarPorRol(ctx, rol.ID)
+	permisos, err := permisoRepo.ListarPorRol(ctx, rol.ID, tenantID)
 	if err != nil {
 		return false
 	}

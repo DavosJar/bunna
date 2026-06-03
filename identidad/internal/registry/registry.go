@@ -346,6 +346,7 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 				RateLimitIPMax:      cfg.RecuperacionRateLimitIPMax,
 				RateLimitUsuarioMax: cfg.RecuperacionRateLimitUsuarioMax,
 				RateLimitVentana:    cfg.RecuperacionRateLimitVentana,
+				FrontendURL:         cfg.FrontendURL,
 			},
 		),
 

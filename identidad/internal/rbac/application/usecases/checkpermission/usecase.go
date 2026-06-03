@@ -38,7 +38,7 @@ func (uc *VerificarPermisoCasoDeUso) TienePermiso(ctx context.Context, usuarioID
 			return false, err
 		}
 		for _, rol := range roles {
-			if rbac.TienePermisoEnRol(ctx, uc.permisoRepo, rol, codigoPermiso) {
+			if rbac.TienePermisoEnRol(ctx, uc.permisoRepo, rol, codigoPermiso, tenantID) {
 				return true, nil
 			}
 		}
@@ -49,7 +49,7 @@ func (uc *VerificarPermisoCasoDeUso) TienePermiso(ctx context.Context, usuarioID
 		return false, err
 	}
 	for _, rol := range roles {
-		if rbac.TienePermisoEnRol(ctx, uc.permisoRepo, rol, codigoPermiso) {
+		if rbac.TienePermisoEnRol(ctx, uc.permisoRepo, rol, codigoPermiso, tenantID) {
 			return true, nil
 		}
 	}

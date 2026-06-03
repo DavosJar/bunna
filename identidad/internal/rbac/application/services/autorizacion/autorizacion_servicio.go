@@ -28,7 +28,7 @@ func (s *ServicioAutorizacion) TienePermiso(ctx context.Context, usuarioID, tena
 	}
 
 	for _, rol := range roles {
-		if rbac.TienePermisoEnRol(ctx, s.permisoRepo, rol, codigoPermiso) {
+		if rbac.TienePermisoEnRol(ctx, s.permisoRepo, rol, codigoPermiso, tenantID) {
 			return true, nil
 		}
 	}

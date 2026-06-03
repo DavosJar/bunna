@@ -69,6 +69,12 @@ func (r *rolRepositorio) Listar(ctx context.Context, spec rbac.EspecificacionRol
 		}
 	}
 
+	// Filtro por tenant: si TenantID está especificado y no es vacío,
+	// mostrar roles del tenant + roles de sistema (tenant_id vacío)
+	if spec.TenantID != "" {
+		query = query.Where("tenant_id = ? OR tenant_id = '' OR es_sistema = ?", spec.TenantID, true)
+	}
+
 	for _, ord := range pag.Ordenaciones {
 		if !rbac.ColumnasPermitidasRol[ord.Campo] {
 			continue
@@ -113,6 +119,7 @@ func (r *rolRepositorio) Crear(ctx context.Context, rol *rbac.RolDB) error {
 		Nombre:      rol.Nombre,
 		Descripcion: rol.Descripcion,
 		EsSistema:   rol.EsSistema,
+		TenantID:    rol.TenantID,
 	}
 	return r.db.WithContext(ctx).Create(m).Error
 }
@@ -129,6 +136,7 @@ func toRolDB(m *RolModel) *rbac.RolDB {
 		Nombre:      m.Nombre,
 		Descripcion: m.Descripcion,
 		EsSistema:   m.EsSistema,
+		TenantID:    m.TenantID,
 	}
 }
 
@@ -180,12 +188,18 @@ func (r *permisoRepositorio) ActualizarNombreDescripcion(ctx context.Context, id
 		Updates(map[string]interface{}{"nombre": nombre, "descripcion": descripcion}).Error
 }
 
-func (r *permisoRepositorio) ListarPorRol(ctx context.Context, rolID string) ([]*rbac.PermisoDB, error) {
+func (r *permisoRepositorio) ListarPorRol(ctx context.Context, rolID string, tenantID string) ([]*rbac.PermisoDB, error) {
 	var models []PermisoModel
-	if err := r.db.WithContext(ctx).
+	query := r.db.WithContext(ctx).
 		Joins("JOIN rol_permisos ON rol_permisos.permiso_id = permisos.id").
-		Where("rol_permisos.rol_id = ?", rolID).
-		Find(&models).Error; err != nil {
+		Where("rol_permisos.rol_id = ?", rolID)
+
+	// Si hay tenantID, filtrar por tenant + permisos de sistema
+	if tenantID != "" {
+		query = query.Where("(rol_permisos.tenant_id = ? OR rol_permisos.tenant_id = ?)", tenantID, rbac.TenantIDSistema)
+	}
+
+	if err := query.Find(&models).Error; err != nil {
 		return nil, err
 	}
 	permisos := make([]*rbac.PermisoDB, len(models))

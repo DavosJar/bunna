@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/davosjar/bunna/services/identidad/internal/recuperacion/domain"
 	"gorm.io/gorm"
@@ -52,11 +51,9 @@ func (r *usuarioRecuperacionRepositorio) ActualizarPassword(ctx context.Context,
 		`UPDATE credenciales_usuarios SET
 			password_hash = ?,
 			intentos_fallidos = 0,
-			bloqueado_hasta = NULL,
-			fecha_actualizacion = ?
+			bloqueado_hasta = NULL
 		WHERE usuario_id = ?`,
 		nuevoHash,
-		time.Now(),
 		usuarioID,
 	)
 	if result.Error != nil {

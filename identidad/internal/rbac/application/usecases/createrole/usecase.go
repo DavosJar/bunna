@@ -43,6 +43,7 @@ func (uc *CrearRolCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoCrearRol)
 		Nombre:      cmd.Nombre,
 		Descripcion: cmd.Descripcion,
 		EsSistema:   false,
+		TenantID:    cmd.TenantID,
 	}
 
 	if err := uc.rolRepo.Crear(ctx, rol); err != nil {

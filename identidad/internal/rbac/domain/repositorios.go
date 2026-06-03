@@ -21,7 +21,7 @@ type PermisoRepositorio interface {
 	Listar(ctx context.Context) ([]*PermisoDB, error)
 	Crear(ctx context.Context, permiso *PermisoDB) error
 	ActualizarNombreDescripcion(ctx context.Context, id, nombre, descripcion string) error
-	ListarPorRol(ctx context.Context, rolID string) ([]*PermisoDB, error)
+	ListarPorRol(ctx context.Context, rolID string, tenantID string) ([]*PermisoDB, error)
 }
 
 // RolPermisoRepositorio maneja la relación rol ↔ permiso
@@ -53,6 +53,7 @@ type RolDB struct {
 	Nombre      string
 	Descripcion string
 	EsSistema   bool
+	TenantID    string // tenant al que pertenece el rol (vacío para roles de sistema)
 }
 
 // PermisoDB es la representación de un permiso en la capa de dominio/repositorio

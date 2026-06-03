@@ -77,15 +77,6 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
           </button>
         </div>
 
-        {/* User card */}
-        <div className="sidebar__user-card">
-          <div className="sidebar__avatar">{initials}</div>
-          <div className="sidebar__user-info">
-            <p className="sidebar__user-name">{user?.nombre || 'Usuario'}</p>
-            <p className="sidebar__user-role">{user?.rol || 'Caficultor'}</p>
-          </div>
-        </div>
-
         {/* Nav */}
         <nav className="sidebar__nav">
           <span className="sidebar__section-label">General</span>

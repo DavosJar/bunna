@@ -40,7 +40,7 @@ function ModalRoles({ usuario, onClose }) {
     Promise.all([
       getRoles(),
     ]).then(([rolesData]) => {
-      setRoles(rolesData.roles || []);
+      setRoles((rolesData.roles || []).filter(r => r.nombre !== 'sys_admin'));
     }).finally(() => setLoading(false));
   }, []);
 
@@ -124,6 +124,8 @@ function TabUsuarios() {
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({ correo: '' });
+  const [rolesOptions, setRolesOptions] = useState([]);
+  const [rolSeleccionado, setRolSeleccionado] = useState('');
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -136,16 +138,31 @@ function TabUsuarios() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  useEffect(() => {
+    if (modal?.tipo === 'crear') {
+      getRoles().then(data => {
+        const disponibles = (data.roles || []).filter(r => r.nombre !== 'sys_admin' && r.nombre !== 'administrador');
+        setRolesOptions(disponibles);
+      }).catch(() => setRolesOptions([]));
+    }
+  }, [modal?.tipo]);
+
   const handleAccion = async () => {
     try {
       if (modal.tipo === 'baja') await bajaUsuario(modal.usuario.id);
       if (modal.tipo === 'expulsar') await expulsarUsuario(modal.usuario.id);
       if (modal.tipo === 'unlock') await unlockUsuario(modal.usuario.id);
-      if (modal.tipo === 'crear') await createUsuario(form);
+      if (modal.tipo === 'crear') {
+        const usuarioCreado = await createUsuario(form);
+        if (rolSeleccionado) {
+          await asignarRol(usuarioCreado.id, { rol_id: rolSeleccionado, tenant_id: '' });
+        }
+      }
       if (modal.tipo === 'editar') await updateUsuario(modal.usuario.id, { nombre: form.nombre, apellido: form.apellido });
     } catch { } finally {
       setModal(null);
       setForm({ correo: '' });
+      setRolSeleccionado('');
       cargar();
     }
   };
@@ -237,11 +254,22 @@ function TabUsuarios() {
       {(modal?.tipo === 'crear' || modal?.tipo === 'editar') && (
         <Modal title={modal.tipo === 'crear' ? 'Invitar usuario' : 'Editar usuario'} onClose={() => setModal(null)} onConfirm={handleAccion} confirmLabel={modal.tipo === 'crear' ? 'Invitar' : 'Guardar'}>
           {modal.tipo === 'crear' ? (
-            <div className="form-group">
-              <label className="form-label">Correo electrónico</label>
-              <input className="form-input" type="email" placeholder="usuario@correo.com" value={form.correo} onChange={(e) => setForm(f => ({ ...f, correo: e.target.value }))} />
-              <p style={{ color: 'var(--color-gray-600)', fontSize: '0.8rem', marginTop: '0.25rem' }}>Se enviará una invitación al correo para que complete su registro.</p>
-            </div>
+            <>
+              <div className="form-group">
+                <label className="form-label">Correo electrónico</label>
+                <input className="form-input" type="email" placeholder="usuario@correo.com" value={form.correo} onChange={(e) => setForm(f => ({ ...f, correo: e.target.value }))} />
+                <p style={{ color: 'var(--color-gray-600)', fontSize: '0.8rem', marginTop: '0.25rem' }}>Se enviará una invitación al correo para que complete su registro.</p>
+              </div>
+              <div className="form-group" style={{ marginTop: '0.75rem' }}>
+                <label className="form-label">Rol</label>
+                <select className="form-input" value={rolSeleccionado} onChange={(e) => setRolSeleccionado(e.target.value)}>
+                  <option value="">Sin rol (solo invitación)</option>
+                  {rolesOptions.map(r => (
+                    <option key={r.id} value={r.id}>{r.nombre}</option>
+                  ))}
+                </select>
+              </div>
+            </>
           ) : (
             <div className="form-row">
               <div className="form-group">
@@ -421,7 +449,7 @@ function TabRoles() {
     setLoading(true);
     try {
       const data = await getRoles();
-      setRoles(data.roles || []);
+      setRoles((data.roles || []).filter(r => r.nombre !== 'sys_admin'));
     } catch { } finally { setLoading(false); }
   };
 
@@ -429,7 +457,13 @@ function TabRoles() {
 
   const handleAccion = async () => {
     try {
-      if (modal.tipo === 'crear') await createRol(form);
+      if (modal.tipo === 'crear') {
+        const nombreLower = form.nombre.toLowerCase();
+        if (nombreLower === 'sys_admin' || nombreLower.includes('admin') || nombreLower.includes('sys')) {
+          return; // no hacer nada, no se puede crear este tipo de rol
+        }
+        await createRol(form);
+      }
       if (modal.tipo === 'eliminar') await deleteRol(modal.rol.id);
     } catch { } finally {
       setModal(null);

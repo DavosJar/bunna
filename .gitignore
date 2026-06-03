@@ -47,3 +47,4 @@ __pycache__/
 # Zips y temporales
 *.zip
 *.tar.gz
+identidad/bin/identidad

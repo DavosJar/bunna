@@ -34,6 +34,7 @@ type RespuestaCrearUsuario struct {
 type ComandoListarUsuarios struct {
 	Filtros    []shared_domain.CriterioFiltro
 	Paginacion shared_domain.Paginacion
+	TenantID   string
 	EjecutorID string
 }
 
@@ -178,7 +179,7 @@ func (f *usuarioFacadeImpl) ListarUsuarios(ctx context.Context, cmd ComandoLista
 	resp, err := f.listarUsuarios.Ejecutar(ctx, &uc_listusers.ComandoListarUsuarios{
 		Filtros:    cmd.Filtros,
 		Paginacion: cmd.Paginacion,
-		TenantID:   "",
+		TenantID:   cmd.TenantID,
 		EjecutorID: cmd.EjecutorID,
 	})
 	if err != nil {

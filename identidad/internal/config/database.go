@@ -89,6 +89,38 @@ func RunMigrations(db *gorm.DB) error {
 		return fmt.Errorf("failed to migrate tokens_recuperacion: %w", err)
 	}
 
+	// Migrar rol_permisos: agregar id, tenant_id, asignado_por y unique index
+	if err := db.Exec(`
+		ALTER TABLE rol_permisos ADD COLUMN IF NOT EXISTS id varchar(36);
+		ALTER TABLE rol_permisos ADD COLUMN IF NOT EXISTS tenant_id varchar(36) NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000';
+		ALTER TABLE rol_permisos ADD COLUMN IF NOT EXISTS asignado_por varchar(36) NULL;
+	`).Error; err != nil {
+		return fmt.Errorf("failed to migrate rol_permisos columns: %w", err)
+	}
+
+	// Poblar IDs para filas existentes (sistema, ya que no tenían tenant_id antes)
+	if err := db.Exec(`
+		UPDATE rol_permisos SET id = gen_random_uuid()::text WHERE id IS NULL;
+	`).Error; err != nil {
+		return fmt.Errorf("failed to populate rol_permisos ids: %w", err)
+	}
+
+	// Hacer id NOT NULL y PK
+	if err := db.Exec(`
+		ALTER TABLE rol_permisos ALTER COLUMN id SET NOT NULL;
+		ALTER TABLE rol_permisos DROP CONSTRAINT IF EXISTS rol_permisos_pkey;
+		ALTER TABLE rol_permisos ADD PRIMARY KEY (id);
+	`).Error; err != nil {
+		return fmt.Errorf("failed to set rol_permisos primary key: %w", err)
+	}
+
+	// Unique index
+	if err := db.Exec(`
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_rp_rol_perm_tenant ON rol_permisos (rol_id, permiso_id, tenant_id);
+	`).Error; err != nil {
+		return fmt.Errorf("failed to create unique index on rol_permisos: %w", err)
+	}
+
 	// Índice único para emails (case-insensitive via LOWER).
 	db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_usuarios_correo_unique ON usuarios (correo)")
 

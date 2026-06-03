@@ -5,7 +5,9 @@ import (
 	"errors"
 	"time"
 
+	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
+	"github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
 )
 
 var (
@@ -24,12 +26,24 @@ type ConfigRefresh struct {
 }
 
 type RenovarSesionCasoDeUso struct {
-	uow    sesiones_domain.UnitOfWork
-	config ConfigRefresh
+	uow                  sesiones_domain.UnitOfWork
+	config               ConfigRefresh
+	membresiaRepo        tenant.MembresiaRepositorio
+	usuarioTenantRolRepo rbac.UsuarioTenantRolRepositorio
 }
 
-func NewRenovarSesionCasoDeUso(uow sesiones_domain.UnitOfWork, config ConfigRefresh) *RenovarSesionCasoDeUso {
-	return &RenovarSesionCasoDeUso{uow: uow, config: config}
+func NewRenovarSesionCasoDeUso(
+	uow sesiones_domain.UnitOfWork,
+	config ConfigRefresh,
+	membresiaRepo tenant.MembresiaRepositorio,
+	usuarioTenantRolRepo rbac.UsuarioTenantRolRepositorio,
+) *RenovarSesionCasoDeUso {
+	return &RenovarSesionCasoDeUso{
+		uow:                  uow,
+		config:               config,
+		membresiaRepo:        membresiaRepo,
+		usuarioTenantRolRepo: usuarioTenantRolRepo,
+	}
 }
 
 func (uc *RenovarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoRenovarSesion) (*RespuestaRenovarSesion, error) {
@@ -43,6 +57,20 @@ func (uc *RenovarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoRenov
 	}
 
 	refreshTokenHash := uc.uow.TokenServicio().HashearToken(cmd.RefreshToken)
+
+	// Look up user's own tenant (first membership by creation order)
+	var ownTenantID string
+	var ownRol string
+	if uc.membresiaRepo != nil && uc.usuarioTenantRolRepo != nil {
+		tenants, err := uc.membresiaRepo.ListarTenantsPorUsuario(ctx, claims.UsuarioID)
+		if err == nil && len(tenants) > 0 {
+			ownTenantID = tenants[0]
+			roles, err := uc.usuarioTenantRolRepo.ListarRolesPorUsuarioEnTenant(ctx, claims.UsuarioID, ownTenantID)
+			if err == nil && len(roles) > 0 {
+				ownRol = roles[0].Nombre
+			}
+		}
+	}
 
 	var respuesta *RespuestaRenovarSesion
 
@@ -77,7 +105,7 @@ func (uc *RenovarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoRenov
 			return ErrLimiteRefrescosAlcanzado
 		}
 
-		nuevoAccessToken, expiracionAccess, err := tx.TokenServicio().GenerarAccessToken(claims.UsuarioID, sesion.ID(), claims.TenantID, claims.Rol)
+		nuevoAccessToken, expiracionAccess, err := tx.TokenServicio().GenerarAccessToken(claims.UsuarioID, sesion.ID(), ownTenantID, ownRol)
 		if err != nil {
 			return ErrErrorGenerandoTokens
 		}
@@ -105,6 +133,8 @@ func (uc *RenovarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoRenov
 			ExpiracionRefresh: expiracionRefresh,
 			SesionID:          sesion.ID(),
 			UsuarioID:         claims.UsuarioID,
+			TenantID:          ownTenantID,
+			Rol:               ownRol,
 		}
 		return nil
 	})

@@ -1,14 +1,15 @@
-package refresh
+package switchtenant
 
 import "time"
 
-type RespuestaRenovarSesion struct {
+// RespuestaCambiarTenant contiene los tokens y datos actualizados tras cambiar de tenant.
+type RespuestaCambiarTenant struct {
 	AccessToken       string
 	RefreshToken      string
 	ExpiracionAccess  time.Time
 	ExpiracionRefresh time.Time
-	SesionID          string
 	UsuarioID         string
+	SesionID          string
 	TenantID          string
 	Rol               string
 }

@@ -122,6 +122,12 @@ func (r *usuarioRepositorio) Listar(ctx context.Context, spec usuario.Especifica
 		}
 	}
 
+	// Filtro por tenant
+	if spec.TenantID != "" {
+		query = query.Joins("JOIN usuario_tenants ON usuario_tenants.usuario_id = CAST(usuarios.id AS VARCHAR)").
+			Where("usuario_tenants.tenant_id = ?", spec.TenantID)
+	}
+
 	for _, ord := range pag.Ordenaciones {
 		if !usuario.ColumnasPermitidas[ord.Campo] {
 			continue

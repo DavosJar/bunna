@@ -46,6 +46,10 @@ func (m *mockAuthFacade) LogoutAll(ctx context.Context, cmd facades.ComandoLogou
 	return nil, nil
 }
 
+func (m *mockAuthFacade) SwitchTenant(ctx context.Context, cmd facades.ComandoSwitchTenant) (*facades.RespuestaSwitchTenant, error) {
+	return nil, nil
+}
+
 // ── Helper ────────────────────────────────────────────────────────────────────
 
 func setupRouter(facade facades.AuthFacade) (*gin.Engine, huma.API) {

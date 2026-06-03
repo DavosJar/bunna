@@ -5,4 +5,5 @@ type ComandoAsignarPermisoARol struct {
 	PermisoCodigo string
 	TenantID      string
 	EjecutorID    string
+	AsignadoPor   string
 }

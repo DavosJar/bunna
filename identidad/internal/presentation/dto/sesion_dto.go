@@ -5,11 +5,13 @@ type RefreshRequest struct {
 }
 
 type RefreshResponse struct {
-	AccessToken  string `json:"access_token"  doc:"Nuevo JWT access token"             example:"eyJhbGci..."`
-	RefreshToken string `json:"refresh_token" doc:"Nuevo JWT refresh token (rotado)"  example:"eyJhbGci..."`
+	AccessToken  string `json:"access_token"  doc:"Nuevo JWT access token"               example:"eyJhbGci..."`
+	RefreshToken string `json:"refresh_token" doc:"Nuevo JWT refresh token (rotado)"    example:"eyJhbGci..."`
 	ExpiresIn    int64  `json:"expires_in"    doc:"Segundos hasta expiración del access" example:"900"`
-	TokenType    string `json:"token_type"    doc:"Tipo de token"                      example:"Bearer"`
-	UsuarioID    string `json:"usuario_id"    doc:"ID del usuario"                     example:"01926b1e-..."`
+	TokenType    string `json:"token_type"    doc:"Tipo de token"                        example:"Bearer"`
+	UsuarioID    string `json:"usuario_id"    doc:"ID del usuario"                       example:"01926b1e-..."`
+	TenantID     string `json:"tenant_id"     doc:"ID del tenant propio del usuario"     example:"01926b1e-..."`
+	Rol          string `json:"rol"           doc:"Rol del usuario en el tenant"         example:"administrador"`
 }
 
 type LogoutResponse struct {

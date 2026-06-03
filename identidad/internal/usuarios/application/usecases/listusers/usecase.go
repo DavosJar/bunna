@@ -29,7 +29,7 @@ func (uc *ListarUsuariosCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoLis
 		return nil, rbac.ErrPermisoDenegado
 	}
 
-	spec := usuario.EspecificacionUsuario{ListaLiltros: cmd.Filtros}
+	spec := usuario.EspecificacionUsuario{ListaLiltros: cmd.Filtros, TenantID: cmd.TenantID}
 	usuarios, err := uc.userRepo.Listar(ctx, spec, cmd.Paginacion)
 	if err != nil {
 		return nil, fmt.Errorf("error al listar usuarios: %w", err)

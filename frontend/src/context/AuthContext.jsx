@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { loginUsuario, registrarUsuario, parseJWT, isTokenExpired } from '../services/authApi';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { loginUsuario, registrarUsuario, parseJWT, isTokenExpired, switchTenantAPI } from '../services/authApi';
+import { getMisTenants, getMisPermisos } from '../services/identidadApi';
 
 const AuthContext = createContext(null);
 
@@ -41,6 +42,15 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(loadStoredUser);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [availableTenants, setAvailableTenants] = useState([]);
+  const [ownTenantId, setOwnTenantId] = useState(null);
+  const [permisos, setPermisos] = useState([]);
+
+  // Derived: current tenant object
+  const currentTenant = useMemo(
+    () => availableTenants?.find(t => t.id === user?.tenantID) || null,
+    [availableTenants, user?.tenantID]
+  );
 
   useEffect(() => {
     if (error) {
@@ -48,6 +58,35 @@ export function AuthProvider({ children }) {
       return () => clearTimeout(t);
     }
   }, [error]);
+
+  // Cargar tenants del usuario al montar si ya está autenticado
+  const fetchMisTenants = useCallback(async () => {
+    try {
+      const data = await getMisTenants();
+      setAvailableTenants(data.tenants || []);
+      setOwnTenantId(data.propio_id || null);
+    } catch {
+      // Silently fail — the user might not be fully authenticated yet
+      setAvailableTenants([]);
+      setOwnTenantId(null);
+    }
+  }, []);
+
+  const fetchMisPermisos = useCallback(async () => {
+    try {
+      const data = await getMisPermisos();
+      setPermisos(data);
+    } catch {
+      setPermisos([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchMisTenants();
+      fetchMisPermisos();
+    }
+  }, [user, fetchMisTenants, fetchMisPermisos]);
 
   const login = useCallback(async (correo, password) => {
     setLoading(true);
@@ -68,6 +107,8 @@ export function AuthProvider({ children }) {
 
       saveSession(data.access_token, data.refresh_token, userData);
       setUser(userData);
+      await fetchMisTenants();
+      await fetchMisPermisos();
       return { success: true, user: userData };
     } catch (err) {
       const msg = err.response?.data?.detail || 'Error al iniciar sesión';
@@ -76,7 +117,36 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchMisTenants]);
+
+  const switchTenant = useCallback(async (tenantId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await switchTenantAPI(tenantId);
+      const data = res.data;
+      const payload = parseJWT(data.access_token);
+
+      const updatedUser = {
+        ...user,
+        tenantID: data.tenant_id,
+        rol: data.rol,
+        sessionId: payload?.sid,
+      };
+
+      saveSession(data.access_token, data.refresh_token, updatedUser);
+      setUser(updatedUser);
+      await fetchMisTenants();
+      await fetchMisPermisos();
+      return { success: true };
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Error al cambiar de tenant';
+      setError(msg);
+      return { success: false, error: msg };
+    } finally {
+      setLoading(false);
+    }
+  }, [user, fetchMisTenants]);
 
   const register = useCallback(async ({ nombre, apellido, correo, password, telefono }) => {
     setLoading(true);
@@ -115,7 +185,7 @@ export function AuthProvider({ children }) {
   }, [logout]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, register, logout, getAccessToken, setError }}>
+    <AuthContext.Provider value={{ user, permisos, loading, error, login, register, logout, getAccessToken, setError, availableTenants, ownTenantId, currentTenant, switchTenant, fetchMisTenants, fetchMisPermisos }}>
       {children}
     </AuthContext.Provider>
   );

@@ -21,6 +21,7 @@ func NewAllFacades(reg *registry.Registry) *AllFacades {
 			reg.IniciarSesionCasoDeUso,
 			reg.RenovarSesionCasoDeUso,
 			reg.CerrarSesionCasoDeUso,
+			reg.CambiarTenantCasoDeUso,
 		),
 		Usuario: NewUsuarioFacade(
 			reg.CrearUsuarioCasoDeUso,
@@ -46,6 +47,7 @@ func NewAllFacades(reg *registry.Registry) *AllFacades {
 		Rbac: NewRbacFacade(
 			reg.ListarRolesCasoDeUso,
                         reg.ListarPermisosCasoDeUso,
+			reg.ListarMisPermisosCasoDeUso,
 			reg.CrearRolCasoDeUso,
 			reg.ModificarRolCasoDeUso,
 			reg.EliminarRolCasoDeUso,
@@ -56,6 +58,9 @@ func NewAllFacades(reg *registry.Registry) *AllFacades {
 		),
 		Tenant: NewTenantFacade(
 			reg.ConfigurarTenantCasoDeUso,
+			reg.TenantRepository(),
+			reg.MembresiaRepository(),
+			reg.UsuarioTenantRolRepositorio(),
 		),
 		Verificacion: NewVerificacionFacade(
 			reg.VerificarCorreoCasoDeUso,

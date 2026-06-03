@@ -26,8 +26,9 @@ type PermisoRepositorio interface {
 
 // RolPermisoRepositorio maneja la relación rol ↔ permiso
 type RolPermisoRepositorio interface {
-	LimpiarPermisosDeRol(ctx context.Context, rolID string) error
-	AsignarPermiso(ctx context.Context, rolID, permisoID string) error
+	AsignarPermiso(ctx context.Context, rolID, permisoID, tenantID, asignadoPor string) error
+	EliminarPermiso(ctx context.Context, rolID, permisoID, tenantID string) error
+	ListarPorRolYTenant(ctx context.Context, rolID, tenantID string) ([]*PermisoDB, error)
 }
 
 // UsuarioRolRepositorio maneja roles globales (solo SYS_ADMIN)

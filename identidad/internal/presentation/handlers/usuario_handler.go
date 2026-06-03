@@ -129,6 +129,7 @@ func (h *ListarUsuariosHandler) handle(ctx context.Context, input *ListarUsuario
 	resp, err := h.facade.ListarUsuarios(ctx, facades.ComandoListarUsuarios{
 		Filtros:    filtros,
 		Paginacion: shared_domain.Paginacion{Pagina: pagina, TamanoPagina: tamano},
+		TenantID:   middleware.GetTenantIDFromCtx(ctx),
 		EjecutorID: ejecutorID,
 	})
 	if err != nil {

@@ -28,8 +28,11 @@ func (PermisoModel) TableName() string { return "permisos" }
 
 // RolPermisoModel representa la tabla rol_permisos
 type RolPermisoModel struct {
-	RolID         string    `gorm:"type:varchar(36);primaryKey;column:rol_id"`
-	PermisoID     string    `gorm:"type:varchar(36);primaryKey;column:permiso_id"`
+	ID            string    `gorm:"type:varchar(36);primaryKey;column:id"`
+	RolID         string    `gorm:"type:varchar(36);not null;column:rol_id;uniqueIndex:idx_rp_rol_perm_tenant"`
+	PermisoID     string    `gorm:"type:varchar(36);not null;column:permiso_id;uniqueIndex:idx_rp_rol_perm_tenant"`
+	TenantID      string    `gorm:"type:varchar(36);not null;column:tenant_id;default:00000000-0000-0000-0000-000000000000;uniqueIndex:idx_rp_rol_perm_tenant"`
+	AsignadoPor   *string   `gorm:"type:varchar(36);column:asignado_por"`
 	FechaCreacion time.Time `gorm:"column:created_at;autoCreateTime"`
 }
 

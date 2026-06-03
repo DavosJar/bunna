@@ -77,15 +77,6 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
           </button>
         </div>
 
-        {/* User card */}
-        <div className="sidebar__user-card">
-          <div className="sidebar__avatar">{initials}</div>
-          <div className="sidebar__user-info">
-            <p className="sidebar__user-name">{user?.nombre || 'Usuario'}</p>
-            <p className="sidebar__user-role">{user?.rol || 'Caficultor'}</p>
-          </div>
-        </div>
-
         {/* Nav */}
         <nav className="sidebar__nav">
           <span className="sidebar__section-label">General</span>
@@ -100,12 +91,16 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
             <span className="sidebar__item-text">Mi Perfil</span>
           </NavLink>
 
-          <span className="sidebar__section-label">Administración</span>
+          {(user?.rol === 'sys_admin' || user?.rol === 'administrador') && (
+            <>
+              <span className="sidebar__section-label">Administración</span>
 
-          <NavLink to="/admin" className={({ isActive }) => `sidebar__item ${isActive ? 'sidebar__item--active' : ''}`}>
-            <IconAdmin className="sidebar__item-icon" />
-            <span className="sidebar__item-text">Panel Admin</span>
-          </NavLink>
+              <NavLink to="/admin" className={({ isActive }) => `sidebar__item ${isActive ? 'sidebar__item--active' : ''}`}>
+                <IconAdmin className="sidebar__item-icon" />
+                <span className="sidebar__item-text">Panel Admin</span>
+              </NavLink>
+            </>
+          )}
         </nav>
 
         {/* Footer */}

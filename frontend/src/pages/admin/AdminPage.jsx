@@ -12,8 +12,6 @@ import Layout from '../../components/layout/Layout';
 import { usePermisos } from '../../hooks/usePermisos';
 import './Admin.css';
 
-const TABS = ['Usuarios', 'Roles', 'Sesiones', 'IPs Bloqueadas'];
-
 function Modal({ title, onClose, onConfirm, confirmLabel = 'Confirmar', danger = false, children }) {
   return (
     <div className="admin-modal-backdrop" onClick={onClose}>
@@ -42,7 +40,7 @@ function ModalRoles({ usuario, onClose }) {
     Promise.all([
       getRoles(),
     ]).then(([rolesData]) => {
-      setRoles(rolesData.roles || []);
+      setRoles((rolesData.roles || []).filter(r => r.nombre !== 'sys_admin'));
     }).finally(() => setLoading(false));
   }, []);
 
@@ -125,7 +123,9 @@ function TabUsuarios() {
   const [filtroEstado, setFiltroEstado] = useState('');
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(null);
-  const [form, setForm] = useState({ correo: '', nombre: '', apellido: '', password: '' });
+  const [form, setForm] = useState({ correo: '' });
+  const [rolesOptions, setRolesOptions] = useState([]);
+  const [rolSeleccionado, setRolSeleccionado] = useState('');
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -138,22 +138,37 @@ function TabUsuarios() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  useEffect(() => {
+    if (modal?.tipo === 'crear') {
+      getRoles().then(data => {
+        const disponibles = (data.roles || []).filter(r => r.nombre !== 'sys_admin' && r.nombre !== 'administrador');
+        setRolesOptions(disponibles);
+      }).catch(() => setRolesOptions([]));
+    }
+  }, [modal?.tipo]);
+
   const handleAccion = async () => {
     try {
       if (modal.tipo === 'baja') await bajaUsuario(modal.usuario.id);
       if (modal.tipo === 'expulsar') await expulsarUsuario(modal.usuario.id);
       if (modal.tipo === 'unlock') await unlockUsuario(modal.usuario.id);
-      if (modal.tipo === 'crear') await createUsuario(form);
+      if (modal.tipo === 'crear') {
+        const usuarioCreado = await createUsuario(form);
+        if (rolSeleccionado) {
+          await asignarRol(usuarioCreado.id, { rol_id: rolSeleccionado, tenant_id: '' });
+        }
+      }
       if (modal.tipo === 'editar') await updateUsuario(modal.usuario.id, { nombre: form.nombre, apellido: form.apellido });
     } catch { } finally {
       setModal(null);
-      setForm({ correo: '', nombre: '', apellido: '', password: '' });
+      setForm({ correo: '' });
+      setRolSeleccionado('');
       cargar();
     }
   };
 
   const abrirEditar = (u) => {
-    setForm({ correo: u.correo, nombre: u.nombre, apellido: u.apellido, password: '' });
+    setForm({ correo: u.correo, nombre: u.nombre, apellido: u.apellido });
     setModal({ tipo: 'editar', usuario: u });
   };
 
@@ -164,7 +179,7 @@ function TabUsuarios() {
       <div className="admin-card">
         <div className="admin-card__top">
           <h2 className="admin-card__title">Usuarios ({total})</h2>
-          {puede('identidad:usuario:crear') && <button className="btn-add" onClick={() => setModal({ tipo: 'crear' })}>+ Nuevo usuario</button>}
+          {puede('identidad:usuario:crear') && <button className="btn-add" onClick={() => setModal({ tipo: 'crear' })}>+ Invitar</button>}
         </div>
         <div className="admin-search">
           <input type="text" placeholder="Filtrar por correo..." value={filtroCorreo} onChange={(e) => { setFiltroCorreo(e.target.value); setPagina(1); }} />
@@ -237,28 +252,35 @@ function TabUsuarios() {
         />
       )}
       {(modal?.tipo === 'crear' || modal?.tipo === 'editar') && (
-        <Modal title={modal.tipo === 'crear' ? 'Nuevo usuario' : 'Editar usuario'} onClose={() => setModal(null)} onConfirm={handleAccion} confirmLabel={modal.tipo === 'crear' ? 'Crear' : 'Guardar'}>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Nombre</label>
-              <input className="form-input" type="text" value={form.nombre} onChange={(e) => setForm(f => ({ ...f, nombre: e.target.value }))} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Apellido</label>
-              <input className="form-input" type="text" value={form.apellido} onChange={(e) => setForm(f => ({ ...f, apellido: e.target.value }))} />
-            </div>
-          </div>
-          {modal.tipo === 'crear' && (
+        <Modal title={modal.tipo === 'crear' ? 'Invitar usuario' : 'Editar usuario'} onClose={() => setModal(null)} onConfirm={handleAccion} confirmLabel={modal.tipo === 'crear' ? 'Invitar' : 'Guardar'}>
+          {modal.tipo === 'crear' ? (
             <>
               <div className="form-group">
-                <label className="form-label">Correo</label>
-                <input className="form-input" type="email" value={form.correo} onChange={(e) => setForm(f => ({ ...f, correo: e.target.value }))} />
+                <label className="form-label">Correo electrónico</label>
+                <input className="form-input" type="email" placeholder="usuario@correo.com" value={form.correo} onChange={(e) => setForm(f => ({ ...f, correo: e.target.value }))} />
+                <p style={{ color: 'var(--color-gray-600)', fontSize: '0.8rem', marginTop: '0.25rem' }}>Se enviará una invitación al correo para que complete su registro.</p>
               </div>
-              <div className="form-group">
-                <label className="form-label">Contraseña</label>
-                <input className="form-input" type="password" placeholder="Mínimo 8 caracteres" value={form.password} onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))} />
+              <div className="form-group" style={{ marginTop: '0.75rem' }}>
+                <label className="form-label">Rol</label>
+                <select className="form-input" value={rolSeleccionado} onChange={(e) => setRolSeleccionado(e.target.value)}>
+                  <option value="">Sin rol (solo invitación)</option>
+                  {rolesOptions.map(r => (
+                    <option key={r.id} value={r.id}>{r.nombre}</option>
+                  ))}
+                </select>
               </div>
             </>
+          ) : (
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Nombre</label>
+                <input className="form-input" type="text" value={form.nombre} onChange={(e) => setForm(f => ({ ...f, nombre: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Apellido</label>
+                <input className="form-input" type="text" value={form.apellido} onChange={(e) => setForm(f => ({ ...f, apellido: e.target.value }))} />
+              </div>
+            </div>
           )}
         </Modal>
       )}
@@ -427,7 +449,7 @@ function TabRoles() {
     setLoading(true);
     try {
       const data = await getRoles();
-      setRoles(data.roles || []);
+      setRoles((data.roles || []).filter(r => r.nombre !== 'sys_admin'));
     } catch { } finally { setLoading(false); }
   };
 
@@ -435,7 +457,13 @@ function TabRoles() {
 
   const handleAccion = async () => {
     try {
-      if (modal.tipo === 'crear') await createRol(form);
+      if (modal.tipo === 'crear') {
+        const nombreLower = form.nombre.toLowerCase();
+        if (nombreLower === 'sys_admin' || nombreLower.includes('admin') || nombreLower.includes('sys')) {
+          return; // no hacer nada, no se puede crear este tipo de rol
+        }
+        await createRol(form);
+      }
       if (modal.tipo === 'eliminar') await deleteRol(modal.rol.id);
     } catch { } finally {
       setModal(null);
@@ -622,10 +650,19 @@ function TabIPsBloqueadas() {
 }
 
 export default function AdminPage() {
+  const { user } = useAuth();
   const [tabActiva, setTabActiva] = useState('Usuarios');
 
+  const isSysAdmin = user?.rol === 'sys_admin';
+  const TABS = isSysAdmin
+    ? ['Usuarios', 'Roles', 'Sesiones', 'IPs Bloqueadas']
+    : ['Usuarios', 'Roles'];
+  const subtitle = isSysAdmin
+    ? 'Gestión de usuarios, roles, sesiones e IPs bloqueadas.'
+    : 'Gestión de usuarios y roles de tu finca.';
+
   return (
-    <Layout title="Panel de administración" subtitle="Gestión de usuarios, roles, sesiones e IPs bloqueadas.">
+    <Layout title="Panel de administración" subtitle={subtitle}>
       <div className="admin-tabs">
         {TABS.map((tab) => (
           <button key={tab} className={`admin-tab ${tabActiva === tab ? 'admin-tab--active' : ''}`} onClick={() => setTabActiva(tab)}>

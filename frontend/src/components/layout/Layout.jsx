@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import Sidebar from './Sidebar';
+import TenantSwitcher from './TenantSwitcher';
 import './Layout.css';
 
 export default function Layout({ children, title, subtitle }) {
@@ -37,6 +38,7 @@ export default function Layout({ children, title, subtitle }) {
             </div>
           </div>
           <div className="layout__topbar-right">
+            <TenantSwitcher />
             <div className="layout__topbar-avatar">{initials}</div>
             <div className="layout__topbar-info">
               <span className="layout__topbar-name">{user?.nombre || 'Usuario'}</span>

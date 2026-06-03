@@ -4,6 +4,7 @@ import "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 
 type EspecificacionUsuario struct {
 	ListaLiltros []domain.CriterioFiltro
+	TenantID     string
 }
 
 var ColumnasPermitidas = map[string]bool{

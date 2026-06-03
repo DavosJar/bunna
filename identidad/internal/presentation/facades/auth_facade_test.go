@@ -58,7 +58,7 @@ func (m *mockLogoutUseCase) CerrarTodas(ctx context.Context, cmd uc_sesiones_log
 
 // newAuthFacadeMock es un helper para tests que crea una AuthFacade con mocks.
 func newAuthFacadeMock(reg facades.RegistroUseCase, verify *uc_verifyemail.VerificarCorreoCasoDeUso, login facades.LoginUseCase, refresh facades.RefreshUseCase, logout facades.LogoutUseCase) facades.AuthFacade {
-	return facades.NewAuthFacade(reg, verify, login, refresh, logout)
+	return facades.NewAuthFacade(reg, verify, login, refresh, logout, nil)
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

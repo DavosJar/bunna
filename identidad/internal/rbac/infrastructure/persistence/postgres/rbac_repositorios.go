@@ -6,7 +6,9 @@ import (
 
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // --- RolRepositorio ---
@@ -211,15 +213,40 @@ func NewRolPermisoRepositorio(db *gorm.DB) rbac.RolPermisoRepositorio {
 	return &rolPermisoRepositorio{db: db}
 }
 
-func (r *rolPermisoRepositorio) LimpiarPermisosDeRol(ctx context.Context, rolID string) error {
+func (r *rolPermisoRepositorio) AsignarPermiso(ctx context.Context, rolID, permisoID, tenantID, asignadoPor string) error {
+	m := &RolPermisoModel{
+		ID:          uuid.New().String(),
+		RolID:       rolID,
+		PermisoID:   permisoID,
+		TenantID:    tenantID,
+		AsignadoPor: &asignadoPor,
+	}
+	// Upsert: ON CONFLICT (rol_id, permiso_id, tenant_id) DO NOTHING
+	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "rol_id"}, {Name: "permiso_id"}, {Name: "tenant_id"}},
+		DoNothing: true,
+	}).Create(m).Error
+}
+
+func (r *rolPermisoRepositorio) EliminarPermiso(ctx context.Context, rolID, permisoID, tenantID string) error {
 	return r.db.WithContext(ctx).
-		Where("rol_id = ?", rolID).
+		Where("rol_id = ? AND permiso_id = ? AND tenant_id = ?", rolID, permisoID, tenantID).
 		Delete(&RolPermisoModel{}).Error
 }
 
-func (r *rolPermisoRepositorio) AsignarPermiso(ctx context.Context, rolID, permisoID string) error {
-	m := &RolPermisoModel{RolID: rolID, PermisoID: permisoID}
-	return r.db.WithContext(ctx).Create(m).Error
+func (r *rolPermisoRepositorio) ListarPorRolYTenant(ctx context.Context, rolID, tenantID string) ([]*rbac.PermisoDB, error) {
+	var models []PermisoModel
+	if err := r.db.WithContext(ctx).
+		Joins("JOIN rol_permisos ON rol_permisos.permiso_id = permisos.id").
+		Where("rol_permisos.rol_id = ? AND (rol_permisos.tenant_id = ? OR rol_permisos.tenant_id = ?)", rolID, tenantID, rbac.TenantIDSistema).
+		Find(&models).Error; err != nil {
+		return nil, err
+	}
+	permisos := make([]*rbac.PermisoDB, len(models))
+	for i, m := range models {
+		permisos[i] = toPermisoDB(&m)
+	}
+	return permisos, nil
 }
 
 // --- UsuarioRolRepositorio ---

@@ -10,17 +10,20 @@ import (
 
 type RevocarPermisoDeRolCasoDeUso struct {
 	rolRepo        rbac.RolRepositorio
+	permisoRepo    rbac.PermisoRepositorio
 	rolPermisoRepo rbac.RolPermisoRepositorio
 	authSvc        rbac.AuthorizationService
 }
 
 func NewRevocarPermisoDeRolCasoDeUso(
 	rolRepo rbac.RolRepositorio,
+	permisoRepo rbac.PermisoRepositorio,
 	rolPermisoRepo rbac.RolPermisoRepositorio,
 	authSvc rbac.AuthorizationService,
 ) *RevocarPermisoDeRolCasoDeUso {
 	return &RevocarPermisoDeRolCasoDeUso{
 		rolRepo:        rolRepo,
+		permisoRepo:    permisoRepo,
 		rolPermisoRepo: rolPermisoRepo,
 		authSvc:        authSvc,
 	}
@@ -44,7 +47,12 @@ func (uc *RevocarPermisoDeRolCasoDeUso) Ejecutar(ctx context.Context, cmd *Coman
 		return nil, rbac.ErrRolInmutable
 	}
 
-	if err := uc.rolPermisoRepo.LimpiarPermisosDeRol(ctx, cmd.RolID); err != nil {
+	permisoDB, err := uc.permisoRepo.ObtenerPorCodigo(ctx, cmd.PermisoCodigo)
+	if err != nil {
+		return nil, fmt.Errorf("permiso no encontrado: %w", err)
+	}
+
+	if err := uc.rolPermisoRepo.EliminarPermiso(ctx, cmd.RolID, permisoDB.ID, cmd.TenantID); err != nil {
 		return nil, fmt.Errorf("error al revocar permiso del rol: %w", err)
 	}
 

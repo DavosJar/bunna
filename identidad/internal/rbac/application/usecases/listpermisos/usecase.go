@@ -34,8 +34,8 @@ func NewListarPermisosCasoDeUso(
 	}
 }
 
-func (uc *ListarPermisosCasoDeUso) Ejecutar(ctx context.Context, ejecutorID string) (*ListarPermisosOutput, error) {
-	ok, err := uc.authSvc.TienePermiso(ctx, ejecutorID, "", rbac.PermisoPermisoConsultar)
+func (uc *ListarPermisosCasoDeUso) Ejecutar(ctx context.Context, ejecutorID, tenantID string) (*ListarPermisosOutput, error) {
+	ok, err := uc.authSvc.TienePermiso(ctx, ejecutorID, tenantID, rbac.PermisoPermisoConsultar)
 	if err != nil {
 		return nil, err
 	}

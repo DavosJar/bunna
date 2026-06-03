@@ -48,6 +48,8 @@ func (h *ListarRolesHandler) handle(ctx context.Context, input *ListarRolesInput
 		return nil, huma.Error401Unauthorized("token requerido")
 	}
 
+	tenantID := middleware.GetTenantIDFromCtx(ctx)
+
 	pagina := input.Pagina
 	if pagina < 1 {
 		pagina = 1
@@ -59,6 +61,7 @@ func (h *ListarRolesHandler) handle(ctx context.Context, input *ListarRolesInput
 
 	resp, err := h.facade.ListarRoles(ctx, facades.ComandoListarRoles{
 		Paginacion: shared_domain.Paginacion{Pagina: pagina, TamanoPagina: tamano},
+		TenantID:   tenantID,
 		EjecutorID: ejecutorID,
 	})
 	if err != nil {
@@ -116,10 +119,13 @@ func (h *CrearRolHandler) handle(ctx context.Context, input *CrearRolInput) (*Cr
 		return nil, huma.Error401Unauthorized("token requerido")
 	}
 
+	tenantID := middleware.GetTenantIDFromCtx(ctx)
+
 	resp, err := h.facade.CrearRol(ctx, facades.ComandoCrearRol{
 		Nombre:      input.Body.Nombre,
 		Descripcion: input.Body.Descripcion,
 		Permisos:    input.Body.Permisos,
+		TenantID:    tenantID,
 		EjecutorID:  ejecutorID,
 	})
 	if err != nil {
@@ -170,10 +176,13 @@ func (h *ModificarRolHandler) handle(ctx context.Context, input *ModificarRolInp
 		return nil, huma.Error401Unauthorized("token requerido")
 	}
 
+	tenantID := middleware.GetTenantIDFromCtx(ctx)
+
 	resp, err := h.facade.ModificarRol(ctx, facades.ComandoModificarRol{
 		RolID:       input.RolID,
 		Nombre:      input.Body.Nombre,
 		Descripcion: input.Body.Descripcion,
+		TenantID:    tenantID,
 		EjecutorID:  ejecutorID,
 	})
 	if err != nil {
@@ -223,8 +232,11 @@ func (h *EliminarRolHandler) handle(ctx context.Context, input *EliminarRolInput
 		return nil, huma.Error401Unauthorized("token requerido")
 	}
 
+	tenantID := middleware.GetTenantIDFromCtx(ctx)
+
 	resp, err := h.facade.EliminarRol(ctx, facades.ComandoEliminarRol{
 		RolID:      input.RolID,
+		TenantID:   tenantID,
 		EjecutorID: ejecutorID,
 	})
 	if err != nil {
@@ -329,10 +341,12 @@ func (h *RevocarRolHandler) handle(ctx context.Context, input *RevocarRolInput) 
 		return nil, huma.Error401Unauthorized("token requerido")
 	}
 
+	tenantID := middleware.GetTenantIDFromCtx(ctx)
+
 	resp, err := h.facade.RevocarRol(ctx, facades.ComandoRevocarRol{
 		UsuarioID:  input.UsuarioID,
 		RolID:      input.RolID,
-		TenantID:   "",
+		TenantID:   tenantID,
 		EjecutorID: ejecutorID,
 	})
 	if err != nil {
@@ -491,7 +505,9 @@ func (h *ListarPermisosHandler) handle(ctx context.Context, input *struct{}) (*L
 		return nil, huma.Error401Unauthorized("token requerido")
 	}
 
-	resp, err := h.facade.ListarPermisos(ctx, ejecutorID)
+	tenantID := middleware.GetTenantIDFromCtx(ctx)
+
+	resp, err := h.facade.ListarPermisos(ctx, ejecutorID, tenantID)
 	if err != nil {
 		return nil, presentation.MapearError(err)
 	}

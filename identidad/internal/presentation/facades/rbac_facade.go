@@ -18,6 +18,7 @@ import (
 
 type ComandoListarRoles struct {
 	Paginacion shared_domain.Paginacion
+	TenantID   string
 	EjecutorID string
 }
 
@@ -40,6 +41,7 @@ type ComandoCrearRol struct {
 	Nombre      string
 	Descripcion string
 	Permisos    []string
+	TenantID    string
 	EjecutorID  string
 }
 
@@ -55,6 +57,7 @@ type ComandoModificarRol struct {
 	RolID       string
 	Nombre      string
 	Descripcion string
+	TenantID    string
 	EjecutorID  string
 }
 
@@ -67,6 +70,7 @@ type RespuestaModificarRol struct {
 
 type ComandoEliminarRol struct {
 	RolID      string
+	TenantID   string
 	EjecutorID string
 }
 
@@ -132,7 +136,7 @@ type RespuestaRevocarPermisoDeRol struct {
 
 type RbacFacade interface {
 	ListarRoles(ctx context.Context, cmd ComandoListarRoles) (*RespuestaListarRoles, error)
-	ListarPermisos(ctx context.Context, ejecutorID string) (*RespuestaListarPermisos, error)
+	ListarPermisos(ctx context.Context, ejecutorID, tenantID string) (*RespuestaListarPermisos, error)
 	ListarMisPermisos(ctx context.Context, rol, tenantID string) (*RespuestaListarMisPermisos, error)
 	CrearRol(ctx context.Context, cmd ComandoCrearRol) (*RespuestaCrearRol, error)
 	ModificarRol(ctx context.Context, cmd ComandoModificarRol) (*RespuestaModificarRol, error)
@@ -182,8 +186,8 @@ func NewRbacFacade(
 	}
 }
 
-func (f *rbacFacadeImpl) ListarPermisos(ctx context.Context, ejecutorID string) (*RespuestaListarPermisos, error) {
-	resp, err := f.listarPermisos.Ejecutar(ctx, ejecutorID)
+func (f *rbacFacadeImpl) ListarPermisos(ctx context.Context, ejecutorID, tenantID string) (*RespuestaListarPermisos, error) {
+	resp, err := f.listarPermisos.Ejecutar(ctx, ejecutorID, tenantID)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +210,7 @@ func (f *rbacFacadeImpl) ListarMisPermisos(ctx context.Context, rol, tenantID st
 func (f *rbacFacadeImpl) ListarRoles(ctx context.Context, cmd ComandoListarRoles) (*RespuestaListarRoles, error) {
 	resp, err := f.listarRoles.Ejecutar(ctx, &uc_listroles.ComandoListarRoles{
 		Paginacion: cmd.Paginacion,
-		TenantID:   "",
+		TenantID:   cmd.TenantID,
 		EjecutorID: cmd.EjecutorID,
 	})
 	if err != nil {
@@ -224,7 +228,7 @@ func (f *rbacFacadeImpl) CrearRol(ctx context.Context, cmd ComandoCrearRol) (*Re
 		Nombre:      cmd.Nombre,
 		Descripcion: cmd.Descripcion,
 		Permisos:    cmd.Permisos,
-		TenantID:    "",
+		TenantID:    cmd.TenantID,
 		EjecutorID:  cmd.EjecutorID,
 	})
 	if err != nil {
@@ -244,7 +248,7 @@ func (f *rbacFacadeImpl) ModificarRol(ctx context.Context, cmd ComandoModificarR
 		RolID:       cmd.RolID,
 		Nombre:      cmd.Nombre,
 		Descripcion: cmd.Descripcion,
-		TenantID:    "",
+		TenantID:    cmd.TenantID,
 		EjecutorID:  cmd.EjecutorID,
 	})
 	if err != nil {
@@ -261,7 +265,7 @@ func (f *rbacFacadeImpl) ModificarRol(ctx context.Context, cmd ComandoModificarR
 func (f *rbacFacadeImpl) EliminarRol(ctx context.Context, cmd ComandoEliminarRol) (*RespuestaEliminarRol, error) {
 	resp, err := f.eliminarRol.Ejecutar(ctx, &uc_deleterole.ComandoEliminarRol{
 		RolID:      cmd.RolID,
-		TenantID:   "",
+		TenantID:   cmd.TenantID,
 		EjecutorID: cmd.EjecutorID,
 	})
 	if err != nil {

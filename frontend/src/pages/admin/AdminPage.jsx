@@ -123,7 +123,7 @@ function TabUsuarios() {
   const [filtroEstado, setFiltroEstado] = useState('');
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(null);
-  const [form, setForm] = useState({ correo: '', nombre: '', apellido: '', password: '' });
+  const [form, setForm] = useState({ correo: '' });
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -145,13 +145,13 @@ function TabUsuarios() {
       if (modal.tipo === 'editar') await updateUsuario(modal.usuario.id, { nombre: form.nombre, apellido: form.apellido });
     } catch { } finally {
       setModal(null);
-      setForm({ correo: '', nombre: '', apellido: '', password: '' });
+      setForm({ correo: '' });
       cargar();
     }
   };
 
   const abrirEditar = (u) => {
-    setForm({ correo: u.correo, nombre: u.nombre, apellido: u.apellido, password: '' });
+    setForm({ correo: u.correo, nombre: u.nombre, apellido: u.apellido });
     setModal({ tipo: 'editar', usuario: u });
   };
 
@@ -162,7 +162,7 @@ function TabUsuarios() {
       <div className="admin-card">
         <div className="admin-card__top">
           <h2 className="admin-card__title">Usuarios ({total})</h2>
-          {puede('identidad:usuario:crear') && <button className="btn-add" onClick={() => setModal({ tipo: 'crear' })}>+ Nuevo usuario</button>}
+          {puede('identidad:usuario:crear') && <button className="btn-add" onClick={() => setModal({ tipo: 'crear' })}>+ Invitar</button>}
         </div>
         <div className="admin-search">
           <input type="text" placeholder="Filtrar por correo..." value={filtroCorreo} onChange={(e) => { setFiltroCorreo(e.target.value); setPagina(1); }} />
@@ -235,28 +235,24 @@ function TabUsuarios() {
         />
       )}
       {(modal?.tipo === 'crear' || modal?.tipo === 'editar') && (
-        <Modal title={modal.tipo === 'crear' ? 'Nuevo usuario' : 'Editar usuario'} onClose={() => setModal(null)} onConfirm={handleAccion} confirmLabel={modal.tipo === 'crear' ? 'Crear' : 'Guardar'}>
-          <div className="form-row">
+        <Modal title={modal.tipo === 'crear' ? 'Invitar usuario' : 'Editar usuario'} onClose={() => setModal(null)} onConfirm={handleAccion} confirmLabel={modal.tipo === 'crear' ? 'Invitar' : 'Guardar'}>
+          {modal.tipo === 'crear' ? (
             <div className="form-group">
-              <label className="form-label">Nombre</label>
-              <input className="form-input" type="text" value={form.nombre} onChange={(e) => setForm(f => ({ ...f, nombre: e.target.value }))} />
+              <label className="form-label">Correo electrónico</label>
+              <input className="form-input" type="email" placeholder="usuario@correo.com" value={form.correo} onChange={(e) => setForm(f => ({ ...f, correo: e.target.value }))} />
+              <p style={{ color: 'var(--color-gray-600)', fontSize: '0.8rem', marginTop: '0.25rem' }}>Se enviará una invitación al correo para que complete su registro.</p>
             </div>
-            <div className="form-group">
-              <label className="form-label">Apellido</label>
-              <input className="form-input" type="text" value={form.apellido} onChange={(e) => setForm(f => ({ ...f, apellido: e.target.value }))} />
-            </div>
-          </div>
-          {modal.tipo === 'crear' && (
-            <>
+          ) : (
+            <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Correo</label>
-                <input className="form-input" type="email" value={form.correo} onChange={(e) => setForm(f => ({ ...f, correo: e.target.value }))} />
+                <label className="form-label">Nombre</label>
+                <input className="form-input" type="text" value={form.nombre} onChange={(e) => setForm(f => ({ ...f, nombre: e.target.value }))} />
               </div>
               <div className="form-group">
-                <label className="form-label">Contraseña</label>
-                <input className="form-input" type="password" placeholder="Mínimo 8 caracteres" value={form.password} onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))} />
+                <label className="form-label">Apellido</label>
+                <input className="form-input" type="text" value={form.apellido} onChange={(e) => setForm(f => ({ ...f, apellido: e.target.value }))} />
               </div>
-            </>
+            </div>
           )}
         </Modal>
       )}

@@ -12,8 +12,6 @@ import Layout from '../../components/layout/Layout';
 import { usePermisos } from '../../hooks/usePermisos';
 import './Admin.css';
 
-const TABS = ['Usuarios', 'Roles', 'Sesiones', 'IPs Bloqueadas'];
-
 function Modal({ title, onClose, onConfirm, confirmLabel = 'Confirmar', danger = false, children }) {
   return (
     <div className="admin-modal-backdrop" onClick={onClose}>
@@ -622,10 +620,19 @@ function TabIPsBloqueadas() {
 }
 
 export default function AdminPage() {
+  const { user } = useAuth();
   const [tabActiva, setTabActiva] = useState('Usuarios');
 
+  const isSysAdmin = user?.rol === 'sys_admin';
+  const TABS = isSysAdmin
+    ? ['Usuarios', 'Roles', 'Sesiones', 'IPs Bloqueadas']
+    : ['Usuarios', 'Roles'];
+  const subtitle = isSysAdmin
+    ? 'Gestión de usuarios, roles, sesiones e IPs bloqueadas.'
+    : 'Gestión de usuarios y roles de tu finca.';
+
   return (
-    <Layout title="Panel de administración" subtitle="Gestión de usuarios, roles, sesiones e IPs bloqueadas.">
+    <Layout title="Panel de administración" subtitle={subtitle}>
       <div className="admin-tabs">
         {TABS.map((tab) => (
           <button key={tab} className={`admin-tab ${tabActiva === tab ? 'admin-tab--active' : ''}`} onClick={() => setTabActiva(tab)}>

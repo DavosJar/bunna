@@ -11,6 +11,7 @@ import (
 	login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/login"
 	logout "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/logout"
 	refresh "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/refresh"
+	switchtenant "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/switchtenant"
 	tenant "github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
 	usuario "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 	verificacion "github.com/davosjar/bunna/services/identidad/internal/verificacion/domain"
@@ -72,6 +73,7 @@ func MapearError(err error) error {
 		rbac.ErrRolYaAsignado, rbac.ErrRolNoAsignado, rbac.ErrRolInmutable,
 		tenant.ErrSlugDuplicado,
 		tenant.ErrUsuarioYaMiembro, tenant.ErrUsuarioNoEsMiembro, tenant.ErrUltimoAdministrador,
+		switchtenant.ErrNoEresMiembro, switchtenant.ErrSinRolEnTenant,
 		verificacion.ErrCorreoYaVerificado,
 		recuperacion.ErrEnlaceYaUtilizado,
 	) {
@@ -83,6 +85,7 @@ func MapearError(err error) error {
 		login.ErrCuentaBloqueada, login.ErrCuentaInactiva,
 		login.ErrCorreoNoVerificado, login.ErrErrorGenerandoTokens,
 		refresh.ErrLimiteRefrescosAlcanzado, refresh.ErrSesionAbsolutaExpirada, refresh.ErrSesionNoValida,
+		switchtenant.ErrErrorGenerandoTokens,
 		seguridad.ErrIPBloqueada,
 		rate_limiter.ErrRateLimitExcedido,
 		recuperacion.ErrDemasiadasSolicitudes,

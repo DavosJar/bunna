@@ -7,6 +7,7 @@ import (
 	uc_assignrole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignrole"
 	uc_createrole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/createrole"
 	uc_deleterole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/deleterole"
+	uc_listarmispermisos "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listarmispermisos"
 	uc_listpermisos "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listpermisos"
 	uc_listroles "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listroles"
 	uc_revokepermissionfromrole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/revokepermissionfromrole"
@@ -29,6 +30,10 @@ type RespuestaListarRoles struct {
 type RespuestaListarPermisos struct {
 	Permisos []uc_listpermisos.PermisoItem
 	Total    int
+}
+
+type RespuestaListarMisPermisos struct {
+	Permisos []string
 }
 
 type ComandoCrearRol struct {
@@ -101,7 +106,9 @@ type RespuestaRevocarRol struct {
 type ComandoAsignarPermisoARol struct {
 	RolID         string
 	PermisoCodigo string
+	TenantID      string
 	EjecutorID    string
+	AsignadoPor   string
 }
 
 type RespuestaAsignarPermisoARol struct {
@@ -113,6 +120,7 @@ type RespuestaAsignarPermisoARol struct {
 type ComandoRevocarPermisoDeRol struct {
 	RolID         string
 	PermisoCodigo string
+	TenantID      string
 	EjecutorID    string
 }
 
@@ -125,6 +133,7 @@ type RespuestaRevocarPermisoDeRol struct {
 type RbacFacade interface {
 	ListarRoles(ctx context.Context, cmd ComandoListarRoles) (*RespuestaListarRoles, error)
 	ListarPermisos(ctx context.Context, ejecutorID string) (*RespuestaListarPermisos, error)
+	ListarMisPermisos(ctx context.Context, rol, tenantID string) (*RespuestaListarMisPermisos, error)
 	CrearRol(ctx context.Context, cmd ComandoCrearRol) (*RespuestaCrearRol, error)
 	ModificarRol(ctx context.Context, cmd ComandoModificarRol) (*RespuestaModificarRol, error)
 	EliminarRol(ctx context.Context, cmd ComandoEliminarRol) (*RespuestaEliminarRol, error)
@@ -137,6 +146,7 @@ type RbacFacade interface {
 type rbacFacadeImpl struct {
 	listarRoles         *uc_listroles.ListarRolesCasoDeUso
 	listarPermisos      *uc_listpermisos.ListarPermisosCasoDeUso
+	listarMisPermisos   *uc_listarmispermisos.ListarMisPermisosCasoDeUso
 	crearRol            *uc_createrole.CrearRolCasoDeUso
 	modificarRol        *uc_updaterole.ModificarRolCasoDeUso
 	eliminarRol         *uc_deleterole.EliminarRolCasoDeUso
@@ -149,6 +159,7 @@ type rbacFacadeImpl struct {
 func NewRbacFacade(
 	listarRoles *uc_listroles.ListarRolesCasoDeUso,
 	listarPermisos *uc_listpermisos.ListarPermisosCasoDeUso,
+	listarMisPermisos *uc_listarmispermisos.ListarMisPermisosCasoDeUso,
 	crearRol *uc_createrole.CrearRolCasoDeUso,
 	modificarRol *uc_updaterole.ModificarRolCasoDeUso,
 	eliminarRol *uc_deleterole.EliminarRolCasoDeUso,
@@ -160,6 +171,7 @@ func NewRbacFacade(
 	return &rbacFacadeImpl{
 		listarRoles:         listarRoles,
 		listarPermisos:      listarPermisos,
+		listarMisPermisos:   listarMisPermisos,
 		crearRol:            crearRol,
 		modificarRol:        modificarRol,
 		eliminarRol:         eliminarRol,
@@ -178,6 +190,16 @@ func (f *rbacFacadeImpl) ListarPermisos(ctx context.Context, ejecutorID string) 
 	return &RespuestaListarPermisos{
 		Permisos: resp.Permisos,
 		Total:    resp.Total,
+	}, nil
+}
+
+func (f *rbacFacadeImpl) ListarMisPermisos(ctx context.Context, rol, tenantID string) (*RespuestaListarMisPermisos, error) {
+	codigos, err := f.listarMisPermisos.Ejecutar(ctx, rol, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	return &RespuestaListarMisPermisos{
+		Permisos: codigos,
 	}, nil
 }
 
@@ -291,8 +313,9 @@ func (f *rbacFacadeImpl) AsignarPermisoARol(ctx context.Context, cmd ComandoAsig
 	resp, err := f.asignarPermisoARol.Ejecutar(ctx, &uc_assignpermissiontorole.ComandoAsignarPermisoARol{
 		RolID:         cmd.RolID,
 		PermisoCodigo: cmd.PermisoCodigo,
-		TenantID:      "",
+		TenantID:      cmd.TenantID,
 		EjecutorID:    cmd.EjecutorID,
+		AsignadoPor:   cmd.AsignadoPor,
 	})
 	if err != nil {
 		return nil, err
@@ -308,7 +331,7 @@ func (f *rbacFacadeImpl) RevocarPermisoDeRol(ctx context.Context, cmd ComandoRev
 	resp, err := f.revocarPermisoDeRol.Ejecutar(ctx, &uc_revokepermissionfromrole.ComandoRevocarPermisoDeRol{
 		RolID:         cmd.RolID,
 		PermisoCodigo: cmd.PermisoCodigo,
-		TenantID:      "",
+		TenantID:      cmd.TenantID,
 		EjecutorID:    cmd.EjecutorID,
 	})
 	if err != nil {

@@ -129,7 +129,7 @@ func TestRenovarSesionExitoso(t *testing.T) {
 		tokenServicio: tokenSvc,
 		generadorID:   &mockGeneradorID{},
 	}
-	uc := refresh.NewRenovarSesionCasoDeUso(uow, refresh.ConfigRefresh{MaxRefrescos: 10})
+	uc := refresh.NewRenovarSesionCasoDeUso(uow, refresh.ConfigRefresh{MaxRefrescos: 10}, nil, nil)
 	resp, err := uc.Ejecutar(context.Background(), refresh.ComandoRenovarSesion{RefreshToken: "valid-token"})
 	if err != nil {
 		t.Fatalf("error inesperado: %v", err)
@@ -140,7 +140,7 @@ func TestRenovarSesionExitoso(t *testing.T) {
 }
 
 func TestRenovarSesionTokenVacio(t *testing.T) {
-	uc := refresh.NewRenovarSesionCasoDeUso(&mockUnitOfWork{}, refresh.ConfigRefresh{})
+	uc := refresh.NewRenovarSesionCasoDeUso(&mockUnitOfWork{}, refresh.ConfigRefresh{}, nil, nil)
 	_, err := uc.Ejecutar(context.Background(), refresh.ComandoRenovarSesion{RefreshToken: ""})
 	if !errors.Is(err, refresh.ErrRefreshTokenRequerido) {
 		t.Errorf("esperaba ErrRefreshTokenRequerido, got %v", err)
@@ -151,7 +151,7 @@ func TestRenovarSesionTokenInvalido(t *testing.T) {
 	uow := &mockUnitOfWork{
 		tokenServicio: &mockTokenServicio{errValid: errors.New("invalido")},
 	}
-	uc := refresh.NewRenovarSesionCasoDeUso(uow, refresh.ConfigRefresh{})
+	uc := refresh.NewRenovarSesionCasoDeUso(uow, refresh.ConfigRefresh{}, nil, nil)
 	_, err := uc.Ejecutar(context.Background(), refresh.ComandoRenovarSesion{RefreshToken: "bad-token"})
 	if !errors.Is(err, refresh.ErrTokenInvalido) {
 		t.Errorf("esperaba ErrTokenInvalido, got %v", err)
@@ -169,9 +169,8 @@ func TestRenovarSesionSesionNoValida(t *testing.T) {
 	sesionRepoMock := &mockSesionRepo{err: errors.New("not found")}
 	uow.sesionRepo = sesionRepoMock
 
-	uc := refresh.NewRenovarSesionCasoDeUso(uow, refresh.ConfigRefresh{})
+	uc := refresh.NewRenovarSesionCasoDeUso(uow, refresh.ConfigRefresh{}, nil, nil)
 	_, err := uc.Ejecutar(context.Background(), refresh.ComandoRenovarSesion{RefreshToken: "valid-token"})
-
 	if !errors.Is(err, refresh.ErrTokenInvalido) {
 		t.Errorf("esperaba ErrTokenInvalido cuando no se encuentra sesión, got %v", err)
 	}
@@ -189,7 +188,7 @@ func TestRenovarSesionLimiteRefrescos(t *testing.T) {
 		sesionRepo:    &mockSesionRepo{sesion: sesion},
 		tokenServicio: tokenSvc,
 	}
-	uc := refresh.NewRenovarSesionCasoDeUso(uow, refresh.ConfigRefresh{MaxRefrescos: 0})
+	uc := refresh.NewRenovarSesionCasoDeUso(uow, refresh.ConfigRefresh{MaxRefrescos: 0}, nil, nil)
 	_, err := uc.Ejecutar(context.Background(), refresh.ComandoRenovarSesion{RefreshToken: "valid-token"})
 	if err != nil {
 		t.Fatalf("no debería fallar con MaxRefrescos=0: %v", err)
@@ -212,7 +211,7 @@ func TestRenovarSesionTimeoutAbsoluto(t *testing.T) {
 	uc := refresh.NewRenovarSesionCasoDeUso(uow, refresh.ConfigRefresh{
 		MaxRefrescos:    10,
 		TimeoutAbsoluto: 30 * time.Minute,
-	})
+	}, nil, nil)
 	_, err := uc.Ejecutar(context.Background(), refresh.ComandoRenovarSesion{RefreshToken: "valid-token"})
 	if !errors.Is(err, refresh.ErrSesionAbsolutaExpirada) {
 		t.Errorf("esperaba ErrSesionAbsolutaExpirada, got %v", err)

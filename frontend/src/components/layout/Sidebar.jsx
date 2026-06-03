@@ -100,12 +100,16 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
             <span className="sidebar__item-text">Mi Perfil</span>
           </NavLink>
 
-          <span className="sidebar__section-label">Administración</span>
+          {(user?.rol === 'sys_admin' || user?.rol === 'administrador') && (
+            <>
+              <span className="sidebar__section-label">Administración</span>
 
-          <NavLink to="/admin" className={({ isActive }) => `sidebar__item ${isActive ? 'sidebar__item--active' : ''}`}>
-            <IconAdmin className="sidebar__item-icon" />
-            <span className="sidebar__item-text">Panel Admin</span>
-          </NavLink>
+              <NavLink to="/admin" className={({ isActive }) => `sidebar__item ${isActive ? 'sidebar__item--active' : ''}`}>
+                <IconAdmin className="sidebar__item-icon" />
+                <span className="sidebar__item-text">Panel Admin</span>
+              </NavLink>
+            </>
+          )}
         </nav>
 
         {/* Footer */}

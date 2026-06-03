@@ -52,7 +52,7 @@ func (uc *AsignarPermisoARolCasoDeUso) Ejecutar(ctx context.Context, cmd *Comand
 		return nil, fmt.Errorf("permiso no encontrado: %w", err)
 	}
 
-	if err := uc.rolPermisoRepo.AsignarPermiso(ctx, cmd.RolID, permisoDB.ID); err != nil {
+	if err := uc.rolPermisoRepo.AsignarPermiso(ctx, cmd.RolID, permisoDB.ID, cmd.TenantID, cmd.AsignadoPor); err != nil {
 		return nil, fmt.Errorf("error al asignar permiso al rol: %w", err)
 	}
 

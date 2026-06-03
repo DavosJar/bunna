@@ -101,13 +101,10 @@ func (s *SeedServicio) Ejecutar(ctx context.Context) error {
 			}
 		}
 
-		// 3. Re-sincronizar permisos del rol
-		if err := s.rolPermisoRepo.LimpiarPermisosDeRol(ctx, rolID); err != nil {
-			return err
-		}
+		// 3. Re-sincronizar permisos del rol (upsert idempotente)
 		for _, codigoPermiso := range rolInfo.Permisos {
 			permisoID := permisoIDs[codigoPermiso]
-			if err := s.rolPermisoRepo.AsignarPermiso(ctx, rolID, permisoID); err != nil {
+			if err := s.rolPermisoRepo.AsignarPermiso(ctx, rolID, permisoID, rbac.TenantIDSistema, ""); err != nil {
 				return err
 			}
 		}

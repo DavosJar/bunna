@@ -51,3 +51,17 @@ export function isTokenExpired(token) {
   if (!payload?.exp) return true;
   return Date.now() >= payload.exp * 1000;
 }
+
+/**
+ * Cambiar de tenant activo.
+ * POST /api/v1/auth/switch-tenant
+ */
+export async function switchTenantAPI(tenantId) {
+  const token = localStorage.getItem('bunna_access_token');
+  const response = await authClient.post(
+    '/api/v1/auth/switch-tenant',
+    { tenant_id: tenantId },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return response.data;
+}

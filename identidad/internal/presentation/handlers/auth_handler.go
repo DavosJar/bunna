@@ -53,6 +53,8 @@ func (h *RefreshHandler) handle(ctx context.Context, input *RefreshInput) (*Refr
 		ExpiresIn:    resp.ExpiresIn,
 		TokenType:    resp.TokenType,
 		UsuarioID:    resp.UsuarioID,
+		TenantID:     resp.TenantID,
+		Rol:          resp.Rol,
 	})
 	return out, nil
 }

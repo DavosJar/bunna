@@ -89,6 +89,7 @@ func New(all *facades.AllFacades, cfg Config) *gin.Engine {
 	handlers.NewRefreshHandler(all.Auth).Register(api)
 	handlers.NewLogoutHandler(all.Auth).Register(api)
 	handlers.NewLogoutAllHandler(all.Auth).Register(api)
+	handlers.NewSwitchTenantHandler(all.Auth).Register(api)
 
 	// Registrar handlers — Usuarios
 	handlers.NewCrearUsuarioHandler(all.Usuario).Register(api)
@@ -123,9 +124,11 @@ func New(all *facades.AllFacades, cfg Config) *gin.Engine {
 	handlers.NewAsignarPermisoARolHandler(all.Rbac).Register(api)
 	handlers.NewRevocarPermisoDeRolHandler(all.Rbac).Register(api)
 	handlers.NewListarPermisosHandler(all.Rbac).Register(api)
+	handlers.NewListarMisPermisosHandler(all.Rbac).Register(api)
 
 	// Registrar handlers — Tenants
 	handlers.NewConfigurarTenantHandler(all.Tenant).Register(api)
+	handlers.NewListarMisTenantsHandler(all.Tenant).Register(api)
 
 	// Registrar handlers — Verificación
 	handlers.NewSolicitarVerificacionHandler(all.Verificacion).Register(api)

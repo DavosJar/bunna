@@ -1,5 +1,8 @@
 package rbac
 
+// TenantIDSistema es el UUID sentinela para asignaciones de permisos a nivel sistema
+const TenantIDSistema = "00000000-0000-0000-0000-000000000000"
+
 // Nombres de roles de sistema — inmutables
 const (
 	RolSysAdmin      = "sys_admin"

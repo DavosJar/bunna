@@ -59,6 +59,7 @@ type AuthFacade interface {
 	Refresh(ctx context.Context, cmd ComandoRefresh) (*RespuestaRefresh, error)
 	Logout(ctx context.Context, cmd ComandoLogout) (*RespuestaLogout, error)
 	LogoutAll(ctx context.Context, cmd ComandoLogoutAll) (*RespuestaLogout, error)
+	SwitchTenant(ctx context.Context, cmd ComandoSwitchTenant) (*RespuestaSwitchTenant, error)
 }
 
 // ComandoRefresh contiene el token de refresco.
@@ -73,6 +74,27 @@ type RespuestaRefresh struct {
 	ExpiresIn    int64
 	TokenType    string
 	UsuarioID    string
+	TenantID     string
+	Rol          string
+}
+
+// ComandoSwitchTenant contiene los datos para cambiar de tenant activo.
+type ComandoSwitchTenant struct {
+	UsuarioID string
+	SesionID  string
+	TenantID  string
+}
+
+// RespuestaSwitchTenant contiene los tokens y datos tras cambiar de tenant.
+type RespuestaSwitchTenant struct {
+	AccessToken  string
+	RefreshToken string
+	ExpiresIn    int64
+	TokenType    string
+	UsuarioID    string
+	SesionID     string
+	TenantID     string
+	Rol          string
 }
 
 // RespuestaLogout contiene la cantidad de sesiones revocadas.

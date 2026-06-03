@@ -8,16 +8,18 @@ import (
 	uc_sesiones_login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/login"
 	uc_sesiones_logout "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/logout"
 	uc_sesiones_refresh "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/refresh"
+	uc_sesiones_switchtenant "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/switchtenant"
 	uc_register "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/register"
 	uc_verifyemail "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/verifyemail"
 )
 
 type authFacadeImpl struct {
-	registroUseCase     RegistroUseCase
-	verificacionUseCase *uc_verifyemail.VerificarCorreoCasoDeUso
-	loginUseCase        LoginUseCase
-	refreshUseCase      RefreshUseCase
-	logoutUseCase       LogoutUseCase
+	registroUseCase      RegistroUseCase
+	verificacionUseCase  *uc_verifyemail.VerificarCorreoCasoDeUso
+	loginUseCase         LoginUseCase
+	refreshUseCase       RefreshUseCase
+	logoutUseCase        LogoutUseCase
+	switchTenantUseCase  *uc_sesiones_switchtenant.CambiarTenantCasoDeUso
 }
 
 func NewAuthFacade(
@@ -26,6 +28,7 @@ func NewAuthFacade(
 	loginUseCase LoginUseCase,
 	refreshUseCase RefreshUseCase,
 	logoutUseCase LogoutUseCase,
+	switchTenantUseCase *uc_sesiones_switchtenant.CambiarTenantCasoDeUso,
 ) AuthFacade {
 	return &authFacadeImpl{
 		registroUseCase:     registroUseCase,
@@ -33,6 +36,7 @@ func NewAuthFacade(
 		loginUseCase:        loginUseCase,
 		refreshUseCase:      refreshUseCase,
 		logoutUseCase:       logoutUseCase,
+		switchTenantUseCase: switchTenantUseCase,
 	}
 }
 
@@ -104,6 +108,32 @@ func (f *authFacadeImpl) Refresh(ctx context.Context, cmd ComandoRefresh) (*Resp
 		ExpiresIn:    expiresIn,
 		TokenType:    "Bearer",
 		UsuarioID:    respuesta.UsuarioID,
+		TenantID:     respuesta.TenantID,
+		Rol:          respuesta.Rol,
+	}, nil
+}
+
+func (f *authFacadeImpl) SwitchTenant(ctx context.Context, cmd ComandoSwitchTenant) (*RespuestaSwitchTenant, error) {
+	respuesta, err := f.switchTenantUseCase.Ejecutar(ctx, uc_sesiones_switchtenant.ComandoCambiarTenant{
+		UsuarioID: cmd.UsuarioID,
+		SesionID:  cmd.SesionID,
+		TenantID:  cmd.TenantID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	expiresIn := int64(time.Until(respuesta.ExpiracionAccess).Seconds())
+
+	return &RespuestaSwitchTenant{
+		AccessToken:  respuesta.AccessToken,
+		RefreshToken: respuesta.RefreshToken,
+		ExpiresIn:    expiresIn,
+		TokenType:    "Bearer",
+		UsuarioID:    respuesta.UsuarioID,
+		SesionID:     respuesta.SesionID,
+		TenantID:     respuesta.TenantID,
+		Rol:          respuesta.Rol,
 	}, nil
 }
 

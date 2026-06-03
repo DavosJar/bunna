@@ -5,6 +5,7 @@ import (
 	notificaciones "github.com/davosjar/bunna/services/identidad/internal/notificaciones/domain"
 	notificaciones_email "github.com/davosjar/bunna/services/identidad/internal/notificaciones/infrastructure/email"
 	checkpermission "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/checkpermission"
+	uc_listarmispermisos "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listarmispermisos"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignpermissiontorole"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignrole"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/createrole"
@@ -36,6 +37,7 @@ import (
 	uc_sesiones_login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/login"
 	uc_sesiones_logout "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/logout"
 	uc_sesiones_refresh "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/refresh"
+	uc_sesiones_switchtenant "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/switchtenant"
 	uc_terminatesession "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/terminatesession"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 	sesiones_postgres "github.com/davosjar/bunna/services/identidad/internal/sesiones/infrastructure/persistence/postgres"
@@ -100,9 +102,10 @@ type Registry struct {
 	ServicioRateLimit *rate_limiter.ServicioRateLimit
 
 	// Casos de uso — auth
-	IniciarSesionCasoDeUso *uc_sesiones_login.IniciarSesionCasoDeUso
-	CerrarSesionCasoDeUso  *uc_sesiones_logout.CerrarSesionCasoDeUso
-	RenovarSesionCasoDeUso *uc_sesiones_refresh.RenovarSesionCasoDeUso
+	IniciarSesionCasoDeUso    *uc_sesiones_login.IniciarSesionCasoDeUso
+	CerrarSesionCasoDeUso     *uc_sesiones_logout.CerrarSesionCasoDeUso
+	RenovarSesionCasoDeUso    *uc_sesiones_refresh.RenovarSesionCasoDeUso
+	CambiarTenantCasoDeUso    *uc_sesiones_switchtenant.CambiarTenantCasoDeUso
 
 	// Casos de uso — usuarios admin
 	CrearUsuarioCasoDeUso     *uc_createuser.CrearUsuarioCasoDeUso
@@ -130,6 +133,7 @@ type Registry struct {
 	// Casos de uso — roles y permisos
 	ListarRolesCasoDeUso         *listroles.ListarRolesCasoDeUso
 	ListarPermisosCasoDeUso      *uc_listpermisos.ListarPermisosCasoDeUso
+	ListarMisPermisosCasoDeUso   *uc_listarmispermisos.ListarMisPermisosCasoDeUso
 	CrearRolCasoDeUso            *createrole.CrearRolCasoDeUso
 	ModificarRolCasoDeUso        *updaterole.ModificarRolCasoDeUso
 	EliminarRolCasoDeUso         *deleterole.EliminarRolCasoDeUso
@@ -239,6 +243,8 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		usuarioTenantRolRepo,
 	)
 
+	listarMisPermisosCasoDeUso := uc_listarmispermisos.NewListarMisPermisosCasoDeUso(rolRepo, rolPermisoRepo)
+
 	return &Registry{
 		usuarioRepository:      usuarioRepo,
 		credencialesRepository: credencialesRepo,
@@ -280,10 +286,15 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 			usuarioTenantRolRepo,
 		),
 		CerrarSesionCasoDeUso:  uc_sesiones_logout.NewCerrarSesionCasoDeUso(sesionUoW),
-		RenovarSesionCasoDeUso: uc_sesiones_refresh.NewRenovarSesionCasoDeUso(sesionUoW, uc_sesiones_refresh.ConfigRefresh{
-			MaxRefrescos:    cfg.SesionMaxRefrescos,
-			TimeoutAbsoluto: cfg.SesionTimeoutAbsoluto,
-		}),
+		RenovarSesionCasoDeUso: uc_sesiones_refresh.NewRenovarSesionCasoDeUso(
+			sesionUoW,
+			uc_sesiones_refresh.ConfigRefresh{
+				MaxRefrescos:    cfg.SesionMaxRefrescos,
+				TimeoutAbsoluto: cfg.SesionTimeoutAbsoluto,
+			},
+			membresiaRepo,
+			usuarioTenantRolRepo,
+		),
 
 		// Casos de uso — usuarios admin
 		CrearUsuarioCasoDeUso:     uc_createuser.NewCrearUsuarioCasoDeUso(usuarioRepo, credencialesRepo, encriptacion, authSvc, generadorID),
@@ -307,6 +318,13 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		// Casos de uso — sesiones
 		ListarSesionesCasoDeUso:     uc_listsessions.NewListarSesionesCasoDeUso(sesionRepo, authSvc),
 		ForzarCierreSesionCasoDeUso: uc_terminatesession.NewForzarCierreSesionCasoDeUso(sesionRepo, authSvc),
+
+		// Casos de uso — switch tenant
+		CambiarTenantCasoDeUso: uc_sesiones_switchtenant.NewCambiarTenantCasoDeUso(
+			membresiaRepo,
+			usuarioTenantRolRepo,
+			sesionUoW,
+		),
 
 		// Casos de uso — tenants
 		ConfigurarTenantCasoDeUso: uc_updatetenant.NewConfigurarTenantCasoDeUso(tenantRepo, authSvc),
@@ -334,13 +352,14 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		// Casos de uso — roles y permisos
 		ListarRolesCasoDeUso:         listroles.NewListarRolesCasoDeUso(rolRepo, permisoRepo, authSvc),
 			ListarPermisosCasoDeUso:      uc_listpermisos.NewListarPermisosCasoDeUso(permisoRepo, authSvc),
+		ListarMisPermisosCasoDeUso:   listarMisPermisosCasoDeUso,
 		CrearRolCasoDeUso:            createrole.NewCrearRolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc),
 		ModificarRolCasoDeUso:        updaterole.NewModificarRolCasoDeUso(rolRepo, authSvc),
 		EliminarRolCasoDeUso:         deleterole.NewEliminarRolCasoDeUso(rolRepo, authSvc),
 		AsignarRolCasoDeUso:          assignrole.NewAsignarRolCasoDeUso(usuarioRolRepo, usuarioTenantRolRepo, rolRepo, authSvc),
 		RevocarRolCasoDeUso:          revokerole.NewRevocarRolCasoDeUso(usuarioRolRepo, usuarioTenantRolRepo, authSvc),
 		AsignarPermisoARolCasoDeUso:  assignpermissiontorole.NewAsignarPermisoARolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc),
-		RevocarPermisoDeRolCasoDeUso: revokepermissionfromrole.NewRevocarPermisoDeRolCasoDeUso(rolRepo, rolPermisoRepo, authSvc),
+		RevocarPermisoDeRolCasoDeUso: revokepermissionfromrole.NewRevocarPermisoDeRolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc),
 	}
 }
 
@@ -364,3 +383,6 @@ func (r *Registry) MembresiaRepository() tenant_domain.MembresiaRepositorio {
 }
 func (r *Registry) AuthService() *checkpermission.VerificarPermisoCasoDeUso { return r.authService }
 func (r *Registry) EmailServicio() notificaciones.EmailServicio     { return r.emailServicio }
+func (r *Registry) UsuarioTenantRolRepositorio() rbac.UsuarioTenantRolRepositorio {
+	return r.usuarioTenantRolRepo
+}

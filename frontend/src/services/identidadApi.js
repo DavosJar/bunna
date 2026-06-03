@@ -31,6 +31,12 @@ export async function updateMiPassword({ password_actual, nueva_password }) {
   return res.data.data;
 }
 
+// ── Tenants ────────────────────────────────────────────────
+export async function getMisTenants() {
+  const res = await client.get('/api/v1/tenants/mis-tenants');
+  return res.data.data;
+}
+
 // ── Recuperación de contraseña ─────────────────────────────
 export async function solicitarRecuperacion({ correo }) {
   const res = await client.post('/api/v1/recuperacion/solicitar', { correo });
@@ -158,6 +164,11 @@ export async function desbloquearIP(ip) {
 export async function getPermisos() {
   const res = await client.get('/api/v1/permisos');
   return res.data?.data || {};
+}
+
+export async function getMisPermisos() {
+  const res = await client.get('/api/v1/mis-permisos');
+  return res.data?.data?.permisos || [];
 }
 
 export async function asignarPermisoARol(rolID, permisoCodigo) {

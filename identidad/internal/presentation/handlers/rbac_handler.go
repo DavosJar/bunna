@@ -384,10 +384,14 @@ func (h *AsignarPermisoARolHandler) handle(ctx context.Context, input *AsignarPe
 		return nil, huma.Error401Unauthorized("token requerido")
 	}
 
+	tenantID := middleware.GetTenantIDFromCtx(ctx)
+
 	resp, err := h.facade.AsignarPermisoARol(ctx, facades.ComandoAsignarPermisoARol{
 		RolID:         input.RolID,
 		PermisoCodigo: input.Body.PermisoCodigo,
+		TenantID:      tenantID,
 		EjecutorID:    ejecutorID,
+		AsignadoPor:   ejecutorID,
 	})
 	if err != nil {
 		return nil, presentation.MapearError(err)
@@ -437,9 +441,12 @@ func (h *RevocarPermisoDeRolHandler) handle(ctx context.Context, input *RevocarP
 		return nil, huma.Error401Unauthorized("token requerido")
 	}
 
+	tenantID := middleware.GetTenantIDFromCtx(ctx)
+
 	resp, err := h.facade.RevocarPermisoDeRol(ctx, facades.ComandoRevocarPermisoDeRol{
 		RolID:         input.RolID,
 		PermisoCodigo: input.PermisoCodigo,
+		TenantID:      tenantID,
 		EjecutorID:    ejecutorID,
 	})
 	if err != nil {

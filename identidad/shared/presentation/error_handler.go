@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/danielgtaylor/huma/v2"
+	invitaciones "github.com/davosjar/bunna/services/identidad/internal/invitaciones/domain"
 	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	recuperacion "github.com/davosjar/bunna/services/identidad/internal/recuperacion/domain"
 	seguridad "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/bloqueo_ip"
@@ -64,6 +65,7 @@ func MapearError(err error) error {
 		tenant.ErrTenantNoEncontrado,
 		recuperacion.ErrUsuarioNoEncontrado, recuperacion.ErrEnlaceInvalido,
 		verificacion.ErrUsuarioNoEncontrado, verificacion.ErrEnlaceInvalido,
+		invitaciones.ErrNoEncontrada,
 	) {
 		return huma.Error404NotFound(err.Error())
 	}
@@ -83,6 +85,7 @@ func MapearError(err error) error {
 	// 422 Unprocessable Entity
 	if esError(err,
 		login.ErrCuentaBloqueada, login.ErrCuentaInactiva,
+		invitaciones.ErrEnlaceExpirado, invitaciones.ErrYaAceptada, invitaciones.ErrEnlaceInvalido, invitaciones.ErrInvitacionNoValida,
 		login.ErrCorreoNoVerificado, login.ErrErrorGenerandoTokens,
 		refresh.ErrLimiteRefrescosAlcanzado, refresh.ErrSesionAbsolutaExpirada, refresh.ErrSesionNoValida,
 		switchtenant.ErrErrorGenerandoTokens,

@@ -140,6 +140,10 @@ func New(all *facades.AllFacades, cfg Config) *gin.Engine {
 	handlers.NewValidarTokenRecuperacionHandler(all.Recuperacion).Register(api)
 	handlers.NewConfirmarRecuperacionHandler(all.Recuperacion).Register(api)
 
+	// Registrar handlers — Invitaciones
+	handlers.NewCrearInvitacionHandler(all.Invitacion).Register(api)
+	handlers.NewAceptarInvitacionHandler(all.Invitacion).Register(api)
+
 	return router
 }
 

@@ -83,6 +83,13 @@
   color: var(--color-gray-900);
 }
 
+.form-error {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: #dc2626;
+  font-weight: 500;
+}
+
 .admin-table-wrapper {
   overflow-x: auto;
 }
@@ -134,6 +141,7 @@
 .admin-badge--inactivo { background: #f3f4f6; color: #6b7280; }
 .admin-badge--expulsado { background: #fee2e2; color: #991b1b; }
 .admin-badge--no_verificado { background: #fef3c7; color: #92400e; }
+.admin-badge--dueno { background: #dbeafe; color: #1e40af; font-weight: 600; }
 
 .admin-actions {
   display: flex;

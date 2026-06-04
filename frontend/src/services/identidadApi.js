@@ -160,6 +160,17 @@ export async function desbloquearIP(ip) {
   const res = await client.delete(`/api/v1/ips-bloqueadas/${ip}`);
   return res.data.data;
 }
+// ── Invitaciones ──────────────────────────────────────────────
+export async function invitarUsuario({ correo, rol_id }) {
+  const res = await client.post('/api/v1/invitaciones', { correo, rol_id });
+  return res.data.data;
+}
+
+export async function aceptarInvitacion({ token }) {
+  const res = await client.post('/api/v1/invitaciones/aceptar', { token });
+  return res.data.data;
+}
+
 // ── Permisos de roles ──────────────────────────────────────────
 export async function getPermisos() {
   const res = await client.get('/api/v1/permisos');

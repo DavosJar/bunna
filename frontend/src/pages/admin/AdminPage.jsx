@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
-  getUsuarios, createUsuario, updateUsuario, bajaUsuario, expulsarUsuario, unlockUsuario,
+  getUsuarios, invitarUsuario, updateUsuario, bajaUsuario, expulsarUsuario, unlockUsuario,
   getRoles, createRol, deleteRol,
   asignarRol, revocarRol,
   getPermisos, asignarPermisoARol, revocarPermisoDeRol,
@@ -10,6 +10,7 @@ import {
 } from '../../services/identidadApi';
 import Layout from '../../components/layout/Layout';
 import { usePermisos } from '../../hooks/usePermisos';
+import { validateEmail } from '../../services/authApi';
 import './Admin.css';
 
 function Modal({ title, onClose, onConfirm, confirmLabel = 'Confirmar', danger = false, children }) {
@@ -116,6 +117,7 @@ function ModalRoles({ usuario, onClose }) {
 
 function TabUsuarios() {
   const { puede } = usePermisos();
+  const { user: usuarioActual } = useAuth();
   const [usuarios, setUsuarios] = useState([]);
   const [total, setTotal] = useState(0);
   const [pagina, setPagina] = useState(1);
@@ -124,6 +126,7 @@ function TabUsuarios() {
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({ correo: '' });
+  const [formError, setFormError] = useState('');
   const [rolesOptions, setRolesOptions] = useState([]);
   const [rolSeleccionado, setRolSeleccionado] = useState('');
 
@@ -153,15 +156,19 @@ function TabUsuarios() {
       if (modal.tipo === 'expulsar') await expulsarUsuario(modal.usuario.id);
       if (modal.tipo === 'unlock') await unlockUsuario(modal.usuario.id);
       if (modal.tipo === 'crear') {
-        const usuarioCreado = await createUsuario(form);
-        if (rolSeleccionado) {
-          await asignarRol(usuarioCreado.id, { rol_id: rolSeleccionado, tenant_id: '' });
+        const validation = validateEmail(form.correo);
+        if (!validation.valid) {
+          setFormError(validation.errors[0]);
+          return;
         }
+        setFormError('');
+        await invitarUsuario({ correo: form.correo, rol_id: rolSeleccionado || undefined });
       }
       if (modal.tipo === 'editar') await updateUsuario(modal.usuario.id, { nombre: form.nombre, apellido: form.apellido });
     } catch { } finally {
       setModal(null);
       setForm({ correo: '' });
+      setFormError('');
       setRolSeleccionado('');
       cargar();
     }
@@ -208,11 +215,17 @@ function TabUsuarios() {
                       <td>{new Date(u.creado_en).toLocaleDateString()}</td>
                       <td>
                         <div className="admin-actions">
-                          {puede('identidad:usuario:modificar') && <button className="btn-admin btn-admin--primary" onClick={() => abrirEditar(u)}>Editar</button>}
-                          {puede('identidad:rol:asignar') && <button className="btn-admin btn-admin--primary" onClick={() => setModal({ tipo: 'roles', usuario: u })}>Roles</button>}
-                          {puede('identidad:credenciales:desbloquear') && <button className="btn-admin btn-admin--warning" onClick={() => setModal({ tipo: 'unlock', usuario: u })}>Desbloquear</button>}
-                          {puede('identidad:usuario:eliminar') && <button className="btn-admin btn-admin--danger" onClick={() => setModal({ tipo: 'baja', usuario: u })}>Dar baja</button>}
-                          {puede('identidad:usuario:expulsar') && <button className="btn-admin btn-admin--danger" onClick={() => setModal({ tipo: 'expulsar', usuario: u })}>Expulsar</button>}
+                          {u.id === usuarioActual?.id ? (
+                            <span className="admin-badge admin-badge--dueno">Dueño</span>
+                          ) : (
+                            <>
+                              {puede('identidad:usuario:modificar') && <button className="btn-admin btn-admin--primary" onClick={() => abrirEditar(u)}>Editar</button>}
+                              {puede('identidad:rol:asignar') && <button className="btn-admin btn-admin--primary" onClick={() => setModal({ tipo: 'roles', usuario: u })}>Roles</button>}
+                              {puede('identidad:credenciales:desbloquear') && <button className="btn-admin btn-admin--warning" onClick={() => setModal({ tipo: 'unlock', usuario: u })}>Desbloquear</button>}
+                              {puede('identidad:usuario:eliminar') && <button className="btn-admin btn-admin--danger" onClick={() => setModal({ tipo: 'baja', usuario: u })}>Dar baja</button>}
+                              {puede('identidad:usuario:expulsar') && <button className="btn-admin btn-admin--danger" onClick={() => setModal({ tipo: 'expulsar', usuario: u })}>Expulsar</button>}
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -257,7 +270,8 @@ function TabUsuarios() {
             <>
               <div className="form-group">
                 <label className="form-label">Correo electrónico</label>
-                <input className="form-input" type="email" placeholder="usuario@correo.com" value={form.correo} onChange={(e) => setForm(f => ({ ...f, correo: e.target.value }))} />
+                <input className="form-input" type="email" placeholder="usuario@correo.com" value={form.correo} onChange={(e) => { setForm(f => ({ ...f, correo: e.target.value })); setFormError(''); }} />
+                {formError && <p className="form-error">{formError}</p>}
                 <p style={{ color: 'var(--color-gray-600)', fontSize: '0.8rem', marginTop: '0.25rem' }}>Se enviará una invitación al correo para que complete su registro.</p>
               </div>
               <div className="form-group" style={{ marginTop: '0.75rem' }}>

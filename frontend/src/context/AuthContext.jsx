@@ -101,6 +101,7 @@ export function AuthProvider({ children }) {
         email: correo,
         nombre: correo.split('@')[0],
         tenantID: data.tenant_id,
+        ownTenantID: data.tenant_id,
         rol: data.rol || 'caficultor',
         sessionId: payload?.sid,
       };

@@ -29,6 +29,10 @@ func (uc *DarDeBajaUsuarioCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoD
 		return nil, rbac.ErrPermisoDenegado
 	}
 
+	if cmd.EjecutorID == cmd.UsuarioID {
+		return nil, fmt.Errorf("no puedes darte de baja a ti mismo")
+	}
+
 	u, err := uc.userRepo.ObtenerPorID(ctx, cmd.UsuarioID)
 	if err != nil {
 		return nil, fmt.Errorf("usuario no encontrado: %w", err)

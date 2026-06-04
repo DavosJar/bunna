@@ -6,4 +6,5 @@ type TipoEmail string
 const (
 	TipoVerificacionCorreo     TipoEmail = "VERIFICACION_CORREO"
 	TipoRecuperacionContrasena TipoEmail = "RECUPERACION_CONTRASENA"
+	TipoInvitacion             TipoEmail = "INVITACION"
 )

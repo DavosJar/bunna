@@ -5,6 +5,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import VerificacionCorreoPage from './pages/auth/VerificacionCorreoPage';
+import AceptarInvitacionPage from './pages/auth/AceptarInvitacionPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import PerfilPage from './pages/perfil/PerfilPage';
 import AdminPage from './pages/admin/AdminPage';
@@ -28,6 +29,7 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verificar-correo" element={<VerificacionCorreoPage />} />
+      <Route path="/aceptar-invitacion" element={<AceptarInvitacionPage />} />
       <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
       <Route path="/perfil" element={<PrivateRoute><PerfilPage /></PrivateRoute>} />
       <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />

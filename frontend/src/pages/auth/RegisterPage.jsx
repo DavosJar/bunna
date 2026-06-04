@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { validateEmail } from '../../services/authApi';
 import './Auth.css';
 
 export default function RegisterPage() {
@@ -9,12 +10,19 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [emailError, setEmailError] = useState('');
   const { register, loading, error } = useAuth();
   const navigate = useNavigate();
 
 const handleSubmit = async (e) => {
   e.preventDefault();
+  setEmailError('');
   if (password.length < 8) return;
+  const validation = validateEmail(email);
+  if (!validation.valid) {
+    setEmailError(validation.errors[0]);
+    return;
+  }
   const result = await register({ nombre, apellido, correo: email, password });
   if (result.success) {
     navigate('/login', {
@@ -77,7 +85,8 @@ const handleSubmit = async (e) => {
 
             <div className="form-group">
               <label className="form-label" htmlFor="reg-email">Correo electrónico</label>
-              <input id="reg-email" className="form-input" type="email" placeholder="tu@correo.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required disabled={loading} />
+              <input id="reg-email" className="form-input" type="email" placeholder="tu@correo.com" value={email} onChange={(e) => { setEmail(e.target.value); setEmailError(''); }} autoComplete="email" required disabled={loading} />
+              {emailError && <p className="form-error">{emailError}</p>}
             </div>
 
             <div className="form-group">

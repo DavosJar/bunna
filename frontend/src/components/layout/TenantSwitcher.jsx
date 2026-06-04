@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import './TenantSwitcher.css';
 
 export default function TenantSwitcher() {
-  const { user, availableTenants, ownTenantId, currentTenant, switchTenant, loading } = useAuth();
+  const { user, availableTenants, currentTenant, switchTenant, loading } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -33,9 +33,15 @@ export default function TenantSwitcher() {
         className="tenant-switcher__trigger"
         onClick={() => setOpen(o => !o)}
         disabled={loading}
-        aria-label="Cambiar de tenant"
+        aria-label="Cambiar de finca"
         aria-expanded={open}
       >
+        <svg className="tenant-switcher__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <span className="tenant-switcher__label">Cambiar finca</span>
         <span className="tenant-switcher__current">
           <span className="tenant-switcher__name">{displayName}</span>
           {displayRole && <span className="tenant-switcher__role">{displayRole}</span>}
@@ -54,7 +60,7 @@ export default function TenantSwitcher() {
           </div>
           {availableTenants.map(t => {
             const isActive = t.id === user?.tenantID;
-            const isOwn = t.es_propio || t.id === ownTenantId;
+            const isOwn = t.id === user?.ownTenantID;
             return (
               <button
                 key={t.id}

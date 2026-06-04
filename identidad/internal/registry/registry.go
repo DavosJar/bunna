@@ -2,6 +2,9 @@ package registry
 
 import (
 	"github.com/davosjar/bunna/services/identidad/internal/config"
+	uc_aceptarInvitacion "github.com/davosjar/bunna/services/identidad/internal/invitaciones/application/usecases/aceptarinvitacion"
+	uc_crearInvitacion "github.com/davosjar/bunna/services/identidad/internal/invitaciones/application/usecases/crearinvitacion"
+	invitaciones_postgres "github.com/davosjar/bunna/services/identidad/internal/invitaciones/infrastructure/persistence/postgres"
 	notificaciones "github.com/davosjar/bunna/services/identidad/internal/notificaciones/domain"
 	notificaciones_email "github.com/davosjar/bunna/services/identidad/internal/notificaciones/infrastructure/email"
 	checkpermission "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/checkpermission"
@@ -148,6 +151,10 @@ type Registry struct {
 	// Casos de uso — verificación y recuperación
 	VerificarCorreoCasoDeUso     *uc_verifyemail.VerificarCorreoCasoDeUso
 	RecuperarContrasenaCasoDeUso *uc_forgotpassword.RecuperarContrasenaCasoDeUso
+
+	// Casos de uso — invitaciones
+	CrearInvitacionCasoDeUso   *uc_crearInvitacion.CrearInvitacionCasoDeUso
+	AceptarInvitacionCasoDeUso *uc_aceptarInvitacion.AceptarInvitacionCasoDeUso
 }
 
 func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
@@ -168,6 +175,7 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 	verificacionRepo := verificacion_postgres.NewVerificacionRepositorio(db)
 	tokenRecuperacionRepo := recuperacion_postgres.NewTokenRecuperacionRepositorio(db)
 	usuarioRecuperacionRepo := recuperacion_postgres.NewUsuarioRecuperacionRepositorio(db)
+	invitacionRepo := invitaciones_postgres.NewInvitacionRepositorio(db)
 
 	encriptacion := bcrypt.NewBcryptEncriptacion(cfg.BcryptCost)
 	tokenSvc := sesiones_jwt.NewJWTTokenServicio(sesiones_jwt.ConfigJWT{
@@ -361,6 +369,21 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		RevocarRolCasoDeUso:          revokerole.NewRevocarRolCasoDeUso(usuarioRolRepo, usuarioTenantRolRepo, authSvc),
 		AsignarPermisoARolCasoDeUso:  assignpermissiontorole.NewAsignarPermisoARolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc),
 		RevocarPermisoDeRolCasoDeUso: revokepermissionfromrole.NewRevocarPermisoDeRolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc),
+
+		CrearInvitacionCasoDeUso: uc_crearInvitacion.NewCrearInvitacionCasoDeUso(
+			invitacionRepo,
+			tenantRepo,
+			rolRepo,
+			emailSvc,
+			generadorID,
+			cfg.FrontendURL,
+			cfg.InvitacionTokenExpiracion,
+		),
+		AceptarInvitacionCasoDeUso: uc_aceptarInvitacion.NewAceptarInvitacionCasoDeUso(
+			invitacionRepo,
+			membresiaRepo,
+			usuarioTenantRolRepo,
+		),
 	}
 }
 

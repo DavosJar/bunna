@@ -3,6 +3,7 @@ package register
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/mail"
 	"regexp"
 	"strings"
@@ -136,6 +137,19 @@ func (uc *RegistrarUsuarioCasoDeUso) asegurarSlugUnico(ctx context.Context, slug
 	return fmt.Sprintf("%s-%s", slug, tenantID[:maxLen])
 }
 
+func emailTieneDominioValido(correo string) error {
+	parts := strings.SplitN(correo, "@", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("formato de correo inválido")
+	}
+	dominio := parts[1]
+	mxRecords, err := net.LookupMX(dominio)
+	if err != nil || len(mxRecords) == 0 {
+		return fmt.Errorf("el dominio del correo no existe o no acepta correos")
+	}
+	return nil
+}
+
 func validarComando(cmd *ComandoRegistrarUsuario) error {
 	if cmd.Correo == "" {
 		return fmt.Errorf("correo no puede estar vacío")
@@ -143,6 +157,10 @@ func validarComando(cmd *ComandoRegistrarUsuario) error {
 
 	if _, err := mail.ParseAddress(cmd.Correo); err != nil {
 		return fmt.Errorf("formato de correo inválido: %w", err)
+	}
+
+	if err := emailTieneDominioValido(cmd.Correo); err != nil {
+		return err
 	}
 
 	if cmd.Password == "" {

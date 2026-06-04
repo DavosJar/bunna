@@ -12,6 +12,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const mensajeBienvenida = location.state?.mensaje;
+  const returnUrl = new URLSearchParams(location.search).get('returnUrl');
 
   const [correoNoVerificado, setCorreoNoVerificado] = useState(false);
   const [reenvioExitoso, setReenvioExitoso] = useState(false);
@@ -22,7 +23,7 @@ export default function LoginPage() {
     setCorreoNoVerificado(false);
     const result = await login(email, password);
     if (result.success) {
-      const destino = result.user?.rol === 'administrador' ? '/admin' : '/dashboard';
+      const destino = returnUrl || (result.user?.rol === 'administrador' ? '/admin' : '/dashboard');
       navigate(destino);
     } else if (result.error?.includes('verificar tu correo')) {
       setCorreoNoVerificado(true);

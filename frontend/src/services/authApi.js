@@ -53,6 +53,34 @@ export function isTokenExpired(token) {
 }
 
 /**
+ * Validar formato básico de correo electrónico.
+ */
+export function validateEmail(email) {
+  const errors = [];
+
+  if (!email?.trim()) {
+    errors.push("El correo es requerido");
+    return { valid: false, errors };
+  }
+
+  const trimmed = email.trim();
+
+  if (trimmed.length > 254)
+    errors.push("El correo excede la longitud máxima permitida");
+
+  if (!trimmed.includes("@"))
+    errors.push("El correo debe contener '@'");
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed))
+    errors.push("El formato del correo no es válido");
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
  * Cambiar de tenant activo.
  * POST /api/v1/auth/switch-tenant
  */

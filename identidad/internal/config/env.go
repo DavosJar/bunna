@@ -58,6 +58,8 @@ type Config struct {
 	RecuperacionRateLimitUsuarioMax int
 	RecuperacionRateLimitVentana    time.Duration
 
+	InvitacionTokenExpiracion time.Duration
+
 	// Rate limiting middleware (IP)
 	RateLimitIPMaxRequests int
 	RateLimitIPVentana     time.Duration
@@ -140,6 +142,11 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	invitacionTokenExpiracion, err := parsarDuracion("INVITACION_TOKEN_EXPIRACION", "48h")
+	if err != nil {
+		return nil, err
+	}
+
 	apiGatewayEnabled, err := strconv.ParseBool(getEnv("API_GATEWAY_ENABLED", "false"))
 	if err != nil {
 		return nil, fmt.Errorf("API_GATEWAY_ENABLED debe ser un booleano válido: %w", err)
@@ -212,6 +219,8 @@ func LoadConfig() (*Config, error) {
 		RecuperacionRateLimitIPMax:      recuperacionRateLimitIPMax,
 		RecuperacionRateLimitUsuarioMax: recuperacionRateLimitUsuarioMax,
 		RecuperacionRateLimitVentana:    recuperacionRateLimitVentana,
+
+		InvitacionTokenExpiracion: invitacionTokenExpiracion,
 
 		RateLimitIPMaxRequests: rateLimitIPMaxRequests,
 		RateLimitIPVentana:     rateLimitIPVentana,

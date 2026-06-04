@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	invitaciones_postgres "github.com/davosjar/bunna/services/identidad/internal/invitaciones/infrastructure/persistence/postgres"
 	rbac_postgres "github.com/davosjar/bunna/services/identidad/internal/rbac/infrastructure/persistence/postgres"
 	recuperacion_postgres "github.com/davosjar/bunna/services/identidad/internal/recuperacion/infrastructure/persistence/postgres"
 	seguridad_postgres "github.com/davosjar/bunna/services/identidad/internal/seguridad/infrastructure/persistence/postgres"
@@ -87,6 +88,10 @@ func RunMigrations(db *gorm.DB) error {
 
 	if err := db.AutoMigrate(&recuperacion_postgres.TokenRecuperacionModel{}); err != nil {
 		return fmt.Errorf("failed to migrate tokens_recuperacion: %w", err)
+	}
+
+	if err := db.AutoMigrate(&invitaciones_postgres.InvitacionModel{}); err != nil {
+		return fmt.Errorf("failed to migrate invitaciones: %w", err)
 	}
 
 	// Migrar rol_permisos: agregar id, tenant_id, asignado_por y unique index

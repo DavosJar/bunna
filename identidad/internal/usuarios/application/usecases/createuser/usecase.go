@@ -3,7 +3,9 @@ package createuser
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/mail"
+	"strings"
 
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	seguridad "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
@@ -41,6 +43,9 @@ func (uc *CrearUsuarioCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoCrear
 	}
 	if _, err := mail.ParseAddress(cmd.Correo); err != nil {
 		return nil, fmt.Errorf("formato de correo inválido: %w", err)
+	}
+	if err := emailTieneDominioValido(cmd.Correo); err != nil {
+		return nil, err
 	}
 	if cmd.Nombre == "" {
 		return nil, fmt.Errorf("nombre no puede estar vacío")
@@ -91,4 +96,17 @@ func (uc *CrearUsuarioCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoCrear
 		Activo:   true,
 		CreadoEn: usuarioCreado.FechaCreacion().Format("2006-01-02T15:04:05Z"),
 	}, nil
+}
+
+func emailTieneDominioValido(correo string) error {
+	parts := strings.SplitN(correo, "@", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("formato de correo inválido")
+	}
+	dominio := parts[1]
+	mxRecords, err := net.LookupMX(dominio)
+	if err != nil || len(mxRecords) == 0 {
+		return fmt.Errorf("el dominio del correo no existe o no acepta correos")
+	}
+	return nil
 }

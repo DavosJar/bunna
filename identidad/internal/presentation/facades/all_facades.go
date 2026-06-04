@@ -11,6 +11,7 @@ type AllFacades struct {
 	Tenant       TenantFacade
 	Verificacion VerificacionFacade
 	Recuperacion RecuperacionFacade
+	Invitacion   InvitacionFacade
 }
 
 func NewAllFacades(reg *registry.Registry) *AllFacades {
@@ -67,6 +68,10 @@ func NewAllFacades(reg *registry.Registry) *AllFacades {
 		),
 		Recuperacion: NewRecuperacionFacade(
 			reg.RecuperarContrasenaCasoDeUso,
+		),
+		Invitacion: NewInvitacionFacade(
+			reg.CrearInvitacionCasoDeUso,
+			reg.AceptarInvitacionCasoDeUso,
 		),
 	}
 }

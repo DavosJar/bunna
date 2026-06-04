@@ -2,7 +2,7 @@ package dto
 
 type CambiarMiPasswordRequest struct {
 	PasswordActual string `json:"password_actual" doc:"Contraseña actual"       example:"vieja123"`
-	NuevaPassword  string `json:"nueva_password"  doc:"Nueva contraseña"        example:"nueva123"`
+	NuevaPassword  string `json:"nueva_password" minLength:"8" doc:"Nueva contraseña (mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número, 1 no alfanumérico)" example:"Secreto1!"`
 }
 
 type CambiarMiPasswordResponse struct {
@@ -10,7 +10,7 @@ type CambiarMiPasswordResponse struct {
 }
 
 type ResetearPasswordRequest struct {
-	NuevaPassword string `json:"nueva_password" doc:"Nueva contraseña" example:"nueva123"`
+	NuevaPassword string `json:"nueva_password" minLength:"8" doc:"Nueva contraseña (mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número, 1 no alfanumérico)" example:"Secreto1!"`
 }
 
 type ResetearPasswordResponse struct {

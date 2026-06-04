@@ -71,11 +71,11 @@ func LoadConfig() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	jwtAccessExpiracion, err := parsarDuracion("JWT_ACCESS_EXPIRACION", "15m")
+	jwtAccessExpiracion, err := parsarDuracion("JWT_ACCESS_EXPIRACION", "1h")
 	if err != nil {
 		return nil, err
 	}
-	jwtRefreshExpiracion, err := parsarDuracion("JWT_REFRESH_EXPIRACION", "24h")
+	jwtRefreshExpiracion, err := parsarDuracion("JWT_REFRESH_EXPIRACION", "2160h")
 	if err != nil {
 		return nil, err
 	}

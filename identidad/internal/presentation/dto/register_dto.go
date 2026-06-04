@@ -5,7 +5,7 @@ type RegisterRequest struct {
 	Nombre   string  `json:"nombre"             doc:"Nombre del usuario"                example:"Juan"`
 	Apellido string  `json:"apellido"           doc:"Apellido del usuario"              example:"Pérez"`
 	Correo   string  `json:"correo"             doc:"Correo electrónico válido"         example:"juan@correo.com"`
-	Password string  `json:"password"           doc:"Contraseña (mínimo 8 caracteres)" example:"secreto123"`
+	Password string  `json:"password" minLength:"8" doc:"Contraseña (mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número, 1 no alfanumérico)" example:"Secreto1!"`
 	Telefono *string `json:"telefono,omitempty" doc:"Teléfono de contacto (opcional)"  example:"0999999999"`
 }
 

@@ -75,6 +75,13 @@ func (c *CredencialesUsuario) Activar() {
 	c.activo = true
 }
 
+// CambiarHash actualiza el hash de la contraseña y resetea intentos fallidos
+func (c *CredencialesUsuario) CambiarHash(nuevoHash string) {
+	c.passwordHash = nuevoHash
+	c.intentosFallidos = 0
+	c.bloqueadoHasta = time.Time{}
+}
+
 // Getters públicos para acceso de lectura
 func (c *CredencialesUsuario) UsuarioID() string {
 	return c.usuarioID

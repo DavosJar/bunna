@@ -4,7 +4,7 @@ import {
   getUsuarios, invitarUsuario, updateUsuario, bajaUsuario, expulsarUsuario, unlockUsuario,
   getRoles, createRol, deleteRol,
   asignarRol, revocarRol,
-  getPermisos, asignarPermisoARol, revocarPermisoDeRol,
+  getMisPermisos, asignarPermisoARol, revocarPermisoDeRol,
   getSesiones, cerrarSesion,
   getIPsBloqueadas, desbloquearIP,
 } from '../../services/identidadApi';
@@ -35,6 +35,7 @@ function ModalRoles({ usuario, onClose }) {
   const [rolesUsuario, setRolesUsuario] = useState([]);
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState('');
+  const { user } = useAuth();
 
   useEffect(() => {
     setLoading(true);
@@ -47,7 +48,7 @@ function ModalRoles({ usuario, onClose }) {
 
   const handleAsignar = async (rolID) => {
     try {
-      await asignarRol(usuario.id, { rol_id: rolID, tenant_id: '' });
+      await asignarRol(usuario.id, { rol_id: rolID, tenant_id: user?.tenantID || '' });
       setMensaje('Rol asignado exitosamente');
       setRolesUsuario(prev => [...prev, rolID]);
       setTimeout(() => setMensaje(''), 3000);
@@ -186,7 +187,7 @@ function TabUsuarios() {
       <div className="admin-card">
         <div className="admin-card__top">
           <h2 className="admin-card__title">Usuarios ({total})</h2>
-          {puede('identidad:usuario:crear') && <button className="btn-add" onClick={() => setModal({ tipo: 'crear' })}>+ Invitar</button>}
+          <button className="btn-add" onClick={() => setModal({ tipo: 'crear' })}>+ Invitar</button>
         </div>
         <div className="admin-search">
           <input type="text" placeholder="Filtrar por correo..." value={filtroCorreo} onChange={(e) => { setFiltroCorreo(e.target.value); setPagina(1); }} />
@@ -311,8 +312,8 @@ function ModalPermisosRol({ rol, onClose }) {
 
   useEffect(() => {
     setLoading(true);
-    getPermisos()
-      .then(data => setPermisos(data.permisos || []))
+    getMisPermisos()
+      .then(data => setPermisos(data || []))
       .catch(() => setPermisos([]))
       .finally(() => setLoading(false));
   }, []);
@@ -387,6 +388,10 @@ function ModalPermisosRol({ rol, onClose }) {
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-gray-500)' }}>Cargando permisos...</div>
+          ) : permisos.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-gray-500)' }}>
+              No tienes permisos asignados para otorgar a este rol.
+            </div>
           ) : (
             modulos.map(modulo => (
               <div key={modulo} style={{ marginBottom: '1.25rem' }}>

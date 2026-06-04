@@ -6,6 +6,7 @@ import (
 	"time"
 
 	seguridad "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
+	"github.com/davosjar/bunna/services/identidad/internal/shared/application"
 )
 
 type CambiarMiContrasenaCasoDeUso struct {
@@ -21,6 +22,10 @@ func NewCambiarMiContrasenaCasoDeUso(
 }
 
 func (uc *CambiarMiContrasenaCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoCambiarMiContrasena) (*RespuestaCambiarMiContrasena, error) {
+	if err := application.ValidarFormatoPassword(cmd.NuevaPassword, "nueva_password"); err != nil {
+		return nil, err
+	}
+
 	creds, err := uc.credRepo.ObtenerPorUsuarioID(ctx, cmd.EjecutorID)
 	if err != nil {
 		return nil, fmt.Errorf("error al obtener credenciales: %w", err)
@@ -35,7 +40,11 @@ func (uc *CambiarMiContrasenaCasoDeUso) Ejecutar(ctx context.Context, cmd *Coman
 		return nil, fmt.Errorf("error al hashear nueva contraseña: %w", err)
 	}
 
-	_ = nuevoHash
+	creds.CambiarHash(nuevoHash)
+
+	if _, err := uc.credRepo.Actualizar(ctx, creds); err != nil {
+		return nil, fmt.Errorf("error al actualizar contraseña: %w", err)
+	}
 
 	ahora := time.Now().Format("2006-01-02T15:04:05Z")
 	return &RespuestaCambiarMiContrasena{

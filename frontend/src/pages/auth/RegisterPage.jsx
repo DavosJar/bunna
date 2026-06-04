@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { validateEmail } from '../../services/authApi';
+import { validarPassword } from '../../services/validacionPassword';
 import './Auth.css';
 
 export default function RegisterPage() {
@@ -11,13 +12,21 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
-  const { register, loading, error } = useAuth();
+  const [passwordError, setPasswordError] = useState('');
+  const { register, loading, error, setError } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => { setError(null); }, [setError]);
 
 const handleSubmit = async (e) => {
   e.preventDefault();
   setEmailError('');
-  if (password.length < 8) return;
+  setPasswordError('');
+  const validacion = validarPassword(password);
+  if (!validacion.valida) {
+    setPasswordError(validacion.errores[0]);
+    return;
+  }
   const validation = validateEmail(email);
   if (!validation.valid) {
     setEmailError(validation.errors[0]);
@@ -98,7 +107,7 @@ const handleSubmit = async (e) => {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Mínimo 8 caracteres"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); setPasswordError(''); }}
                   autoComplete="new-password"
                   minLength={8}
                   required
@@ -119,6 +128,7 @@ const handleSubmit = async (e) => {
                 </button>
               </div>
             </div>
+            {passwordError && <p className="form-error">{passwordError}</p>}
 
             <button type="submit" className={`btn-primary ${loading ? 'btn-primary--loading' : ''}`} id="register-submit" disabled={loading}>
               {loading ? (

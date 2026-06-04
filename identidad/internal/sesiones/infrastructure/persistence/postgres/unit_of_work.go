@@ -4,9 +4,11 @@ import (
 	"context"
 
 	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
+	seguridad_postgres "github.com/davosjar/bunna/services/identidad/internal/seguridad/infrastructure/persistence/postgres"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	usuario_domain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
+	usuarios_postgres "github.com/davosjar/bunna/services/identidad/internal/usuarios/infrastructure/persistence/postgres"
 	"gorm.io/gorm"
 )
 
@@ -50,8 +52,8 @@ func (uw *SesionUnitOfWorkPostgres) Transaccional(ctx context.Context, fn func(t
 		txUow := &SesionUnitOfWorkPostgres{
 			db:                   txDB,
 			sesionRepo:           NewSesionRepositorio(txDB),
-			credencialesRepo:     uw.credencialesRepo,
-			usuarioRepo:          uw.usuarioRepo,
+			credencialesRepo:     seguridad_postgres.NewCredencialesRepositorio(txDB),
+			usuarioRepo:          usuarios_postgres.NewUsuarioRepositorio(txDB),
 			encriptacionServicio: uw.encriptacionServicio,
 			tokenServicio:        uw.tokenServicio,
 			generadorID:          uw.generadorID,

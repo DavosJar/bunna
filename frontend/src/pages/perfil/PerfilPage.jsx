@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { getMiPerfil, updateMiPerfil, updateMiPassword } from '../../services/identidadApi';
+import { validarPassword } from '../../services/validacionPassword';
 import Layout from '../../components/layout/Layout';
 import './Perfil.css';
 
@@ -41,8 +42,9 @@ export default function PerfilPage() {
 
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
-    if (nuevaPassword.length < 8) {
-      setMsgPassword({ tipo: 'error', texto: 'La nueva contraseña debe tener al menos 8 caracteres.' });
+    const validacion = validarPassword(nuevaPassword);
+    if (!validacion.valida) {
+      setMsgPassword({ tipo: 'error', texto: validacion.errores.join('. ') });
       return;
     }
     setLoadingPassword(true);

@@ -133,6 +133,14 @@ func (u *Usuario) Inactivar() error {
 	return nil
 }
 
+// ActualizarDatosPersonales actualiza nombre y apellido del usuario.
+// No genera evento de dominio porque es una actualización de datos, no de estado.
+func (u *Usuario) ActualizarDatosPersonales(nombre, apellido string) {
+	u.nombre = nombre
+	u.apellido = apellido
+	u.fechaActualizacion = time.Now()
+}
+
 func (u *Usuario) VerificarCorreo() error {
 	if err := u.correoElectronico.Verificar(); err != nil {
 		return ErrTransicionVerificacionNoPermitida

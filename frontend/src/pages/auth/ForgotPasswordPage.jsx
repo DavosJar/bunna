@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { solicitarRecuperacion } from '../../services/identidadApi';
+import { useAuth } from '../../context/AuthContext';
 import './Auth.css';
 
 export default function ForgotPasswordPage() {
@@ -8,6 +9,9 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState('');
+  const { setError: setAuthError } = useAuth();
+
+  useEffect(() => { setAuthError(null); }, [setAuthError]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -38,6 +38,15 @@ func (uc *AsignarPermisoARolCasoDeUso) Ejecutar(ctx context.Context, cmd *Comand
 		return nil, rbac.ErrPermisoDenegado
 	}
 
+	// Also verify the executor possesses the specific permission they're trying to assign
+	ok2, err := uc.authSvc.TienePermiso(ctx, cmd.EjecutorID, cmd.TenantID, cmd.PermisoCodigo)
+	if err != nil {
+		return nil, fmt.Errorf("error al verificar permiso específico: %w", err)
+	}
+	if !ok2 {
+		return nil, rbac.ErrPermisoDenegado
+	}
+
 	rol, err := uc.rolRepo.ObtenerPorID(ctx, cmd.RolID)
 	if err != nil {
 		return nil, fmt.Errorf("rol no encontrado: %w", err)

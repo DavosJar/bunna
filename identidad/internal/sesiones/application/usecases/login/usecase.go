@@ -9,7 +9,6 @@ import (
 	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/bloqueo_ip"
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/rate_limiter"
-	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
@@ -76,73 +75,96 @@ func (uc *IniciarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoInici
 		}
 	}
 
-	var respuesta *RespuestaIniciarSesion
+	ahora := time.Now()
 	var requiereRegistroIP bool
 
-	err := uc.uow.Transaccional(ctx, func(tx sesiones_domain.UnitOfWork) error {
-		ahora := time.Now()
+	// ============================================================
+	// Phase 1: Credential Validation (NO transaction)
+	// The attempt counter MUST persist even on failure, which is
+	// why this runs outside the GORM transaction.
+	// ============================================================
 
-		var credsError error
-
-		usuarios, err := tx.UsuarioRepositorio().Listar(ctx,
-			usuario_domain.EspecificacionUsuario{
-				ListaLiltros: []domain.CriterioFiltro{
-					{Campo: "correo", Operador: "=", Valor: cmd.Email},
-				},
+	usuarios, err := uc.uow.UsuarioRepositorio().Listar(ctx,
+		usuario_domain.EspecificacionUsuario{
+			ListaLiltros: []domain.CriterioFiltro{
+				{Campo: "correo", Operador: "=", Valor: cmd.Email},
 			},
-			domain.Paginacion{Pagina: 1, TamanoPagina: 1},
-		)
-		if err != nil || len(usuarios) == 0 {
-			credsError = ErrCredencialesInvalidas
-		}
+		},
+		domain.Paginacion{Pagina: 1, TamanoPagina: 1},
+	)
+	if err != nil || len(usuarios) == 0 {
+		// Timing attack prevention: hash the password to keep
+		// computation time consistent whether the user exists or not.
+		_, _ = uc.uow.EncriptacionServicio().Hashear(cmd.Password)
+		requiereRegistroIP = true
+		return nil, ErrCredencialesInvalidas
+	}
 
-		var usuarioID string
-		var credenciales *seguridad_domain.CredencialesUsuario
-		if credsError == nil {
-			usuarioID = usuarios[0].ID()
-			credenciales, err = tx.CredencialesRepositorio().ObtenerPorUsuarioID(ctx, usuarioID)
-			if err != nil {
-				credsError = ErrCredencialesInvalidas
-			}
-		}
+	usuario := usuarios[0]
+	usuarioID := usuario.ID()
 
-		if credsError == nil && credenciales.EstaBloqueado(ahora) {
-			credsError = ErrCuentaBloqueada
-		}
+	credenciales, err := uc.uow.CredencialesRepositorio().ObtenerPorUsuarioID(ctx, usuarioID)
+	if err != nil {
+		// Timing attack prevention: same as above.
+		_, _ = uc.uow.EncriptacionServicio().Hashear(cmd.Password)
+		requiereRegistroIP = true
+		return nil, ErrCredencialesInvalidas
+	}
 
-		if credsError == nil && !credenciales.Activo() {
-			credsError = ErrCuentaInactiva
-		}
+	// Check if the account is temporarily blocked.
+	if credenciales.EstaBloqueado(ahora) {
+		// Timing attack prevention.
+		_, _ = uc.uow.EncriptacionServicio().Hashear(cmd.Password)
+		requiereRegistroIP = true
+		return nil, ErrCuentaBloqueada
+	}
 
-		// Prevenir user enumeration (ataque de timing) asegurando que siempre se gaste el mismo tiempo computacional
-		var passwordCorrecto bool
-		if credsError != nil {
-			// Simular el tiempo de verificación hasheando el password ingresado
-			_, _ = tx.EncriptacionServicio().Hashear(cmd.Password)
-		} else {
-			passwordCorrecto = tx.EncriptacionServicio().Verificar(cmd.Password, credenciales.PasswordHash())
-		}
+	// Check if the account is permanently inactive.
+	if !credenciales.Activo() {
+		// Timing attack prevention.
+		_, _ = uc.uow.EncriptacionServicio().Hashear(cmd.Password)
+		requiereRegistroIP = true
+		return nil, ErrCuentaInactiva
+	}
 
-		if credsError != nil {
-			requiereRegistroIP = true
-			return credsError
-		}
+	// Verify the password.
+	passwordCorrecto := uc.uow.EncriptacionServicio().Verificar(cmd.Password, credenciales.PasswordHash())
 
-		if !passwordCorrecto {
-			credenciales.IncrementarIntentoFallido()
-			if credenciales.IntentosFallidos() >= uc.config.CuentaMaxIntentos {
-				credenciales.BloquearHasta(ahora.Add(uc.config.CuentaBloqueoDuracion))
-			}
-			if _, err := tx.CredencialesRepositorio().Actualizar(ctx, credenciales); err != nil {
-				return err
-			}
-			requiereRegistroIP = true
-			return ErrCredencialesInvalidas
+	if !passwordCorrecto {
+		credenciales.IncrementarIntentoFallido()
+		if credenciales.IntentosFallidos() >= uc.config.CuentaMaxIntentos {
+			credenciales.BloquearHasta(ahora.Add(uc.config.CuentaBloqueoDuracion))
 		}
+		if _, err := uc.uow.CredencialesRepositorio().Actualizar(ctx, credenciales); err != nil {
+			return nil, err
+		}
+		requiereRegistroIP = true
+		if credenciales.EstaBloqueado(ahora) {
+			return nil, ErrCuentaBloqueada
+		}
+		return nil, ErrCredencialesInvalidas
+	}
 
-		// Verificar que el correo esté verificado
-		if usuarios[0].EstadoVerificacionCorreo() != usuario_domain.VERIFICADO {
+	// ============================================================
+	// Phase 2: Session Creation (WITH transaction)
+	// Only reached after successful password verification.
+	// If anything fails here the transaction rolls back, but the
+	// failed-attempt counter from Phase 1 stays persisted.
+	// ============================================================
+
+	var respuesta *RespuestaIniciarSesion
+
+	err = uc.uow.Transaccional(ctx, func(tx sesiones_domain.UnitOfWork) error {
+		// Verify that the user's email is verified before creating a session.
+		if usuario.EstadoVerificacionCorreo() != usuario_domain.VERIFICADO {
 			return ErrCorreoNoVerificado
+		}
+
+		// Reload credenciales inside the transaction to get a consistent
+		// view and avoid carrying over in-memory mutations from Phase 1.
+		credencialesTx, err := tx.CredencialesRepositorio().ObtenerPorUsuarioID(ctx, usuarioID)
+		if err != nil {
+			return err
 		}
 
 		tenantID := ""
@@ -194,8 +216,8 @@ func (uc *IniciarSesionCasoDeUso) Ejecutar(ctx context.Context, cmd ComandoInici
 			return err
 		}
 
-		credenciales.ResetearIntentos()
-		if _, err := tx.CredencialesRepositorio().Actualizar(ctx, credenciales); err != nil {
+		credencialesTx.ResetearIntentos()
+		if _, err := tx.CredencialesRepositorio().Actualizar(ctx, credencialesTx); err != nil {
 			return err
 		}
 

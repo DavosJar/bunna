@@ -460,8 +460,8 @@ func TestIniciarSesion5toIntentoBloquea(t *testing.T) {
 	_, err := uc.Ejecutar(context.Background(), login.ComandoIniciarSesion{
 		Email: "test@correo.com", Password: "incorrecta",
 	})
-	if !errors.Is(err, login.ErrCredencialesInvalidas) {
-		t.Errorf("esperaba ErrCredencialesInvalidas, got %v", err)
+	if !errors.Is(err, login.ErrCuentaBloqueada) {
+		t.Errorf("esperaba ErrCuentaBloqueada, got %v", err)
 	}
 	if !credRepo.actualizado {
 		t.Error("esperaba que se actualizaran las credenciales")

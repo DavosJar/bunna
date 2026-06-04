@@ -101,7 +101,27 @@ func (s *SeedServicio) Ejecutar(ctx context.Context) error {
 			}
 		}
 
-		// 3. Re-sincronizar permisos del rol (upsert idempotente)
+		// 3. Limpiar permisos que ya no corresponden al rol
+		permisosActuales, err := s.permisoRepo.ListarPorRol(ctx, rolID, rbac.TenantIDSistema)
+		if err != nil {
+			return err
+		}
+
+		deseados := make(map[string]bool)
+		for _, c := range rolInfo.Permisos {
+			deseados[c] = true
+		}
+
+		for _, p := range permisosActuales {
+			if !deseados[p.Codigo] {
+				if err := s.rolPermisoRepo.EliminarPermiso(ctx, rolID, p.ID, rbac.TenantIDSistema); err != nil {
+					return err
+				}
+				log.Printf("[Seed] Permiso eliminado del rol %s: %s", rolInfo.Nombre, p.Codigo)
+			}
+		}
+
+		// 4. Re-sincronizar permisos del rol (upsert idempotente)
 		for _, codigoPermiso := range rolInfo.Permisos {
 			permisoID := permisoIDs[codigoPermiso]
 			if err := s.rolPermisoRepo.AsignarPermiso(ctx, rolID, permisoID, rbac.TenantIDSistema, ""); err != nil {

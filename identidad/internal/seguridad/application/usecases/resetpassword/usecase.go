@@ -7,6 +7,7 @@ import (
 
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	seguridad "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
+	"github.com/davosjar/bunna/services/identidad/internal/shared/application"
 	sesiones "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 )
 
@@ -32,6 +33,10 @@ func NewResetearContrasenaCasoDeUso(
 }
 
 func (uc *ResetearContrasenaCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoResetearContrasena) (*RespuestaResetearContrasena, error) {
+	if err := application.ValidarFormatoPassword(cmd.NuevaPassword, "nueva_password"); err != nil {
+		return nil, err
+	}
+
 	ok, err := uc.authSvc.TienePermiso(ctx, cmd.EjecutorID, cmd.TenantID, rbac.PermisoUsuarioResetearPassword)
 	if err != nil {
 		return nil, fmt.Errorf("error al verificar permiso: %w", err)
@@ -50,8 +55,11 @@ func (uc *ResetearContrasenaCasoDeUso) Ejecutar(ctx context.Context, cmd *Comand
 		return nil, fmt.Errorf("error al hashear password: %w", err)
 	}
 
-	_ = creds
-	_ = nuevoHash
+	creds.CambiarHash(nuevoHash)
+
+	if _, err := uc.credRepo.Actualizar(ctx, creds); err != nil {
+		return nil, fmt.Errorf("error al actualizar contraseña: %w", err)
+	}
 
 	if err := uc.sesionRepo.InvalidarTodasPorUsuarioID(ctx, cmd.UsuarioID); err != nil {
 		return nil, fmt.Errorf("error al invalidar sesiones: %w", err)

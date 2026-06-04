@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { showToast } from './toastService';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://3.142.93.237:8080';
 
@@ -14,6 +15,81 @@ client.interceptors.request.use((config) => {
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) prom.reject(error);
+    else prom.resolve(token);
+  });
+  failedQueue = [];
+};
+
+// Interceptor para refrescar token en 401
+client.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Evitar bucles: no intentar refresh si es la propia petición de refresh
+    if (originalRequest?.url?.includes('/auth/refresh')) {
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // Si ya se está refrescando, encolar la solicitud
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return client(originalRequest);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refreshToken = localStorage.getItem('bunna_refresh_token');
+      if (!refreshToken) {
+        isRefreshing = false;
+        localStorage.clear();
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      try {
+        const res = await client.post('/api/v1/auth/refresh', { refresh_token: refreshToken });
+        const data = res.data?.data || res.data;
+
+        localStorage.setItem('bunna_access_token', data.access_token);
+        localStorage.setItem('bunna_refresh_token', data.refresh_token);
+
+        processQueue(null, data.access_token);
+
+        originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
+        return client(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        localStorage.clear();
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    // Show toast for rate limit errors
+    if (error.response?.status === 429) {
+      const msg = error.response?.data?.error || 'Demasiadas solicitudes. Intente más tarde.';
+      showToast(msg, 'error');
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 // ── Mi Perfil ──────────────────────────────────────────────
 export async function getMiPerfil() {

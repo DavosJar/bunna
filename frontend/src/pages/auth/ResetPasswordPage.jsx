@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { validarTokenRecuperacion, confirmarRecuperacion } from '../../services/identidadApi';
+import { validarPassword } from '../../services/validacionPassword';
 import './Auth.css';
 
 export default function ResetPasswordPage() {
@@ -26,7 +27,11 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (password !== confirmar) { setError('Las contraseñas no coinciden.'); return; }
-    if (password.length < 8) { setError('Mínimo 8 caracteres.'); return; }
+    const validacion = validarPassword(password);
+    if (!validacion.valida) {
+      setError(validacion.errores.join('. '));
+      return;
+    }
     setLoading(true);
     setError('');
     try {

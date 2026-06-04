@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"log"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -10,8 +11,15 @@ import (
 	presentation "github.com/davosjar/bunna/services/identidad/shared/presentation"
 )
 
+type misPermisoItem struct {
+	Codigo      string `json:"codigo" doc:"Código del permiso"`
+	Nombre      string `json:"nombre" doc:"Nombre del permiso"`
+	Descripcion string `json:"descripcion" doc:"Descripción del permiso"`
+	Modulo      string `json:"modulo" doc:"Módulo del permiso"`
+}
+
 type listarMisPermisosData struct {
-	Permisos []string `json:"permisos" doc:"Lista de códigos de permiso del usuario autenticado"`
+	Permisos []misPermisoItem `json:"permisos" doc:"Lista de permisos del usuario autenticado"`
 }
 
 type ListarMisPermisosOutput struct {
@@ -50,9 +58,22 @@ func (h *ListarMisPermisosHandler) handle(ctx context.Context, input *struct{}) 
 		return nil, presentation.MapearError(err)
 	}
 
+	usuarioID := middleware.GetUsuarioIDFromCtx(ctx)
+	log.Printf("[MisPermisos] usuario=%s rol=%s tenant=%s permisos=%v", usuarioID, rol, tenantID, resp.Permisos)
+
+	items := make([]misPermisoItem, len(resp.Permisos))
+	for i, p := range resp.Permisos {
+		items[i] = misPermisoItem{
+			Codigo:      p.Codigo,
+			Nombre:      p.Nombre,
+			Descripcion: p.Descripcion,
+			Modulo:      p.Modulo,
+		}
+	}
+
 	out := &ListarMisPermisosOutput{}
 	out.Body = presentation.NewApiResponse(listarMisPermisosData{
-		Permisos: resp.Permisos,
+		Permisos: items,
 	})
 	return out, nil
 }

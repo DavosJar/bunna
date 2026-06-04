@@ -9,6 +9,7 @@ import (
 
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	seguridad "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
+	"github.com/davosjar/bunna/services/identidad/internal/shared/application"
 	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	usuario "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 )
@@ -52,6 +53,9 @@ func (uc *CrearUsuarioCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoCrear
 	}
 	if cmd.Password == "" {
 		return nil, fmt.Errorf("password no puede estar vacío")
+	}
+	if err := application.ValidarFormatoPassword(cmd.Password, "password"); err != nil {
+		return nil, err
 	}
 
 	ok, err := uc.authSvc.TienePermiso(ctx, cmd.EjecutorID, "", rbac.PermisoUsuarioCrear)

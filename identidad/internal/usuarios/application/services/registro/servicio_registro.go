@@ -6,6 +6,7 @@ import (
 	"net/mail"
 
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
+	"github.com/davosjar/bunna/services/identidad/internal/shared/application"
 	"github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 )
 
@@ -96,6 +97,9 @@ func validarComando(comando *ComandoRegistro) error {
 
 	if comando.Password == "" {
 		return fmt.Errorf("password no puede estar vacío")
+	}
+	if err := application.ValidarFormatoPassword(comando.Password, "password"); err != nil {
+		return err
 	}
 
 	if comando.Nombre == "" {

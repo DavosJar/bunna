@@ -142,7 +142,7 @@ func TestServicioRegistroValidacionCorreoVacio(t *testing.T) {
 	ctx := context.Background()
 	comando := &registro.ComandoRegistro{
 		Correo:   "", // Vacío
-		Password: "password123",
+		Password: "Test1234!",
 		Nombre:   "Juan",
 		Apellido: "García",
 		Telefono: "6001234567",
@@ -200,7 +200,7 @@ func TestServicioRegistroValidacionNombreVacio(t *testing.T) {
 	ctx := context.Background()
 	comando := &registro.ComandoRegistro{
 		Correo:   "test@example.com",
-		Password: "password123",
+		Password: "Test1234!",
 		Nombre:   "", // Vacío
 		Apellido: "García",
 		Telefono: "6001234567",
@@ -232,21 +232,21 @@ func TestServicioRegistroMultiplesUsuarios(t *testing.T) {
 	usuarios := []*registro.ComandoRegistro{
 		{
 			Correo:   "user1@example.com",
-			Password: "pass1",
+			Password: "Test1234!",
 			Nombre:   "Usuario",
 			Apellido: "Uno",
 			Telefono: "6001111111",
 		},
 		{
 			Correo:   "user2@example.com",
-			Password: "pass2",
+			Password: "Pass5678!",
 			Nombre:   "Usuario",
 			Apellido: "Dos",
 			Telefono: "6002222222",
 		},
 		{
 			Correo:   "user3@example.com",
-			Password: "pass3",
+			Password: "Clave999?",
 			Nombre:   "Usuario",
 			Apellido: "Tres",
 			Telefono: "6003333333",
@@ -292,7 +292,7 @@ func TestServicioRegistroValidacionEmailInvalido(t *testing.T) {
 	ctx := context.Background()
 	comando := &registro.ComandoRegistro{
 		Correo:   "notanemail", // Email inválido
-		Password: "password123",
+		Password: "Test1234!",
 		Nombre:   "Juan",
 		Apellido: "García",
 		Telefono: "6001234567",
@@ -324,7 +324,7 @@ func TestServicioRegistroValidacionEmailSinArroba(t *testing.T) {
 	ctx := context.Background()
 	comando := &registro.ComandoRegistro{
 		Correo:   "user.com", // Email sin @
-		Password: "password123",
+		Password: "Test1234!",
 		Nombre:   "Juan",
 		Apellido: "García",
 		Telefono: "6001234567",
@@ -356,7 +356,7 @@ func TestRegistroPasswordHasheadoCorrectamente(t *testing.T) {
 	ctx := context.Background()
 	comando := &registro.ComandoRegistro{
 		Correo:   "test@example.com",
-		Password: "MySecurePassword123!",
+		Password: "Test1234!",
 		Nombre:   "Juan",
 		Apellido: "García",
 		Telefono: "6001234567",
@@ -420,7 +420,7 @@ func TestServicioRegistroRollbackSiCredencialesFalla(t *testing.T) {
 	// Crear un usuario exitosamente primero
 	comando1 := &registro.ComandoRegistro{
 		Correo:   "test1@example.com",
-		Password: "password123",
+		Password: "Test1234!",
 		Nombre:   "Usuario",
 		Apellido: "Uno",
 		Telefono: "6001234567",
@@ -450,7 +450,7 @@ func TestServicioRegistroRollbackSiCredencialesFalla(t *testing.T) {
 	// Primero creamos un usuario con el ID especificado
 	comando2 := &registro.ComandoRegistro{
 		Correo:   "test2@example.com",
-		Password: "password456",
+		Password: "Pass5678!",
 		Nombre:   "Usuario",
 		Apellido: "Dos",
 		Telefono: "6001234568",
@@ -505,7 +505,7 @@ func TestServicioRegistroTransaccionAtomicaConContextTimeout(t *testing.T) {
 
 	comando := &registro.ComandoRegistro{
 		Correo:   "test@example.com",
-		Password: "password123",
+		Password: "Test1234!",
 		Nombre:   "Juan",
 		Apellido: "García",
 		Telefono: "6001234567",
@@ -572,7 +572,7 @@ func TestServicioRegistroConGeneradorIDInyectado(t *testing.T) {
 	ctx := context.Background()
 	comando := &registro.ComandoRegistro{
 		Correo:   "test@example.com",
-		Password: "password123",
+		Password: "Test1234!",
 		Nombre:   "Juan",
 		Apellido: "García",
 		Telefono: "6001234567",

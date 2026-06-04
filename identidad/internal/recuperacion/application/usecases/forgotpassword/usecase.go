@@ -10,6 +10,7 @@ import (
 	dominio "github.com/davosjar/bunna/services/identidad/internal/recuperacion/domain"
 	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
+	"github.com/davosjar/bunna/services/identidad/internal/shared/application"
 	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 )
 
@@ -139,10 +140,7 @@ func (uc *RecuperarContrasenaCasoDeUso) ValidarToken(ctx context.Context, cmd Co
 }
 
 func (uc *RecuperarContrasenaCasoDeUso) Confirmar(ctx context.Context, cmd ComandoConfirmarRestablecimiento) (*RespuestaConfirmarRestablecimiento, error) {
-	if cmd.NuevaPassword == "" {
-		return nil, dominio.ErrPasswordDebil
-	}
-	if len(cmd.NuevaPassword) < 8 {
+	if err := application.ValidarFormatoPassword(cmd.NuevaPassword, "nueva_password"); err != nil {
 		return nil, dominio.ErrPasswordDebil
 	}
 

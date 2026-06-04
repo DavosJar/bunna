@@ -4,7 +4,7 @@ type CrearUsuarioRequest struct {
 	Correo   string `json:"correo"   doc:"Correo electrónico del usuario" example:"juan@correo.com"`
 	Nombre   string `json:"nombre"   doc:"Nombre del usuario"             example:"Juan"`
 	Apellido string `json:"apellido" doc:"Apellido del usuario"           example:"Pérez"`
-	Password string `json:"password" doc:"Contraseña (mínimo 8 caracteres)" example:"secreto123"`
+	Password string `json:"password" minLength:"8" doc:"Contraseña (mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número, 1 no alfanumérico)" example:"Secreto1!"`
 }
 
 type CrearUsuarioResponse struct {

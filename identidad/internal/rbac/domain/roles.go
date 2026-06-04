@@ -51,10 +51,11 @@ var RolesDeSistema = []RolInfo{
 	},
 	{
 		Nombre:      RolAdministrador,
-		Descripcion: "Administrador del tenant: gestiona roles personalizados y asigna permisos",
+		Descripcion: "Administrador del tenant: gestiona miembros, roles personalizados y permisos del propio tenant",
 		EsSistema:   true,
 		Permisos: []string{
 			PermisoUsuarioConsultar,
+			PermisoUsuarioExpulsar,
 			PermisoRolCrear,
 			PermisoRolModificar,
 			PermisoRolEliminar,

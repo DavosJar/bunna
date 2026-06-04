@@ -10,6 +10,7 @@ import (
 
 	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	seguridad "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
+	"github.com/davosjar/bunna/services/identidad/internal/shared/application"
 	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
 	usuario "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
@@ -165,6 +166,9 @@ func validarComando(cmd *ComandoRegistrarUsuario) error {
 
 	if cmd.Password == "" {
 		return fmt.Errorf("password no puede estar vacío")
+	}
+	if err := application.ValidarFormatoPassword(cmd.Password, "password"); err != nil {
+		return err
 	}
 	if cmd.Nombre == "" {
 		return fmt.Errorf("nombre no puede estar vacío")

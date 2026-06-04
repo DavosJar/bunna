@@ -19,7 +19,7 @@ type ValidarTokenRecuperacionResponse struct {
 
 type ConfirmarRecuperacionRequest struct {
 	Token         string `json:"token"          doc:"Token de recuperación"     example:"abc123..."`
-	NuevaPassword string `json:"nueva_password"  doc:"Nueva contraseña"          example:"nueva123"`
+	NuevaPassword string `json:"nueva_password" minLength:"8" doc:"Nueva contraseña (mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número, 1 no alfanumérico)" example:"Secreto1!"`
 }
 
 type ConfirmarRecuperacionResponse struct {

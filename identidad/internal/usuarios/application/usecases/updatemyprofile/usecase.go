@@ -21,14 +21,18 @@ func (uc *ModificarMiPerfilCasoDeUso) Ejecutar(ctx context.Context, cmd *Comando
 		return nil, fmt.Errorf("usuario no encontrado: %w", err)
 	}
 
-	// Por ahora solo lectura del perfil; los setters se agregarían al agregado
-	_ = u
+	u.ActualizarDatosPersonales(cmd.Nombre, cmd.Apellido)
+
+	actualizado, err := uc.userRepo.Actualizar(ctx, u)
+	if err != nil {
+		return nil, fmt.Errorf("error al actualizar perfil: %w", err)
+	}
 
 	return &RespuestaModificarMiPerfil{
-		ID:           u.ID(),
-		Correo:       u.Correo(),
-		Nombre:       u.Nombre(),
-		Apellido:     u.Apellido(),
-		ModificadoEn: u.FechaActualizacion().Format("2006-01-02T15:04:05Z"),
+		ID:           actualizado.ID(),
+		Correo:       actualizado.Correo(),
+		Nombre:       actualizado.Nombre(),
+		Apellido:     actualizado.Apellido(),
+		ModificadoEn: actualizado.FechaActualizacion().Format("2006-01-02T15:04:05Z"),
 	}, nil
 }

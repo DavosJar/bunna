@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { solicitarVerificacion } from '../../services/identidadApi';
@@ -8,7 +8,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login, loading, error } = useAuth();
+  const { login, loading, error, setError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const mensajeBienvenida = location.state?.mensaje;
@@ -17,6 +17,8 @@ export default function LoginPage() {
   const [correoNoVerificado, setCorreoNoVerificado] = useState(false);
   const [reenvioExitoso, setReenvioExitoso] = useState(false);
   const [reenvioError, setReenvioError] = useState(false);
+
+  useEffect(() => { setError(null); }, [setError]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -86,6 +88,17 @@ export default function LoginPage() {
             </div>
           )}
 
+          {error && (
+            <div className="auth-error" id="login-error">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+              {error}
+            </div>
+          )}
+
           {correoNoVerificado && (
             <div style={{
               padding: '1rem',
@@ -129,17 +142,6 @@ export default function LoginPage() {
                   No se pudo reenviar. Intenta registrarte de nuevo.
                 </p>
               )}
-            </div>
-          )}
-
-          {error && !correoNoVerificado && (
-            <div className="auth-error" id="login-error">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="15" y1="9" x2="9" y2="15"/>
-                <line x1="9" y1="9" x2="15" y2="15"/>
-              </svg>
-              {error}
             </div>
           )}
 

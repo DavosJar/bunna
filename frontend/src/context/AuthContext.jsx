@@ -75,7 +75,9 @@ export function AuthProvider({ children }) {
   const fetchMisPermisos = useCallback(async () => {
     try {
       const data = await getMisPermisos();
-      setPermisos(data);
+      // data is now [{codigo, nombre, descripcion, modulo}, ...]
+      // Extract just codes for permission checking (puede())
+      setPermisos(data.map(p => p.codigo));
     } catch {
       setPermisos([]);
     }

@@ -7,6 +7,7 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import VerificacionCorreoPage from './pages/auth/VerificacionCorreoPage';
 import AceptarInvitacionPage from './pages/auth/AceptarInvitacionPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
+import ToastContainer from './components/toast/ToastContainer';
 import PerfilPage from './pages/perfil/PerfilPage';
 import AdminPage from './pages/admin/AdminPage';
 
@@ -43,6 +44,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <AppRoutes />
+        <ToastContainer />
       </AuthProvider>
     </BrowserRouter>
   );

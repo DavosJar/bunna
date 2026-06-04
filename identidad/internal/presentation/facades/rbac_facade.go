@@ -33,8 +33,15 @@ type RespuestaListarPermisos struct {
 	Total    int
 }
 
+type MisPermisoItem struct {
+	Codigo      string
+	Nombre      string
+	Descripcion string
+	Modulo      string
+}
+
 type RespuestaListarMisPermisos struct {
-	Permisos []string
+	Permisos []MisPermisoItem
 }
 
 type ComandoCrearRol struct {
@@ -198,12 +205,21 @@ func (f *rbacFacadeImpl) ListarPermisos(ctx context.Context, ejecutorID, tenantI
 }
 
 func (f *rbacFacadeImpl) ListarMisPermisos(ctx context.Context, rol, tenantID string) (*RespuestaListarMisPermisos, error) {
-	codigos, err := f.listarMisPermisos.Ejecutar(ctx, rol, tenantID)
+	items, err := f.listarMisPermisos.Ejecutar(ctx, rol, tenantID)
 	if err != nil {
 		return nil, err
 	}
+	permisos := make([]MisPermisoItem, len(items))
+	for i, p := range items {
+		permisos[i] = MisPermisoItem{
+			Codigo:      p.Codigo,
+			Nombre:      p.Nombre,
+			Descripcion: p.Descripcion,
+			Modulo:      p.Modulo,
+		}
+	}
 	return &RespuestaListarMisPermisos{
-		Permisos: codigos,
+		Permisos: permisos,
 	}, nil
 }
 

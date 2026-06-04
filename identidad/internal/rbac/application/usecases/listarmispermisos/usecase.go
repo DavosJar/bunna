@@ -6,6 +6,14 @@ import (
 	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 )
 
+// PermisoDTO representa la información de un permiso que se expone al exterior
+type PermisoDTO struct {
+	Codigo      string
+	Nombre      string
+	Descripcion string
+	Modulo      string
+}
+
 type ListarMisPermisosCasoDeUso struct {
 	rolRepo        rbac.RolRepositorio
 	rolPermisoRepo rbac.RolPermisoRepositorio
@@ -21,7 +29,7 @@ func NewListarMisPermisosCasoDeUso(
 	}
 }
 
-func (uc *ListarMisPermisosCasoDeUso) Ejecutar(ctx context.Context, rolNombre, tenantID string) ([]string, error) {
+func (uc *ListarMisPermisosCasoDeUso) Ejecutar(ctx context.Context, rolNombre, tenantID string) ([]PermisoDTO, error) {
 	rolDB, err := uc.rolRepo.ObtenerPorNombre(ctx, rolNombre)
 	if err != nil {
 		return nil, err
@@ -41,9 +49,14 @@ func (uc *ListarMisPermisosCasoDeUso) Ejecutar(ctx context.Context, rolNombre, t
 		}
 	}
 
-	codigos := make([]string, len(permisos))
+	items := make([]PermisoDTO, len(permisos))
 	for i, p := range permisos {
-		codigos[i] = p.Codigo
+		items[i] = PermisoDTO{
+			Codigo:      p.Codigo,
+			Nombre:      p.Nombre,
+			Descripcion: p.Descripcion,
+			Modulo:      p.Modulo,
+		}
 	}
-	return codigos, nil
+	return items, nil
 }

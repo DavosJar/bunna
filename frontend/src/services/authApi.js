@@ -93,3 +93,12 @@ export async function switchTenantAPI(tenantId) {
   );
   return response.data;
 }
+
+/**
+ * Refrescar access token usando refresh token.
+ * POST /api/v1/auth/refresh
+ */
+export async function refreshTokenAPI(refreshToken) {
+  const response = await authClient.post('/api/v1/auth/refresh', { refresh_token: refreshToken });
+  return response.data;
+}

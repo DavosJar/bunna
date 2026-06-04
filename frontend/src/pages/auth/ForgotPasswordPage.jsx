@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { solicitarRecuperacion } from '../../services/identidadApi';
+import LogoIcon from '../../components/LogoIcon';
 import { useAuth } from '../../context/AuthContext';
 import './Auth.css';
 
@@ -33,7 +34,7 @@ export default function ForgotPasswordPage() {
         <img src="/coffee-bg.png" alt="Café" className="auth-hero__bg" />
         <div className="auth-hero__overlay" />
         <div className="auth-hero__logo">
-          <div className="auth-hero__logo-icon">☕</div>
+          <LogoIcon className="auth-hero__logo-icon" imgClassName="auth-hero__logo-img" />
           <span className="auth-hero__logo-text">Bunna</span>
         </div>
         <div className="auth-hero__content">
@@ -53,7 +54,7 @@ export default function ForgotPasswordPage() {
           {error && (
             <div className="auth-error">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
               </svg>
               {error}
             </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import LogoIcon from '../LogoIcon';
 import './Sidebar.css';
 
 const IconDashboard = ({ className }) => (
@@ -69,7 +70,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
         {/* Brand */}
         <div className="sidebar__brand">
           <div className="sidebar__brand-left">
-            <div className="sidebar__logo">☕</div>
+            <LogoIcon className="sidebar__logo" imgClassName="sidebar__logo-img" />
             <span className="sidebar__brand-name">Bunna</span>
           </div>
           <button className="sidebar__toggle" onClick={onToggle} aria-label="Colapsar menú">

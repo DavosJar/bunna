@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import LogoIcon from '../../components/LogoIcon';
 import './Auth.css';
 
 export default function RegisterPage() {
@@ -31,7 +32,7 @@ const handleSubmit = async (e) => {
         <img src="/coffee-bg.png" alt="Plantación de café" className="auth-hero__bg" />
         <div className="auth-hero__overlay" />
         <div className="auth-hero__logo">
-          <div className="auth-hero__logo-icon">☕</div>
+          <LogoIcon className="auth-hero__logo-icon" imgClassName="auth-hero__logo-img" />
           <span className="auth-hero__logo-text">Bunna</span>
         </div>
         <div className="auth-hero__content">

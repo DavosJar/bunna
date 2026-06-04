@@ -57,6 +57,13 @@
   font-size: 1.1rem;
 }
 
+.auth-hero__logo-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
 .auth-hero__logo-text {
   font-family: var(--font-serif);
   font-size: 1.25rem;

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import LeafScrollAnime from '../../components/LeafScrollAnime';
 import './Landing.css';
 
 /* ── Scroll-reveal hook ── */
@@ -17,6 +18,8 @@ function useReveal(threshold = 0.15) {
   }, [threshold]);
   return ref;
 }
+
+import LogoIcon from '../../components/LogoIcon';
 
 /* ── SVG Icons ── */
 const IconUpload = () => (
@@ -93,7 +96,7 @@ function Navbar() {
   return (
     <nav className={`land-nav ${scrolled ? 'land-nav--scrolled' : ''}`} id="land-navbar">
       <a href="/" className="land-nav__logo" aria-label="Bunna — inicio">
-        <div className="land-nav__logo-icon">☕</div>
+        <LogoIcon className="land-nav__logo-icon" imgClassName="land-nav__logo-img" />
         <span className="land-nav__logo-text">Bunna</span>
       </a>
 
@@ -150,7 +153,7 @@ function Hero() {
     <section className="land-hero" aria-label="Sección principal">
       <img
         ref={imgRef}
-        src="/landing-hero.png"
+        src="/landing-hero.webp"
         alt="Plantación de café en las montañas"
         className="land-hero__bg"
       />
@@ -184,24 +187,7 @@ function Hero() {
   );
 }
 
-/* ── Stats strip ── */
-function Stats() {
-  const ref = useReveal(0.2);
-  return (
-    <div className="land-stats" ref={ref}>
-      {[
-        { num: '< 3s',  label: 'Tiempo de análisis por imagen' },
-        { num: '95%+',  label: 'Precisión en detección de deficiencias' },
-        { num: '100%',  label: 'Acceso desde cualquier dispositivo' },
-      ].map((s, i) => (
-        <div className="land-stat land-reveal" key={i} style={{ transitionDelay: `${i * 100}ms` }}>
-          <span className="land-stat__number">{s.num}</span>
-          <span className="land-stat__label">{s.label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
+
 
 /* ── How it works ── */
 function HowItWorks() {
@@ -287,7 +273,7 @@ function Features() {
     <section className="land-section land-section--light" id="caracteristicas" aria-labelledby="feat-title">
       <div className="land-features">
         <div className="land-features__visual">
-          <img src="/landing-leaf.png" alt="Hoja de café analizada por Bunna" className="land-features__img" />
+          <img src="/landing-leaf.webp" alt="Hoja de café analizada por Bunna" className="land-features__img" />
           <div className="land-features__badge">
             <span className="land-features__badge-dot" aria-hidden="true" />
             <span className="land-features__badge-text">Análisis en tiempo real</span>
@@ -423,7 +409,7 @@ function Footer() {
   return (
     <footer className="land-footer">
       <a href="/" className="land-footer__logo" aria-label="Bunna">
-        <div className="land-nav__logo-icon" aria-hidden="true">☕</div>
+        <LogoIcon className="land-nav__logo-icon" imgClassName="land-nav__logo-img" />
         <span className="land-footer__logo-text">Bunna</span>
       </a>
       <p className="land-footer__copy">© {new Date().getFullYear()} Bunna. Todos los derechos reservados.</p>
@@ -443,9 +429,9 @@ export default function LandingPage() {
       <Navbar />
       <main>
         <Hero />
-        <Stats />
         <HowItWorks />
         <Features />
+        <LeafScrollAnime />
         <About />
         <CTAStrip />
       </main>

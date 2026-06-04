@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { validarTokenRecuperacion, confirmarRecuperacion } from '../../services/identidadApi';
+import LogoIcon from '../../components/LogoIcon';
 import './Auth.css';
 
 export default function ResetPasswordPage() {
@@ -46,7 +47,7 @@ export default function ResetPasswordPage() {
         <img src="/coffee-bg.png" alt="Café" className="auth-hero__bg" />
         <div className="auth-hero__overlay" />
         <div className="auth-hero__logo">
-          <div className="auth-hero__logo-icon">☕</div>
+          <LogoIcon className="auth-hero__logo-icon" imgClassName="auth-hero__logo-img" />
           <span className="auth-hero__logo-text">Bunna</span>
         </div>
         <div className="auth-hero__content">

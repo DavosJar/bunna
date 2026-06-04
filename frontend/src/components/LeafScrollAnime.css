@@ -1,0 +1,301 @@
+/* ============================================================
+   LEAF SCROLL ANIME — Bunna
+   Scroll-driven leaf color transition powered by anime.js
+   ============================================================ */
+
+.anime-showcase {
+  position: relative;
+  height: 280vh;
+  background: var(--land-ink, #0d1a0f);
+  color: #fff;
+  overflow: visible;
+}
+
+/* Ambient radial glow that shifts color with scroll */
+.anime-showcase__glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  transition: background 0.5s ease-out;
+}
+
+/* Sticky viewport lock */
+.anime-showcase__sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.anime-showcase__grid {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 4rem;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 5rem;
+  align-items: center;
+}
+
+/* ── Info panel ── */
+.anime-showcase__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.anime-showcase__eyebrow {
+  font-family: var(--land-font-body, -apple-system, sans-serif);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 3.5px;
+  color: var(--land-amber-light, #e8b840);
+}
+
+/* ── Cards stack ── */
+.anime-showcase__cards {
+  position: relative;
+  min-height: 240px;
+}
+
+.anime-card {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  opacity: 0;
+  transform: translateY(18px) scale(0.97);
+  pointer-events: none;
+  transition: opacity 450ms cubic-bezier(0.16, 1, 0.3, 1),
+              transform 450ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 350ms ease-out;
+}
+
+.anime-card--active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: all;
+  z-index: 2;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.anime-card__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.anime-card__dot--green {
+  background: #2d6a3f;
+  box-shadow: 0 0 14px rgba(45, 106, 63, 0.7),
+              0 0 4px rgba(45, 106, 63, 0.4);
+}
+
+.anime-card__dot--yellow {
+  background: #e8b840;
+  box-shadow: 0 0 14px rgba(232, 184, 64, 0.7),
+              0 0 4px rgba(232, 184, 64, 0.4);
+}
+
+.anime-card__title {
+  font-family: var(--land-font-display, Georgia, serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.anime-card__desc {
+  font-family: var(--land-font-body, -apple-system, sans-serif);
+  font-size: 0.92rem;
+  font-weight: 300;
+  line-height: 1.75;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+/* ── Gauge ── */
+.anime-gauge {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.anime-gauge__labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--land-font-body, -apple-system, sans-serif);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.anime-gauge__labels span {
+  transition: color 300ms ease, font-weight 200ms ease;
+}
+
+.anime-gauge__labels span.is-active {
+  color: #fff;
+  font-weight: 600;
+}
+
+.anime-gauge__track {
+  height: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.anime-gauge__fill {
+  height: 100%;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #2d6a3f, #7a9a30, #c4a820, #e8b840);
+  transition: width 80ms linear;
+}
+
+/* ── Leaf visual ── */
+.anime-showcase__visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+.anime-leaf__wrapper {
+  will-change: transform;
+  transition: transform 80ms linear;
+}
+
+.anime-leaf__svg {
+  width: 260px;
+  height: auto;
+  will-change: filter;
+  transition: filter 250ms ease-out;
+}
+
+.anime-leaf__body {
+  will-change: fill;
+}
+
+.anime-leaf__vein {
+  will-change: opacity, stroke-width;
+}
+
+/* Floating badge */
+.anime-leaf__badge {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13, 26, 15, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 100px;
+  padding: 0.65rem 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+}
+
+.anime-leaf__badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.anime-leaf__badge-dot.is-green {
+  background: #2d6a3f;
+  box-shadow: 0 0 8px rgba(45, 106, 63, 0.8);
+}
+
+.anime-leaf__badge-dot.is-yellow {
+  background: #e8b840;
+  box-shadow: 0 0 8px rgba(232, 184, 64, 0.8);
+}
+
+.anime-leaf__badge-text {
+  font-family: var(--land-font-body, -apple-system, sans-serif);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.2px;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 968px) {
+  .anime-showcase__grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 0 1.5rem;
+  }
+
+  .anime-showcase__visual {
+    order: -1;
+    padding: 1rem 0;
+  }
+
+  .anime-leaf__svg {
+    width: 200px;
+  }
+
+  .anime-showcase__cards {
+    min-height: 250px;
+  }
+
+  .anime-card {
+    padding: 1.5rem;
+  }
+
+  .anime-card__title {
+    font-size: 1.35rem;
+  }
+
+  .anime-gauge {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .anime-leaf__svg {
+    width: 160px;
+  }
+
+  .anime-card {
+    padding: 1.25rem;
+  }
+
+  .anime-card__title {
+    font-size: 1.15rem;
+  }
+
+  .anime-card__desc {
+    font-size: 0.85rem;
+  }
+}

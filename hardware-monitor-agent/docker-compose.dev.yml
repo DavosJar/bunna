@@ -1,0 +1,74 @@
+services:
+  # Kafka no necesita Zookeeper en las versiones modernas (KRaft mode)
+  # Imagen oficial de Apache Kafka en modo KRaft
+  kafka:
+    image: apache/kafka:latest
+    container_name: hardware-monitor-kafka
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+    environment:
+      # Configuraciones para la imagen oficial de Apache (Modo KRaft)
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
+      - KAFKA_NUM_PARTITIONS=1
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+    restart: unless-stopped
+
+  # Un visor gráfico para ver que los mensajes estén llegando realmente
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: hardware-monitor-kafka-ui
+    ports:
+      - "8081:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+    depends_on:
+      - kafka
+
+  # Agente de monitoreo de hardware
+  agent:
+    build: .
+    container_name: hardware-monitor-agent
+    depends_on:
+      kafka:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+    restart: unless-stopped
+
+  # Desarrollo rápido con Rust (sin rebuild de imagen, caché de dependencias)
+  agent-dev:
+    image: rust:latest
+    working_dir: /app
+    volumes:
+      - .:/app
+      - cargo-registry:/usr/local/cargo/registry
+      - cargo-git:/usr/local/cargo/git
+      - cargo-target:/app/target
+    command: cargo run
+    depends_on:
+      kafka:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+    container_name: hardware-monitor-agent-dev
+
+volumes:
+  cargo-registry:
+  cargo-git:
+  cargo-target:

@@ -1,1 +1,19 @@
 .gomcp/
+
+# Go
+bin/
+vendor/
+*.test
+*.out
+
+# Logs
+*.log
+api_tests_happy_path.log
+api_tests.log
+test_all_endpoints.log
+
+# Environment
+.env
+
+# Docker
+docker-compose.override.yml

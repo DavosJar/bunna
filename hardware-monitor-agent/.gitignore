@@ -1,0 +1,25 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+virtual/
+.pytest_cache/
+
+
+# Environment
+.env
+
+# Docker
+docker-compose.override.yml
+
+# IDEs
+.vscode/
+.idea/

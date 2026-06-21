@@ -1,6 +1,9 @@
 package registry
 
 import (
+	"context"
+	"time"
+
 	"github.com/davosjar/bunna/services/identidad/internal/config"
 	uc_aceptarInvitacion "github.com/davosjar/bunna/services/identidad/internal/invitaciones/application/usecases/aceptarinvitacion"
 	uc_crearInvitacion "github.com/davosjar/bunna/services/identidad/internal/invitaciones/application/usecases/crearinvitacion"
@@ -63,6 +66,10 @@ import (
 	uc_verifyemail "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/verifyemail"
 	verificacion_domain "github.com/davosjar/bunna/services/identidad/internal/verificacion/domain"
 	verificacion_postgres "github.com/davosjar/bunna/services/identidad/internal/verificacion/infrastructure/persistence/postgres"
+	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/buffer"
+	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/decorator"
+	"strings"
+
 	"gorm.io/gorm"
 )
 
@@ -98,16 +105,16 @@ type Registry struct {
 
 	// Servicios de aplicación — registro
 	servicioRegistro             *registro.ServicioRegistro
-	RegistrarUsuarioCasoDeUso    *uc_register.RegistrarUsuarioCasoDeUso
+	RegistrarUsuarioCasoDeUso    decorator.RegistroUseCase
 
 	// Servicios de aplicación — seguridad perimetral
 	ServicioBloqueoIP *bloqueo_ip.ServicioBloqueoIP
 	ServicioRateLimit *rate_limiter.ServicioRateLimit
 
 	// Casos de uso — auth
-	IniciarSesionCasoDeUso    *uc_sesiones_login.IniciarSesionCasoDeUso
-	CerrarSesionCasoDeUso     *uc_sesiones_logout.CerrarSesionCasoDeUso
-	RenovarSesionCasoDeUso    *uc_sesiones_refresh.RenovarSesionCasoDeUso
+	IniciarSesionCasoDeUso    decorator.LoginUseCase
+	CerrarSesionCasoDeUso     decorator.LogoutUseCase
+	RenovarSesionCasoDeUso    decorator.RefreshUseCase
 	CambiarTenantCasoDeUso    *uc_sesiones_switchtenant.CambiarTenantCasoDeUso
 
 	// Casos de uso — usuarios admin
@@ -155,6 +162,11 @@ type Registry struct {
 	// Casos de uso — invitaciones
 	CrearInvitacionCasoDeUso   *uc_crearInvitacion.CrearInvitacionCasoDeUso
 	AceptarInvitacionCasoDeUso *uc_aceptarInvitacion.AceptarInvitacionCasoDeUso
+
+	// Telemetry
+	TelemetryWriter  buffer.BufferWriter
+	TelemetryEnabled bool
+	telemetryCancel  context.CancelFunc
 }
 
 func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
@@ -253,6 +265,70 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 
 	listarMisPermisosCasoDeUso := uc_listarmispermisos.NewListarMisPermisosCasoDeUso(rolRepo, rolPermisoRepo)
 
+	// Inicialización de Telemetría
+	var telemetryWriter buffer.BufferWriter
+	var telemetryCancel context.CancelFunc = func() {}
+
+	if cfg.TelemetryEnabled {
+		// Configuración del buffer (valores por defecto o desde config si se expande)
+		bufCfg := buffer.Config{
+			Capacity:             10000,
+			BatchSize:            1, // Enviamos de 1 en 1 para desarrollo
+			FlushIntervalSeconds: 1,
+			MaxRetries:           3,
+			BackoffBase:          100 * time.Millisecond,
+			BackoffMax:           2 * time.Second,
+			KafkaBrokers:         strings.Split(cfg.KafkaBrokers, ","),
+			KafkaTopic:           cfg.KafkaTopic,
+		}
+		ringBuf := buffer.NewRingBuffer(bufCfg)
+		producer := buffer.NewKafkaProducer(bufCfg)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		telemetryCancel = cancel
+		buffer.StartConsumer(ctx, ringBuf, producer, bufCfg)
+
+		telemetryWriter = ringBuf
+	} else {
+		telemetryWriter = buffer.NewNoopWriter()
+	}
+
+	// Casos de uso base
+	iniciarSesionUC := uc_sesiones_login.NewIniciarSesionCasoDeUso(
+		sesionUoW, bloqueoIPSvc, rateLimitSvc,
+		uc_sesiones_login.ConfigLogin{
+			CuentaMaxIntentos:     cfg.CuentaBloqueoMaxIntentos,
+			CuentaBloqueoDuracion: cfg.CuentaBloqueoDuracion,
+		},
+		membresiaRepo,
+		usuarioTenantRolRepo,
+	)
+
+	renovarSesionUC := uc_sesiones_refresh.NewRenovarSesionCasoDeUso(
+		sesionUoW,
+		uc_sesiones_refresh.ConfigRefresh{
+			MaxRefrescos:    cfg.SesionMaxRefrescos,
+			TimeoutAbsoluto: cfg.SesionTimeoutAbsoluto,
+		},
+		membresiaRepo,
+		usuarioTenantRolRepo,
+	)
+
+	cerrarSesionUC := uc_sesiones_logout.NewCerrarSesionCasoDeUso(sesionUoW)
+
+	// Decoradores de Telemetría
+	var decoratedLogin decorator.LoginUseCase = iniciarSesionUC
+	var decoratedRefresh decorator.RefreshUseCase = renovarSesionUC
+	var decoratedLogout decorator.LogoutUseCase = cerrarSesionUC
+	var decoratedRegister decorator.RegistroUseCase = registroUseCase
+
+	if cfg.TelemetryEnabled {
+		decoratedLogin = decorator.NewDecoratorLogin(iniciarSesionUC, telemetryWriter)
+		decoratedRefresh = decorator.NewDecoratorRefresh(renovarSesionUC, telemetryWriter)
+		decoratedLogout = decorator.NewDecoratorLogout(cerrarSesionUC, telemetryWriter)
+		decoratedRegister = decorator.NewDecoratorRegistro(registroUseCase, telemetryWriter)
+	}
+
 	return &Registry{
 		usuarioRepository:      usuarioRepo,
 		credencialesRepository: credencialesRepo,
@@ -279,30 +355,14 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		ServicioRefresh:   refreshSvc,
 		ServicioLogout:    logoutSvc,
 		servicioRegistro:             registroSvc,
-		RegistrarUsuarioCasoDeUso:    registroUseCase,
+		RegistrarUsuarioCasoDeUso:    decoratedRegister,
 		ServicioBloqueoIP: bloqueoIPSvc,
 		ServicioRateLimit: rateLimitSvc,
 
 		// Casos de uso — auth
-		IniciarSesionCasoDeUso: uc_sesiones_login.NewIniciarSesionCasoDeUso(
-			sesionUoW, bloqueoIPSvc, rateLimitSvc,
-			uc_sesiones_login.ConfigLogin{
-				CuentaMaxIntentos:     cfg.CuentaBloqueoMaxIntentos,
-				CuentaBloqueoDuracion: cfg.CuentaBloqueoDuracion,
-			},
-			membresiaRepo,
-			usuarioTenantRolRepo,
-		),
-		CerrarSesionCasoDeUso:  uc_sesiones_logout.NewCerrarSesionCasoDeUso(sesionUoW),
-		RenovarSesionCasoDeUso: uc_sesiones_refresh.NewRenovarSesionCasoDeUso(
-			sesionUoW,
-			uc_sesiones_refresh.ConfigRefresh{
-				MaxRefrescos:    cfg.SesionMaxRefrescos,
-				TimeoutAbsoluto: cfg.SesionTimeoutAbsoluto,
-			},
-			membresiaRepo,
-			usuarioTenantRolRepo,
-		),
+		IniciarSesionCasoDeUso: decoratedLogin,
+		CerrarSesionCasoDeUso:  decoratedLogout,
+		RenovarSesionCasoDeUso: decoratedRefresh,
 
 		// Casos de uso — usuarios admin
 		CrearUsuarioCasoDeUso:     uc_createuser.NewCrearUsuarioCasoDeUso(usuarioRepo, credencialesRepo, encriptacion, authSvc, generadorID),
@@ -384,6 +444,11 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 			membresiaRepo,
 			usuarioTenantRolRepo,
 		),
+
+		// Telemetry fields
+		TelemetryWriter:  telemetryWriter,
+		TelemetryEnabled: cfg.TelemetryEnabled,
+		telemetryCancel:  telemetryCancel,
 	}
 }
 
@@ -398,7 +463,7 @@ func (r *Registry) EncriptacionServicio() seguridad_domain.EncriptacionServicio 
 func (r *Registry) UsuarioUnitOfWork() usuario_domain.UnitOfWork    { return r.usuarioUnitOfWork }
 func (r *Registry) TokenServicio() sesiones_domain.TokenServicio    { return r.tokenServicio }
 func (r *Registry) GetServicioRegistro() *registro.ServicioRegistro { return r.servicioRegistro }
-func (r *Registry) GetRegistrarUsuarioCasoDeUso() *uc_register.RegistrarUsuarioCasoDeUso {
+func (r *Registry) GetRegistrarUsuarioCasoDeUso() decorator.RegistroUseCase {
 	return r.RegistrarUsuarioCasoDeUso
 }
 func (r *Registry) TenantRepository() tenant_domain.TenantRepositorio { return r.tenantRepository }
@@ -409,4 +474,11 @@ func (r *Registry) AuthService() *checkpermission.VerificarPermisoCasoDeUso { re
 func (r *Registry) EmailServicio() notificaciones.EmailServicio     { return r.emailServicio }
 func (r *Registry) UsuarioTenantRolRepositorio() rbac.UsuarioTenantRolRepositorio {
 	return r.usuarioTenantRolRepo
+}
+
+// Close libera los recursos del Registry, incluyendo la telemetría.
+func (r *Registry) Close() {
+	if r.telemetryCancel != nil {
+		r.telemetryCancel()
+	}
 }

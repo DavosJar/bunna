@@ -63,6 +63,10 @@ type Config struct {
 	// Rate limiting middleware (IP)
 	RateLimitIPMaxRequests int
 	RateLimitIPVentana     time.Duration
+
+	TelemetryEnabled bool
+	KafkaBrokers     string
+	KafkaTopic       string
 }
 
 // LoadConfig carga y valida todas las variables de entorno.
@@ -170,6 +174,11 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	telemetryEnabled, err := strconv.ParseBool(getEnv("TELEMETRY_ENABLED", "false"))
+	if err != nil {
+		return nil, fmt.Errorf("TELEMETRY_ENABLED debe ser un booleano válido: %w", err)
+	}
+
 	cfg := &Config{
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     getEnv("DB_PORT", "5432"),
@@ -224,6 +233,10 @@ func LoadConfig() (*Config, error) {
 
 		RateLimitIPMaxRequests: rateLimitIPMaxRequests,
 		RateLimitIPVentana:     rateLimitIPVentana,
+
+		TelemetryEnabled: telemetryEnabled,
+		KafkaBrokers:     getEnv("KAFKA_BROKERS", "localhost:9092"),
+		KafkaTopic:       getEnv("KAFKA_TOPIC", "telemetry"),
 	}
 
 	if cfg.DBPassword == "" {

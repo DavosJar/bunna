@@ -12,6 +12,8 @@ import (
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/facades"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/handlers"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/middleware"
+	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/buffer"
+	telemetry_middleware "github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/middleware"
 	sesiones_domain "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
 )
 
@@ -23,6 +25,8 @@ type Config struct {
 	TokenSvc          sesiones_domain.TokenServicio
 	RateLimitIPMaxRequests int
 	RateLimitIPVentana     time.Duration
+	TelemetryEnabled       bool
+	TelemetryWriter        buffer.BufferWriter
 }
 
 // jwtIfRequired es un wrapper del middleware JWT que lo omite para rutas públicas.
@@ -61,6 +65,17 @@ func New(all *facades.AllFacades, cfg Config) *gin.Engine {
 		cfg.RateLimitIPMaxRequests,
 		cfg.RateLimitIPVentana,
 	))
+
+	// Telemetría condicional
+	if cfg.TelemetryEnabled && cfg.TelemetryWriter != nil {
+		router.Use(telemetry_middleware.NewTelemetryMiddleware(
+			cfg.TelemetryWriter,
+			telemetry_middleware.Config{
+				MaxDurationWarning: 500 * time.Millisecond,
+				MaxDurationError:   1000 * time.Millisecond,
+			},
+		))
+	}
 
 	// Cuando está detrás de API Gateway, confiar en el proxy
 	// y usar X-Forwarded-For para la IP real del cliente

@@ -47,7 +47,7 @@ func NewAllFacades(reg *registry.Registry) *AllFacades {
 		),
 		Rbac: NewRbacFacade(
 			reg.ListarRolesCasoDeUso,
-                        reg.ListarPermisosCasoDeUso,
+			reg.ListarPermisosCasoDeUso,
 			reg.ListarMisPermisosCasoDeUso,
 			reg.CrearRolCasoDeUso,
 			reg.ModificarRolCasoDeUso,

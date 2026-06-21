@@ -8,7 +8,7 @@ import (
 func TestRenderizarTemplateVerificacion(t *testing.T) {
 	asunto, cuerpo, err := RenderizarTemplate(TipoVerificacionCorreo, map[string]string{
 		"nombre":           "Juan",
-		"token":            "abc-123",
+		"url_verificacion": "https://bunna.app/verificar?token=abc-123",
 		"expiracion_horas": "24",
 	})
 	if err != nil {
@@ -20,8 +20,8 @@ func TestRenderizarTemplateVerificacion(t *testing.T) {
 	if !strings.Contains(cuerpo, "Juan") {
 		t.Error("Expected cuerpo con nombre 'Juan'")
 	}
-	if !strings.Contains(cuerpo, "abc-123") {
-		t.Error("Expected cuerpo con token 'abc-123'")
+	if !strings.Contains(cuerpo, "bunna.app/verificar") {
+		t.Error("Expected cuerpo con url_verificacion")
 	}
 	if !strings.Contains(cuerpo, "24") {
 		t.Error("Expected cuerpo con expiracion '24'")
@@ -31,7 +31,7 @@ func TestRenderizarTemplateVerificacion(t *testing.T) {
 func TestRenderizarTemplateRecuperacion(t *testing.T) {
 	asunto, cuerpo, err := RenderizarTemplate(TipoRecuperacionContrasena, map[string]string{
 		"nombre":           "Maria",
-		"token":            "xyz-456",
+		"url_recuperacion": "https://bunna.app/recuperar?token=xyz-456",
 		"expiracion_horas": "2",
 	})
 	if err != nil {
@@ -43,8 +43,8 @@ func TestRenderizarTemplateRecuperacion(t *testing.T) {
 	if !strings.Contains(cuerpo, "Maria") {
 		t.Error("Expected cuerpo con nombre 'Maria'")
 	}
-	if !strings.Contains(cuerpo, "xyz-456") {
-		t.Error("Expected cuerpo con token 'xyz-456'")
+	if !strings.Contains(cuerpo, "bunna.app/recuperar") {
+		t.Error("Expected cuerpo con url_recuperacion")
 	}
 }
 

@@ -191,7 +191,7 @@ func TestRegistrarUsuarioExitoso(t *testing.T) {
 
 	cmd := &register.ComandoRegistrarUsuario{
 		Correo:   "test@example.com",
-		Password: "password123",
+		Password: "Secreto1!",
 		Nombre:   "Juan",
 		Apellido: "García",
 		Telefono: "6001234567",
@@ -259,7 +259,7 @@ func TestRegistrarUsuario_CreaTenantConNombreYSlug(t *testing.T) {
 	)
 
 	cmd := &register.ComandoRegistrarUsuario{
-		Correo: "ana@example.com", Password: "pass123",
+		Correo: "ana@example.com", 		Password: "Secreto1!",
 		Nombre: "Ana", Apellido: "López",
 	}
 
@@ -322,7 +322,7 @@ func TestRegistrarUsuario_CreaMembresia(t *testing.T) {
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@example.com", Password: "pass",
+		Correo: "test@example.com", 		Password: "Secreto1!",
 		Nombre: "Test", Apellido: "User",
 	})
 	if err != nil {
@@ -365,7 +365,7 @@ func TestRegistrarUsuarioNombreVacio(t *testing.T) {
 	uc := newUCSuccess()
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@example.com", Password: "pass", Nombre: "",
+		Correo: "test@example.com", Password: "Secreto1!", Nombre: "",
 	})
 	if err == nil {
 		t.Fatal("esperaba error por nombre vacío")
@@ -376,7 +376,7 @@ func TestRegistrarUsuarioEmailInvalido(t *testing.T) {
 	uc := newUCSuccess()
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "notanemail", Password: "pass", Nombre: "Test",
+		Correo: "notanemail", Password: "Secreto1!", Nombre: "Test",
 	})
 	if err == nil {
 		t.Fatal("esperaba error por email inválido")
@@ -421,7 +421,7 @@ func TestRegistrarUsuarioCorreoDuplicado(t *testing.T) {
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "dup@example.com", Password: "pass123",
+		Correo: "dup@example.com", Password: "Secreto1!",
 		Nombre: "Dup", Apellido: "User",
 	})
 	if err == nil {
@@ -470,7 +470,7 @@ func TestRegistrarUsuarioErrorPersistiendoCredenciales(t *testing.T) {
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@example.com", Password: "pass",
+		Correo: "test@example.com", 		Password: "Secreto1!",
 		Nombre: "Test", Apellido: "User",
 	})
 	if err == nil {
@@ -516,7 +516,7 @@ func TestRegistrarUsuarioErrorPersistiendoTenant(t *testing.T) {
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@example.com", Password: "pass",
+		Correo: "test@example.com", 		Password: "Secreto1!",
 		Nombre: "Test", Apellido: "User",
 	})
 	if err == nil {
@@ -562,7 +562,7 @@ func TestRegistrarUsuarioErrorPersistiendoMembresia(t *testing.T) {
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@example.com", Password: "pass",
+		Correo: "test@example.com", 		Password: "Secreto1!",
 		Nombre: "Test", Apellido: "User",
 	})
 	if err == nil {
@@ -607,7 +607,7 @@ func TestRegistrarUsuarioIDsInyectados(t *testing.T) {
 	)
 
 	resp, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@example.com", Password: "pass",
+		Correo: "test@example.com", 		Password: "Secreto1!",
 		Nombre: "Test", Apellido: "User",
 	})
 	if err != nil {
@@ -660,7 +660,7 @@ func TestRegistrarUsuarioPasswordHasheado(t *testing.T) {
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@example.com", Password: "miPassword",
+		Correo: "test@example.com", 		Password: "Secreto1!",
 		Nombre: "Test", Apellido: "User",
 	})
 	if err != nil {
@@ -725,7 +725,7 @@ func TestRegistrarUsuarioSlugGenerado(t *testing.T) {
 			)
 
 			_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-				Correo: "test@example.com", Password: "pass",
+				Correo: "test@example.com", Password: "Secreto1!",
 				Nombre: tt.nombre, Apellido: tt.apellido,
 			})
 			if err != nil {
@@ -741,9 +741,9 @@ func TestRegistrarUsuarioSlugGenerado(t *testing.T) {
 func TestRegistrarUsuarioCamposCorreoYTelefonoOpcional(t *testing.T) {
 	uc := newUCSuccess()
 
-	resp, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@domain.com", Password: "pass123",
-		Nombre: "Test", Apellido: "User", Telefono: "0987654321",
+		resp, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
+			Correo: "test@domain.com", Password: "Secreto1!",
+			Nombre: "Test", Apellido: "User", Telefono: "0987654321",
 	})
 	if err != nil {
 		t.Fatalf("error inesperado: %v", err)
@@ -799,7 +799,7 @@ func TestRegistrarUsuario_AsignaRolAdministrador(t *testing.T) {
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@example.com", Password: "pass",
+		Correo: "test@example.com", 		Password: "Secreto1!",
 		Nombre: "Test", Apellido: "User",
 	})
 	if err != nil {

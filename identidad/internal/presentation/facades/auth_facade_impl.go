@@ -54,6 +54,9 @@ func (f *authFacadeImpl) Registrar(ctx context.Context, cmd ComandoRegistro) (*R
 
 	// Post-registro: enviar email de verificación (best-effort)
 	go func() {
+		if f.verificacionUseCase == nil {
+			return
+		}
 		if _, err := f.verificacionUseCase.Solicitar(context.Background(), uc_verifyemail.ComandoSolicitarVerificacion{
 			UsuarioID: respuesta.UsuarioID,
 		}); err != nil {

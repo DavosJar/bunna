@@ -1,5 +1,5 @@
 {
-  "title": "Hardware - M\u00e9tricas",
+  "title": "Hardware - Métricas",
   "uid": "hardware-metrics",
   "timezone": "browser",
   "time": {
@@ -13,69 +13,60 @@
   ],
   "schemaVersion": 36,
   "version": 1,
+  "templating": {
+    "list": [
+      {
+        "name": "cloud_provider",
+        "type": "query",
+        "query": "SELECT DISTINCT cloud_provider FROM hardware_metricas WHERE cloud_provider != ''",
+        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+        "includeAll": false,
+        "multi": false,
+        "sort": 1
+      },
+      {
+        "name": "node_hostname",
+        "type": "query",
+        "query": "SELECT DISTINCT node_hostname FROM hardware_metricas WHERE cloud_provider = '$cloud_provider' AND node_hostname != ''",
+        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+        "includeAll": false,
+        "multi": false,
+        "sort": 1,
+        "refresh": 2
+      }
+    ]
+  },
   "panels": [
     {
       "title": "CPU Usage",
       "type": "timeseries",
       "id": 1,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "clickhouse"
-      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
       "fieldConfig": {
         "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "max": 100,
+          "unit": "percent", "min": 0, "max": 100,
           "custom": {
-            "displayMode": "list",
-            "spanNulls": false,
-            "showPoints": "never",
-            "lineInterpolation": "smooth",
-            "gradientMode": "opacity",
-            "fillOpacity": 20
+            "displayMode": "list", "spanNulls": false, "showPoints": "never",
+            "lineInterpolation": "smooth", "gradientMode": "opacity", "fillOpacity": 20
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 70
-              },
-              {
-                "color": "red",
-                "value": 90
-              }
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
             ]
           }
         },
         "overrides": []
       },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        }
-      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true } },
       "targets": [
         {
           "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "clickhouse"
-          },
-          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 30 SECOND) AS t, avg(cpu_usage_percent) AS cpu_usage_percent FROM hardware_metricas WHERE $__timeFilter(timestamp) GROUP BY t ORDER BY t",
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 30 SECOND) AS t, avg(cpu_usage_percent) AS cpu_usage_percent FROM hardware_metricas WHERE $__timeFilter(timestamp) AND node_hostname = '$node_hostname' GROUP BY t ORDER BY t",
           "format": "table",
           "interval": ""
         }
@@ -85,73 +76,39 @@
       "title": "RAM Usage",
       "type": "timeseries",
       "id": 2,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "clickhouse"
-      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
       "fieldConfig": {
         "defaults": {
           "unit": "bytes",
           "custom": {
-            "displayMode": "list",
-            "spanNulls": false,
-            "showPoints": "never",
-            "lineInterpolation": "smooth",
-            "gradientMode": "opacity",
+            "displayMode": "list", "spanNulls": false, "showPoints": "never",
+            "lineInterpolation": "smooth", "gradientMode": "opacity",
             "fillOpacity": 60,
-            "stacking": {
-              "mode": "normal",
-              "group": "ram"
-            }
+            "stacking": { "mode": "normal", "group": "ram" }
           }
         },
         "overrides": [
           {
-            "matcher": {
-              "id": "byName",
-              "options": "ram_available_mb"
-            },
-            "properties": [
-              {
-                "id": "custom.fillOpacity",
-                "value": 30
-              }
-            ]
+            "matcher": { "id": "byName", "options": "ram_available_mb" },
+            "properties": [{ "id": "custom.fillOpacity", "value": 30 }]
           }
         ]
       },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        }
-      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true } },
       "targets": [
         {
           "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "clickhouse"
-          },
-          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 30 SECOND) AS t, avg(ram_used_mb) * 1048576 AS ram_usada FROM hardware_metricas WHERE $__timeFilter(timestamp) GROUP BY t ORDER BY t",
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 30 SECOND) AS t, avg(ram_used_mb) * 1048576 AS ram_usada FROM hardware_metricas WHERE $__timeFilter(timestamp) AND node_hostname = '$node_hostname' GROUP BY t ORDER BY t",
           "format": "table",
           "legendFormat": "RAM Usada",
           "interval": ""
         },
         {
           "refId": "B",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "clickhouse"
-          },
-          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 30 SECOND) AS t, avg(ram_available_mb) * 1048576 AS ram_disponible FROM hardware_metricas WHERE $__timeFilter(timestamp) GROUP BY t ORDER BY t",
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 30 SECOND) AS t, avg(ram_available_mb) * 1048576 AS ram_disponible FROM hardware_metricas WHERE $__timeFilter(timestamp) AND node_hostname = '$node_hostname' GROUP BY t ORDER BY t",
           "format": "table",
           "legendFormat": "RAM Disponible",
           "interval": ""
@@ -162,64 +119,32 @@
       "title": "Disk Usage",
       "type": "timeseries",
       "id": 3,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 8
-      },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "clickhouse"
-      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
       "fieldConfig": {
         "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "max": 100,
+          "unit": "percent", "min": 0, "max": 100,
           "custom": {
-            "displayMode": "list",
-            "spanNulls": false,
-            "showPoints": "never",
-            "lineInterpolation": "smooth",
-            "gradientMode": "opacity",
-            "fillOpacity": 20
+            "displayMode": "list", "spanNulls": false, "showPoints": "never",
+            "lineInterpolation": "smooth", "gradientMode": "opacity", "fillOpacity": 20
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 80
-              },
-              {
-                "color": "red",
-                "value": 95
-              }
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "red", "value": 95 }
             ]
           }
         },
         "overrides": []
       },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        }
-      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true } },
       "targets": [
         {
           "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "clickhouse"
-          },
-          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 30 SECOND) AS t, disco_mount, avg(disco_usage_percent) AS disco_usage_percent FROM hardware_metricas WHERE $__timeFilter(timestamp) GROUP BY t, disco_mount ORDER BY t",
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 30 SECOND) AS t, disco_mount, avg(disco_usage_percent) AS disco_usage_percent FROM hardware_metricas WHERE $__timeFilter(timestamp) AND node_hostname = '$node_hostname' GROUP BY t, disco_mount ORDER BY t",
           "format": "table",
           "interval": ""
         }
@@ -229,87 +154,41 @@
       "title": "Network Traffic",
       "type": "timeseries",
       "id": 4,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 8
-      },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "clickhouse"
-      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
       "fieldConfig": {
         "defaults": {
           "unit": "Bps",
           "custom": {
-            "displayMode": "list",
-            "spanNulls": false,
-            "showPoints": "never",
-            "lineInterpolation": "smooth",
-            "gradientMode": "opacity",
-            "fillOpacity": 20
+            "displayMode": "list", "spanNulls": false, "showPoints": "never",
+            "lineInterpolation": "smooth", "gradientMode": "opacity", "fillOpacity": 20
           }
         },
         "overrides": [
           {
-            "matcher": {
-              "id": "byName",
-              "options": "interfaz_received_bytes"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "blue",
-                  "mode": "fixed"
-                }
-              }
-            ]
+            "matcher": { "id": "byName", "options": "interfaz_received_bytes" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
           },
           {
-            "matcher": {
-              "id": "byName",
-              "options": "interfaz_transmitted_bytes"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "orange",
-                  "mode": "fixed"
-                }
-              }
-            ]
+            "matcher": { "id": "byName", "options": "interfaz_transmitted_bytes" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
           }
         ]
       },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        }
-      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true } },
       "targets": [
         {
           "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "clickhouse"
-          },
-          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 30 SECOND) AS t, avg(interfaz_received_bytes_per_sec) AS interfaz_received_bytes FROM hardware_metricas WHERE $__timeFilter(timestamp) GROUP BY t ORDER BY t",
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 30 SECOND) AS t, avg(interfaz_received_bytes_per_sec) AS interfaz_received_bytes FROM hardware_metricas WHERE $__timeFilter(timestamp) AND node_hostname = '$node_hostname' GROUP BY t ORDER BY t",
           "format": "table",
           "legendFormat": "Recibidos",
           "interval": ""
         },
         {
           "refId": "B",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "clickhouse"
-          },
-          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 30 SECOND) AS t, avg(interfaz_transmitted_bytes_per_sec) AS interfaz_transmitted_bytes FROM hardware_metricas WHERE $__timeFilter(timestamp) GROUP BY t ORDER BY t",
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 30 SECOND) AS t, avg(interfaz_transmitted_bytes_per_sec) AS interfaz_transmitted_bytes FROM hardware_metricas WHERE $__timeFilter(timestamp) AND node_hostname = '$node_hostname' GROUP BY t ORDER BY t",
           "format": "table",
           "legendFormat": "Transmitidos",
           "interval": ""
@@ -320,51 +199,23 @@
       "title": "Alertas Recientes",
       "type": "table",
       "id": 5,
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 16
-      },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "clickhouse"
-      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
       "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "left",
-            "displayMode": "auto"
-          }
-        },
+        "defaults": { "custom": { "align": "left", "displayMode": "auto" } },
         "overrides": [
           {
-            "matcher": {
-              "id": "byName",
-              "options": "severity"
-            },
+            "matcher": { "id": "byName", "options": "severity" },
             "properties": [
-              {
-                "id": "custom.displayMode",
-                "value": "color-text"
-              },
+              { "id": "custom.displayMode", "value": "color-text" },
               {
                 "id": "thresholds",
                 "value": {
                   "mode": "absolute",
                   "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "yellow",
-                      "value": 0
-                    },
-                    {
-                      "color": "red",
-                      "value": 1
-                    }
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 0 },
+                    { "color": "red", "value": 1 }
                   ]
                 }
               }
@@ -373,25 +224,15 @@
         ]
       },
       "options": {
-        "footer": {
-          "show": false
-        },
+        "footer": { "show": false },
         "frameIndex": 0,
         "showTypeIcons": false,
-        "sortBy": [
-          {
-            "displayName": "timestamp",
-            "desc": true
-          }
-        ]
+        "sortBy": [{ "displayName": "timestamp", "desc": true }]
       },
       "targets": [
         {
           "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "clickhouse"
-          },
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
           "rawSql": "SELECT timestamp, severity, message, metric, value, threshold FROM hardware_alertas WHERE $__timeFilter(timestamp) ORDER BY timestamp DESC LIMIT 50",
           "format": "table",
           "interval": ""

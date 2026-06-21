@@ -6,6 +6,8 @@ pub struct Snapshot {
     pub node_id: String,
     pub timestamp: DateTime<Utc>,
     pub interval_ms: u64,
+    pub cloud_provider: String,
+    pub node_hostname: String,
     pub cpu: CpuMetrics,
     pub ram: RamMetrics,
     pub disks: Vec<DiskMetrics>,

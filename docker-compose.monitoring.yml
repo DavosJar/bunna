@@ -46,6 +46,9 @@ services:
       - NODE_ID=agent-1
       - SAMPLE_INTERVAL_MS=5000
       - KAFKA_TOPIC=hardware_metrics
+      - CLOUD_PROVIDER=local
+    volumes:
+      - /etc/hostname:/etc/host_hostname:ro
 
   servicio-monitoreo:
     build:

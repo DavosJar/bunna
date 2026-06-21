@@ -13,6 +13,8 @@ pub struct InstantaneaHardware {
     pub node_id: String,
     pub timestamp: String,
     pub interval_ms: u64,
+    pub cloud_provider: Option<String>,
+    pub node_hostname: Option<String>,
 
     pub cpu: CpuMetricas,
     pub ram: RamMetricas,

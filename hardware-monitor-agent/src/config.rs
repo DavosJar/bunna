@@ -12,6 +12,7 @@ pub struct Config {
     pub ram_critical: f64,
     pub disk_warn: f64,
     pub disk_critical: f64,
+    pub cloud_provider: String,
 }
 
 impl Config {
@@ -40,6 +41,7 @@ impl Config {
             disk_critical: env::var("DISK_CRITICAL_PERCENT")
                 .unwrap_or_else(|_| "95.0".to_string())
                 .parse()?,
+            cloud_provider: env::var("CLOUD_PROVIDER").unwrap_or_else(|_| "local".to_string()),
         })
     }
 }

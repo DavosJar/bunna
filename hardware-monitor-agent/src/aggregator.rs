@@ -8,6 +8,8 @@ pub struct Aggregator {
     guardian_tx: mpsc::Sender<Snapshot>,
     node_id: String,
     interval_ms: u64,
+    cloud_provider: String,
+    node_hostname: String,
 }
 
 pub enum PartialMetrics {
@@ -22,6 +24,8 @@ impl Aggregator {
     pub fn new(
         node_id: String,
         interval_ms: u64,
+        cloud_provider: String,
+        node_hostname: String,
         metrics_rx: mpsc::Receiver<PartialMetrics>,
         snapshot_tx: mpsc::Sender<Snapshot>,
         guardian_tx: mpsc::Sender<Snapshot>,
@@ -29,6 +33,8 @@ impl Aggregator {
         Self {
             node_id,
             interval_ms,
+            cloud_provider,
+            node_hostname,
             metrics_rx,
             snapshot_tx,
             guardian_tx,
@@ -57,6 +63,8 @@ impl Aggregator {
                     node_id: self.node_id.clone(),
                     timestamp: chrono::Utc::now(),
                     interval_ms: self.interval_ms,
+                    cloud_provider: self.cloud_provider.clone(),
+                    node_hostname: self.node_hostname.clone(),
                     cpu: c,
                     ram: r,
                     disks: d,

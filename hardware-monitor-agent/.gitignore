@@ -17,8 +17,6 @@ virtual/
 # Environment
 .env
 
-# Docker
-docker-compose.override.yml
 
 # IDEs
 .vscode/

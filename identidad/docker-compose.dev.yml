@@ -1,26 +1,4 @@
 services:
-  kafka:
-    image: confluentinc/cp-kafka:7.4.0
-    container_name: bunna-kafka
-    ports:
-      - "9092:9092"
-      - "29092:29092"
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: 'broker,controller'
-      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@localhost:9093'
-      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29092'
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
-      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
-      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-    networks:
-      - bunna-network
-
   db:
     image: postgres:16-alpine
     container_name: identidad-db-dev
@@ -50,8 +28,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      kafka:
-        condition: service_started
     ports:
       - "8080:8080"
     environment:
@@ -71,7 +47,7 @@ services:
 
 networks:
   bunna-network:
-    driver: bridge
+    external: true
 
 volumes:
   bunna_postgres_data:

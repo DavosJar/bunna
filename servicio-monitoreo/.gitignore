@@ -1,0 +1,20 @@
+# Rust — build output (binarios, dependencias compiladas, objetos intermedios)
+target/
+
+# Variables de entorno (contienen secretos, tokens, URLs internas)
+.env
+
+# config local / sobreescrituras no commiteables
+config/local/
+config/*.local.*
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

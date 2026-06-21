@@ -1,0 +1,91 @@
+services:
+  # --- INFRAESTRUCTURA ---
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: bunna-kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:29093,PLAINTEXT_HOST://0.0.0.0:29092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: bunna-clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      - CLICKHOUSE_USER=${CH_USER:-monitoreo}
+      - CLICKHOUSE_PASSWORD=${CH_PASS:-monitoreo_dev}
+      - CLICKHOUSE_DB=${CH_DB:-bunna_monitoreo}
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./servicio-monitoreo/config/clickhouse/init:/docker-entrypoint-initdb.d
+
+  # --- SERVICIOS PROPIOS ---
+  hardware-monitor-agent:
+    build: 
+      context: ./hardware-monitor-agent
+    container_name: bunna-hw-agent
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+      - NODE_ID=agent-1
+      - SAMPLE_INTERVAL_MS=5000
+      - KAFKA_TOPIC=hardware_metrics
+
+  servicio-monitoreo:
+    build:
+      context: ./servicio-monitoreo
+    container_name: bunna-ingestor
+    ports:
+      - "9100:9100"
+    depends_on:
+      - hardware-monitor-agent
+      - kafka
+      - clickhouse
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_TOPIC_TELEMETRIA=telemetry
+      - KAFKA_TOPIC_HARDWARE_METRICAS=hardware.metrics
+      - KAFKA_TOPIC_HARDWARE_ALERTAS=hardware.alerts
+      - GRUPO_CONSUMIDOR=monitor-ingestor-group
+      - CLICKHOUSE_URL=http://clickhouse:8123
+      - CLICKHOUSE_USUARIO=${CH_USER:-monitoreo}
+      - CLICKHOUSE_CONTRASENA=${CH_PASS:-monitoreo_dev}
+      - CLICKHOUSE_BD=${CH_DB:-bunna_monitoreo}
+      - RUST_LOG=info
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    container_name: bunna-grafana
+    environment:
+      - GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - clickhouse
+    volumes:
+      - ./servicio-monitoreo/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./servicio-monitoreo/grafana/dashboards:/etc/grafana/provisioning/dashboards
+
+networks:
+  default:
+    name: bunna-network
+
+volumes:
+  clickhouse_data:

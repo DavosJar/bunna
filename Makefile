@@ -25,7 +25,7 @@ push-all: push-agent push-ingestor
 
 # ─── Deploy test ───
 deploy-test:
-	export $$(grep -v '^\s*#' soporte/test/.env | xargs) && docker stack deploy -c soporte/test/compose.yml bunna-test
+	bash -c 'set -a; . soporte/test/.env; set +a; docker stack deploy -c soporte/test/compose.yml bunna-test'
 
 remove-test:
 	docker stack rm bunna-test
@@ -38,7 +38,7 @@ logs-test:
 
 # ─── Deploy prod ───
 deploy-prod:
-	export $$(grep -v '^\s*#' soporte/prod/.env | xargs) && docker stack deploy -c soporte/prod/compose.yml bunna-prod
+	bash -c 'set -a; . soporte/prod/.env; set +a; docker stack deploy -c soporte/prod/compose.yml bunna-prod'
 
 remove-prod:
 	docker stack rm bunna-prod

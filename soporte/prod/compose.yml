@@ -45,7 +45,7 @@ services:
       - CLICKHOUSE_PASSWORD=${CH_PASS:-monitoreo_dev}
       - CLICKHOUSE_DB=${CH_DB:-bunna_monitoreo}
     volumes:
-      - clickhouse_data_${ENV:-prod}:/var/lib/clickhouse
+      - clickhouse_data_prod:/var/lib/clickhouse
     deploy:
       replicas: 1
       resources:
@@ -68,6 +68,9 @@ services:
       - GF_INSTALL_PLUGINS=${GF_INSTALL_PLUGINS:-grafana-clickhouse-datasource}
       - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ../../servicio-monitoreo/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ../../servicio-monitoreo/grafana/dashboards:/etc/grafana/provisioning/dashboards
     deploy:
       replicas: 1
       resources:

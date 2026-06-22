@@ -76,6 +76,9 @@ services:
       - CLICKHOUSE_DB=${CH_DB:-bunna_monitoreo}
     volumes:
       - clickhouse_data_prod:/var/lib/clickhouse
+    configs:
+      - source: clickhouse_init_sql
+        target: /docker-entrypoint-initdb.d/001_tablas.sql
     deploy:
       replicas: 1
       resources:
@@ -134,3 +137,5 @@ configs:
     file: ../../servicio-monitoreo/grafana/dashboards/proveedor.yaml
   hardware_metrics_dashboard:
     file: ../../servicio-monitoreo/grafana/dashboards/hardware-metrics.json
+  clickhouse_init_sql:
+    file: ../../servicio-monitoreo/config/clickhouse/init/001_tablas.sql

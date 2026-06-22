@@ -41,6 +41,28 @@ services:
     deploy:
       mode: global
 
+  servicio-monitoreo:
+    image: 172.31.36.189:5000/servicio-monitoreo:release
+    depends_on:
+      - kafka
+      - clickhouse
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_TOPIC_TELEMETRIA=telemetry
+      - KAFKA_TOPIC_HARDWARE_METRICAS=hardware.metrics
+      - KAFKA_TOPIC_HARDWARE_ALERTAS=hardware.alerts
+      - GRUPO_CONSUMIDOR=monitor-ingestor-${ENV:-test}
+      - CLICKHOUSE_URL=http://clickhouse:8123
+      - CLICKHOUSE_USUARIO=monitoreo
+      - CLICKHOUSE_CONTRASENA=monitoreo_dev
+      - CLICKHOUSE_BD=bunna_monitoreo
+      - RUST_LOG=info
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - ${PLACEMENT_CONSTRAINT:-node.role == worker}
+
   clickhouse:
     image: ${CH_IMAGE:-clickhouse/clickhouse-server:latest}
     ports:

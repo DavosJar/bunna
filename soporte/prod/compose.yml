@@ -81,13 +81,6 @@ services:
         target: /docker-entrypoint-initdb.d/001_tablas.sql
     deploy:
       replicas: 1
-      resources:
-        limits:
-          cpus: ${CH_CPU_LIMIT:-1}
-          memory: ${CH_MEM_LIMIT:-2G}
-        reservations:
-          cpus: '0.5'
-          memory: 1G
       placement:
         constraints:
           - ${PLACEMENT_CONSTRAINT:-node.role == worker}

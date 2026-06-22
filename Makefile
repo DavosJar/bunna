@@ -1,17 +1,17 @@
-.PHONY: deploy-dev deploy-prod remove-dev remove-prod ps-dev ps-prod logs-dev logs-prod
+.PHONY: deploy-test deploy-prod remove-test remove-prod ps-test ps-prod logs-test logs-prod
 
-# ─── Dev ───
-deploy-dev:
-	docker stack deploy -c soporte/dev/compose.yml bunna-dev
+# ─── Test ───
+deploy-test:
+	docker stack deploy -c soporte/test/compose.yml bunna-test
 
-remove-dev:
-	docker stack rm bunna-dev
+remove-test:
+	docker stack rm bunna-test
 
-ps-dev:
-	docker stack ps bunna-dev
+ps-test:
+	docker stack ps bunna-test
 
-logs-dev:
-	docker service logs --tail 50 -f bunna-dev_kafka bunna-dev_clickhouse bunna-dev_grafana
+logs-test:
+	docker service logs --tail 50 -f bunna-test_kafka bunna-test_clickhouse bunna-test_grafana
 
 # ─── Prod ───
 deploy-prod:

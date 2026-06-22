@@ -45,7 +45,7 @@ services:
       - CLICKHOUSE_PASSWORD=${CH_PASS:-monitoreo_dev}
       - CLICKHOUSE_DB=${CH_DB:-bunna_monitoreo}
     volumes:
-      - clickhouse_data_dev:/var/lib/clickhouse
+      - clickhouse_data_test:/var/lib/clickhouse
     deploy:
       replicas: 1
       resources:
@@ -85,10 +85,10 @@ services:
           - ${PLACEMENT_CONSTRAINT:-node.role == worker}
 
 volumes:
-  clickhouse_data_dev:
+  clickhouse_data_test:
 
 networks:
   default:
-    name: bunna-dev-net
+    name: bunna-test-net
     driver: overlay
     attachable: true

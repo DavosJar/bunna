@@ -22,13 +22,6 @@ services:
       KAFKA_HEAP_OPTS: ${KAFKA_HEAP_OPTS:--Xms512M -Xmx1G}
     deploy:
       replicas: 1
-      resources:
-        limits:
-          cpus: ${KAFKA_CPU_LIMIT:-1}
-          memory: ${KAFKA_MEM_LIMIT:-1.5G}
-        reservations:
-          cpus: '0.5'
-          memory: 1G
       placement:
         constraints:
           - ${PLACEMENT_CONSTRAINT:-node.role == worker}

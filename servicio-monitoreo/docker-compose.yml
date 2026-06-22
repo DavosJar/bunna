@@ -1,0 +1,53 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: bunna-clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./config/clickhouse/init:/docker-entrypoint-initdb.d
+    environment:
+      CLICKHOUSE_USER: monitoreo
+      CLICKHOUSE_PASSWORD: monitoreo_dev
+      CLICKHOUSE_DB: bunna_monitoreo
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: bunna-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_INSTALL_PLUGINS: grafana-clickhouse-datasource
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ingestor:
+    build: .
+    container_name: bunna-ingestor
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "9100:9100"
+    restart: unless-stopped
+
+volumes:
+  clickhouse-data:
+  grafana-data:

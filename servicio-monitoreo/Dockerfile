@@ -1,6 +1,7 @@
-FROM rust:latest AS builder
+# Stage 1: Build the Rust binary
+FROM rust:1-bookworm AS builder
 
-# Install system dependencies required by rdkafka-sys (bundled librdkafka C library)
+# Install system dependencies required by rdkafka-sys
 RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     pkg-config \
@@ -9,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Copy the entire project (source, manifests, and lock file)
+# Copy the entire project
 COPY . .
 
 # Build the release binary
@@ -25,6 +26,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the compiled binary from the build stage
-COPY --from=builder /app/target/debug/hardware-monitor-agent /usr/local/bin/hardware-monitor-agent
+WORKDIR /app
+COPY --from=builder /app/target/debug/servicio-monitoreo /app/servicio-monitoreo
 
-ENTRYPOINT ["/usr/local/bin/hardware-monitor-agent"]
+EXPOSE 9100
+CMD ["/app/servicio-monitoreo"]

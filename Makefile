@@ -1,4 +1,4 @@
-.PHONY: build-agent build-ingestor build-all push-agent push-ingestor push-all \
+.PHONY: build-agent build-ingestor build-identidad build-all push-agent push-ingestor push-identidad push-all \
         deploy-test deploy-prod remove-test remove-prod ps-test ps-prod logs-test logs-prod
 
 REGISTRY = 172.31.36.189:5000
@@ -10,7 +10,10 @@ build-agent:
 build-ingestor:
 	cd servicio-monitoreo && docker build -t servicio-monitoreo:release .
 
-build-all: build-agent build-ingestor
+build-identidad:
+	cd identidad && docker build -t identidad:release .
+
+build-all: build-agent build-ingestor build-identidad
 
 # ─── Push ───
 push-agent:
@@ -21,7 +24,11 @@ push-ingestor:
 	docker tag servicio-monitoreo:release $(REGISTRY)/servicio-monitoreo:release
 	docker push $(REGISTRY)/servicio-monitoreo:release
 
-push-all: push-agent push-ingestor
+push-identidad:
+	docker tag identidad:release $(REGISTRY)/identidad:release
+	docker push $(REGISTRY)/identidad:release
+
+push-all: push-agent push-ingestor push-identidad
 
 # ─── Deploy test ───
 deploy-test:

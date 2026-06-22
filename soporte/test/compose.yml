@@ -33,6 +33,21 @@ services:
         constraints:
           - ${PLACEMENT_CONSTRAINT:-node.role == worker}
 
+  hardware-monitor-agent:
+    image: 172.31.36.189:5000/hardware-monitor-agent:release
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+      - SAMPLE_INTERVAL_MS=5000
+      - KAFKA_TOPIC=hardware_metrics
+      - CLOUD_PROVIDER=local
+      - NODE_ID={{.Node.Hostname}}
+    volumes:
+      - /etc/hostname:/etc/host_hostname:ro
+    deploy:
+      mode: global
+
   clickhouse:
     image: ${CH_IMAGE:-clickhouse/clickhouse-server:latest}
     ports:

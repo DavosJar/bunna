@@ -101,6 +101,8 @@ services:
         target: /etc/grafana/provisioning/dashboards/proveedor.yaml
       - source: hardware_metrics_dashboard
         target: /etc/grafana/provisioning/dashboards/hardware-metrics.json
+      - source: api_telemetry_dashboard
+        target: /etc/grafana/provisioning/dashboards/api-telemetry.json
     deploy:
       replicas: 1
       resources:
@@ -130,5 +132,7 @@ configs:
     file: ../../servicio-monitoreo/grafana/dashboards/proveedor.yaml
   hardware_metrics_dashboard:
     file: ../../servicio-monitoreo/grafana/dashboards/hardware-metrics.json
+  api_telemetry_dashboard:
+    file: ../../servicio-monitoreo/grafana/dashboards/api-telemetry.json
   clickhouse_init_sql:
     file: ../../servicio-monitoreo/config/clickhouse/init/001_tablas.sql

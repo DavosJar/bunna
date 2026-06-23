@@ -68,6 +68,7 @@ import (
 	verificacion_postgres "github.com/davosjar/bunna/services/identidad/internal/verificacion/infrastructure/persistence/postgres"
 	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/buffer"
 	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/decorator"
+	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/gormplugin"
 	"strings"
 
 	"gorm.io/gorm"
@@ -289,6 +290,10 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		buffer.StartConsumer(ctx, ringBuf, producer, bufCfg)
 
 		telemetryWriter = ringBuf
+
+		// Registrar plugin de telemetría para GORM (log_type: "BD")
+		gormPlugin := gormplugin.NewTelemetryPlugin(telemetryWriter, gormplugin.DefaultConfig())
+		db.Use(gormPlugin)
 	} else {
 		telemetryWriter = buffer.NewNoopWriter()
 	}

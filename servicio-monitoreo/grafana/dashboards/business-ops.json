@@ -1,6 +1,6 @@
 {
-  "title": "API - Full Telemetry",
-  "uid": "api-full-telemetry",
+  "title": "Business Ops",
+  "uid": "business-ops",
   "timezone": "browser",
   "time": {
     "from": "now-6h",
@@ -8,8 +8,8 @@
   },
   "tags": [
     "bunna",
-    "api",
-    "telemetry",
+    "business",
+    "ops",
     "monitoreo"
   ],
   "schemaVersion": 36,
@@ -18,47 +18,12 @@
   "editable": true,
   "graphTooltip": 0,
   "templating": {
-    "list": [
-      {
-        "name": "service_name",
-        "type": "query",
-        "query": "SELECT DISTINCT service_name FROM telemetria_api WHERE service_name != '' ORDER BY service_name",
-        "datasource": {
-          "type": "grafana-clickhouse-datasource",
-          "uid": "clickhouse"
-        },
-        "refresh": 1,
-        "sort": 1,
-        "includeAll": true,
-        "allValue": "",
-        "hide": 0,
-        "label": "Service",
-        "multi": false,
-        "skipUrlSync": false
-      },
-      {
-        "name": "endpoint",
-        "type": "query",
-        "query": "SELECT DISTINCT path FROM telemetria_api WHERE service_name = '$service_name' ORDER BY path",
-        "datasource": {
-          "type": "grafana-clickhouse-datasource",
-          "uid": "clickhouse"
-        },
-        "refresh": 2,
-        "sort": 1,
-        "includeAll": true,
-        "allValue": "",
-        "hide": 0,
-        "label": "Endpoint",
-        "multi": false,
-        "skipUrlSync": false
-      }
-    ]
+    "list": []
   },
   "panels": [
     {
-      "id": 1,
-      "title": "Total Requests",
+      "id": 101,
+      "title": "Total Use Cases",
       "type": "stat",
       "gridPos": {
         "h": 4,
@@ -116,15 +81,15 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "clickhouse"
           },
-          "rawSql": "SELECT count() FROM telemetria_api WHERE $__timeFilter(timestamp)",
+          "rawSql": "SELECT count() FROM telemetria_negocio WHERE $__timeFilter(timestamp)",
           "format": "table",
           "interval": ""
         }
       ]
     },
     {
-      "id": 2,
-      "title": "RPS",
+      "id": 102,
+      "title": "Avg Duration",
       "type": "stat",
       "gridPos": {
         "h": 4,
@@ -138,10 +103,10 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps",
+          "unit": "ms",
           "decimals": 2,
           "color": {
-            "mode": "none"
+            "mode": "thresholds"
           },
           "custom": {
             "displayMode": "list",
@@ -152,8 +117,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
+                "color": "green",
                 "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 200
+              },
+              {
+                "color": "red",
+                "value": 500
               }
             ]
           }
@@ -161,7 +134,7 @@
         "overrides": []
       },
       "options": {
-        "colorMode": "none",
+        "colorMode": "background",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
@@ -182,14 +155,14 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "clickhouse"
           },
-          "rawSql": "SELECT count()/dateDiff('second', toStartOfInterval(min(timestamp), INTERVAL 1 MINUTE), toStartOfInterval(max(timestamp), INTERVAL 1 MINUTE) + INTERVAL 1 MINUTE) FROM telemetria_api WHERE $__timeFilter(timestamp)",
+          "rawSql": "SELECT round(avg(duration_usecase_ms), 2) FROM telemetria_negocio WHERE $__timeFilter(timestamp)",
           "format": "table",
           "interval": ""
         }
       ]
     },
     {
-      "id": 3,
+      "id": 103,
       "title": "Error Rate",
       "type": "stat",
       "gridPos": {
@@ -256,15 +229,15 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "clickhouse"
           },
-          "rawSql": "SELECT round(countIf(status_code >= 400)/count()*100, 2) FROM telemetria_api WHERE $__timeFilter(timestamp)",
+          "rawSql": "SELECT round(countIf(result != 'success')/count()*100, 2) FROM telemetria_negocio WHERE $__timeFilter(timestamp)",
           "format": "table",
           "interval": ""
         }
       ]
     },
     {
-      "id": 4,
-      "title": "Avg Latency",
+      "id": 104,
+      "title": "Unique Use Cases",
       "type": "stat",
       "gridPos": {
         "h": 4,
@@ -278,10 +251,10 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "ms",
-          "decimals": 2,
+          "unit": "none",
+          "decimals": 0,
           "color": {
-            "mode": "thresholds"
+            "mode": "none"
           },
           "custom": {
             "displayMode": "list",
@@ -292,16 +265,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "blue",
                 "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 200
-              },
-              {
-                "color": "red",
-                "value": 500
               }
             ]
           }
@@ -309,7 +274,7 @@
         "overrides": []
       },
       "options": {
-        "colorMode": "background",
+        "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
@@ -330,15 +295,15 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "clickhouse"
           },
-          "rawSql": "SELECT round(avg(duration_ms), 2) FROM telemetria_api WHERE $__timeFilter(timestamp)",
+          "rawSql": "SELECT count(DISTINCT use_case) FROM telemetria_negocio WHERE $__timeFilter(timestamp)",
           "format": "table",
           "interval": ""
         }
       ]
     },
     {
-      "id": 5,
-      "title": "Requests per second",
+      "id": 105,
+      "title": "Use Cases Over Time",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -401,15 +366,15 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "clickhouse"
           },
-          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 1 MINUTE) AS t, count()/60 AS rps FROM telemetria_api WHERE $__timeFilter(timestamp) GROUP BY t ORDER BY t",
+          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 1 MINUTE) AS t, count()/60 AS rps FROM telemetria_negocio WHERE $__timeFilter(timestamp) GROUP BY t ORDER BY t",
           "format": "table",
           "interval": ""
         }
       ]
     },
     {
-      "id": 6,
-      "title": "Latency P50 / P95 / P99",
+      "id": 106,
+      "title": "Duration P50 / P95 / P99",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -537,16 +502,16 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "clickhouse"
           },
-          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 1 MINUTE) AS t, avg(duration_ms) AS p50, quantile(0.95)(duration_ms) AS p95, quantile(0.99)(duration_ms) AS p99 FROM telemetria_api WHERE $__timeFilter(timestamp) GROUP BY t ORDER BY t",
+          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 1 MINUTE) AS t, avg(duration_usecase_ms) AS p50, quantile(0.95)(duration_usecase_ms) AS p95, quantile(0.99)(duration_usecase_ms) AS p99 FROM telemetria_negocio WHERE $__timeFilter(timestamp) GROUP BY t ORDER BY t",
           "format": "table",
           "interval": ""
         }
       ]
     },
     {
-      "id": 7,
-      "title": "Status Codes Over Time",
-      "type": "timeseries",
+      "id": 107,
+      "title": "Result by Use Case",
+      "type": "barchart",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -562,19 +527,32 @@
           "unit": "short",
           "decimals": 0,
           "custom": {
-            "displayMode": "list",
-            "spanNulls": false,
-            "showPoints": "never",
-            "lineInterpolation": "smooth",
-            "gradientMode": "opacity",
-            "fillOpacity": 60,
-            "drawStyle": "line",
-            "lineWidth": 1,
-            "pointSize": 0,
             "stacking": {
               "mode": "normal",
               "group": "A"
-            }
+            },
+            "orientation": "auto",
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "gradientMode": "hue",
+            "lineInterpolation": "smooth",
+            "lineWidth": 0,
+            "pointSize": 0,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "color": {
+            "mode": "palette-classic"
           },
           "mappings": [],
           "thresholds": {
@@ -590,46 +568,13 @@
         "overrides": [
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": "/2\\d\\d/"
+              "id": "byName",
+              "options": "total"
             },
             "properties": [
               {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/4\\d\\d/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "yellow",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": "/5\\d\\d/"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
+                "id": "displayName",
+                "value": "Total"
               }
             ]
           }
@@ -646,9 +591,87 @@
             "mean"
           ]
         },
+        "sortBy": "total",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "clickhouse"
+          },
+          "rawSql": "SELECT use_case, result, count() AS total FROM telemetria_negocio WHERE $__timeFilter(timestamp) GROUP BY use_case, result ORDER BY total DESC",
+          "format": "table",
+          "interval": ""
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "title": "Result Distribution",
+      "type": "piechart",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "displayLabels": [
+          "name",
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "percent"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "tooltip": {
           "mode": "multi",
-          "sort": "desc"
+          "sort": "none"
         }
       },
       "targets": [
@@ -658,19 +681,19 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "clickhouse"
           },
-          "rawSql": "SELECT toStartOfInterval(timestamp, INTERVAL 1 MINUTE) AS t, status_code, count() AS total FROM telemetria_api WHERE $__timeFilter(timestamp) GROUP BY t, status_code ORDER BY t",
+          "rawSql": "SELECT result, count() AS total FROM telemetria_negocio WHERE $__timeFilter(timestamp) GROUP BY result",
           "format": "table",
           "interval": ""
         }
       ]
     },
     {
-      "id": 8,
-      "title": "Top 10 by Volume",
+      "id": 109,
+      "title": "Top Use Cases by Volume",
       "type": "barchart",
       "gridPos": {
         "h": 8,
-        "w": 4,
+        "w": 8,
         "x": 0,
         "y": 20
       },
@@ -752,20 +775,20 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "clickhouse"
           },
-          "rawSql": "SELECT path, count() AS total FROM telemetria_api WHERE $__timeFilter(timestamp) GROUP BY path ORDER BY total DESC LIMIT 10",
+          "rawSql": "SELECT use_case, count() AS total FROM telemetria_negocio WHERE $__timeFilter(timestamp) GROUP BY use_case ORDER BY total DESC LIMIT 10",
           "format": "table",
           "interval": ""
         }
       ]
     },
     {
-      "id": 9,
-      "title": "Top 10 Highest P50 Latency",
+      "id": 110,
+      "title": "Top Use Cases by P50 Duration",
       "type": "barchart",
       "gridPos": {
         "h": 8,
-        "w": 4,
-        "x": 4,
+        "w": 8,
+        "x": 8,
         "y": 20
       },
       "datasource": {
@@ -827,24 +850,12 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "p50_latency"
+              "options": "p50"
             },
             "properties": [
               {
                 "id": "displayName",
-                "value": "P50 Latency (ms)"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "path"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Endpoint"
+                "value": "P50 Duration (ms)"
               }
             ]
           }
@@ -856,7 +867,7 @@
           "placement": "bottom",
           "showLegend": false
         },
-        "sortBy": "p50_latency",
+        "sortBy": "p50",
         "orientation": "auto"
       },
       "targets": [
@@ -866,20 +877,20 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "clickhouse"
           },
-          "rawSql": "SELECT path, round(avg(duration_ms), 2) AS p50_latency FROM telemetria_api WHERE $__timeFilter(timestamp) GROUP BY path ORDER BY p50_latency DESC LIMIT 10",
+          "rawSql": "SELECT use_case, round(avg(duration_usecase_ms), 2) AS p50 FROM telemetria_negocio WHERE $__timeFilter(timestamp) GROUP BY use_case ORDER BY p50 DESC LIMIT 10",
           "format": "table",
           "interval": ""
         }
       ]
     },
     {
-      "id": 10,
-      "title": "Top 10 Most Errors",
+      "id": 111,
+      "title": "Top Users by Activity",
       "type": "barchart",
       "gridPos": {
         "h": 8,
-        "w": 4,
-        "x": 8,
+        "w": 8,
+        "x": 16,
         "y": 20
       },
       "datasource": {
@@ -933,363 +944,12 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "errors"
+              "options": "total"
             },
             "properties": [
               {
                 "id": "displayName",
-                "value": "Errors (4xx/5xx)"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "error_rate"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Error Rate (%)"
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "sortBy": "errors",
-        "orientation": "auto"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "clickhouse"
-          },
-          "rawSql": "SELECT path, countIf(status_code >= 400) AS errors FROM telemetria_api WHERE $__timeFilter(timestamp) GROUP BY path ORDER BY errors DESC LIMIT 10",
-          "format": "table",
-          "interval": ""
-        }
-      ]
-    },
-    {
-      "id": 11,
-      "title": "Requests by Service",
-      "type": "piechart",
-      "gridPos": {
-        "h": 8,
-        "w": 4,
-        "x": 0,
-        "y": 28
-      },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "clickhouse"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "decimals": 0,
-          "color": {
-            "mode": "palette-classic"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            }
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "displayLabels": [
-          "name",
-          "percent"
-        ],
-        "legend": {
-          "displayMode": "list",
-          "placement": "right",
-          "showLegend": true,
-          "values": [
-            "percent"
-          ]
-        },
-        "pieType": "pie",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "clickhouse"
-          },
-          "rawSql": "SELECT service_name, count() AS total FROM telemetria_api WHERE $__timeFilter(timestamp) AND service_name != '' GROUP BY service_name ORDER BY total DESC",
-          "format": "table",
-          "interval": ""
-        }
-      ]
-    },
-    {
-      "id": 12,
-      "title": "Latency by Service",
-      "type": "barchart",
-      "gridPos": {
-        "h": 8,
-        "w": 4,
-        "x": 4,
-        "y": 28
-      },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "clickhouse"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ms",
-          "decimals": 2,
-          "custom": {
-            "stacking": {
-              "mode": "none",
-              "group": ""
-            },
-            "orientation": "horizontal",
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "gradientMode": "hue",
-            "lineInterpolation": "smooth",
-            "lineWidth": 0,
-            "pointSize": 0,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false
-          },
-          "color": {
-            "mode": "palette-classic"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "p50"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "green",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "displayName",
-                "value": "P50"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "p95"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "yellow",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "displayName",
-                "value": "P95"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "p99"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "red",
-                  "mode": "fixed"
-                }
-              },
-              {
-                "id": "displayName",
-                "value": "P99"
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "sortBy": "p95",
-        "orientation": "auto"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "grafana-clickhouse-datasource",
-            "uid": "clickhouse"
-          },
-          "rawSql": "SELECT service_name, round(avg(duration_ms), 2) AS p50, round(quantile(0.95)(duration_ms), 2) AS p95, round(quantile(0.99)(duration_ms), 2) AS p99 FROM telemetria_api WHERE $__timeFilter(timestamp) AND service_name != '' GROUP BY service_name ORDER BY p95 DESC",
-          "format": "table",
-          "interval": ""
-        }
-      ]
-    },
-    {
-      "id": 13,
-      "title": "Error Rate by Service",
-      "type": "barchart",
-      "gridPos": {
-        "h": 8,
-        "w": 4,
-        "x": 8,
-        "y": 28
-      },
-      "datasource": {
-        "type": "grafana-clickhouse-datasource",
-        "uid": "clickhouse"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "decimals": 2,
-          "custom": {
-            "stacking": {
-              "mode": "none",
-              "group": ""
-            },
-            "orientation": "horizontal",
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "gradientMode": "hue",
-            "lineInterpolation": "smooth",
-            "lineWidth": 0,
-            "pointSize": 0,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false
-          },
-          "color": {
-            "mode": "palette-classic"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 5
-              },
-              {
-                "color": "red",
-                "value": 10
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "error_rate"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "thresholds"
-                }
-              },
-              {
-                "id": "displayName",
-                "value": "Error Rate (%)"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "errors"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Total Errors"
+                "value": "Activity"
               }
             ]
           }
@@ -1301,7 +961,7 @@
           "placement": "bottom",
           "showLegend": false
         },
-        "sortBy": "error_rate",
+        "sortBy": "total",
         "orientation": "auto"
       },
       "targets": [
@@ -1311,7 +971,188 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "clickhouse"
           },
-          "rawSql": "SELECT service_name, countIf(status_code >= 400) AS errors, round(countIf(status_code >= 400)/count()*100, 2) AS error_rate FROM telemetria_api WHERE $__timeFilter(timestamp) AND service_name != '' GROUP BY service_name HAVING errors > 0 ORDER BY error_rate DESC",
+          "rawSql": "SELECT user_id, count() AS total FROM telemetria_negocio WHERE $__timeFilter(timestamp) AND user_id != '' GROUP BY user_id ORDER BY total DESC LIMIT 10",
+          "format": "table",
+          "interval": ""
+        }
+      ]
+    },
+    {
+      "id": 112,
+      "title": "Recent Use Cases",
+      "type": "table",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 2,
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "color": {
+            "mode": "none"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "duration_ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-text"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 200
+                    },
+                    {
+                      "color": "red",
+                      "value": 500
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "result"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "success": {
+                        "color": "green",
+                        "text": "success"
+                      }
+                    }
+                  },
+                  {
+                    "type": "value",
+                    "options": {
+                      "error": {
+                        "color": "red",
+                        "text": "error"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "countRows": false,
+          "enablePagination": false,
+          "reducer": [
+            "sum"
+          ]
+        },
+        "sortBy": [
+          {
+            "displayName": "timestamp",
+            "desc": true
+          }
+        ],
+        "showTypeIcons": false,
+        "rowHeight": 40
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "clickhouse"
+          },
+          "rawSql": "SELECT timestamp, use_case, result, round(duration_usecase_ms, 2) AS duration_ms, user_id FROM telemetria_negocio WHERE $__timeFilter(timestamp) ORDER BY timestamp DESC LIMIT 50",
           "format": "table",
           "interval": ""
         }

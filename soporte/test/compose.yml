@@ -104,6 +104,12 @@ services:
         target: /etc/grafana/provisioning/dashboards/hardware-metrics.json
       - source: api_telemetry_dashboard
         target: /etc/grafana/provisioning/dashboards/api-telemetry.json
+      - source: business_ops_dashboard
+        target: /etc/grafana/provisioning/dashboards/business-ops.json
+      - source: data_queries_dashboard
+        target: /etc/grafana/provisioning/dashboards/data-queries.json
+      - source: api_endpoint_deep_dive_dashboard
+        target: /etc/grafana/provisioning/dashboards/api-endpoint-deep-dive.json
       - source: api_full_telemetry_dashboard
         target: /etc/grafana/provisioning/dashboards/api-full-telemetry.json
     deploy:
@@ -145,6 +151,12 @@ configs:
     file: ../../servicio-monitoreo/grafana/dashboards/hardware-metrics.json
   api_telemetry_dashboard:
     file: ../../servicio-monitoreo/grafana/dashboards/api-telemetry.json
+  business_ops_dashboard:
+    file: ../../servicio-monitoreo/grafana/dashboards/business-ops.json
+  data_queries_dashboard:
+    file: ../../servicio-monitoreo/grafana/dashboards/data-queries.json
+  api_endpoint_deep_dive_dashboard:
+    file: ../../servicio-monitoreo/grafana/dashboards/api-endpoint-deep-dive.json
   api_full_telemetry_dashboard:
     file: ../../servicio-monitoreo/grafana/dashboards/api-full-telemetry.json
   clickhouse_init_sql:

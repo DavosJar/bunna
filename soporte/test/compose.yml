@@ -104,6 +104,8 @@ services:
         target: /etc/grafana/provisioning/dashboards/hardware-metrics.json
       - source: api_telemetry_dashboard
         target: /etc/grafana/provisioning/dashboards/api-telemetry.json
+      - source: api_full_telemetry_dashboard
+        target: /etc/grafana/provisioning/dashboards/api-full-telemetry.json
     deploy:
       replicas: 1
 
@@ -143,5 +145,7 @@ configs:
     file: ../../servicio-monitoreo/grafana/dashboards/hardware-metrics.json
   api_telemetry_dashboard:
     file: ../../servicio-monitoreo/grafana/dashboards/api-telemetry.json
+  api_full_telemetry_dashboard:
+    file: ../../servicio-monitoreo/grafana/dashboards/api-full-telemetry.json
   clickhouse_init_sql:
     file: ../../servicio-monitoreo/config/clickhouse/init/001_tablas.sql

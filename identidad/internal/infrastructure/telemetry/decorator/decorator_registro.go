@@ -6,6 +6,7 @@ import (
 	"time"
 
 	uc_register "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/register"
+	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry"
 	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/buffer"
 	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/middleware"
 	presentation_middleware "github.com/davosjar/bunna/services/identidad/internal/presentation/middleware"
@@ -29,17 +30,25 @@ func (d *decoratorRegistro) Ejecutar(ctx context.Context, cmd *uc_register.Coman
 	duration := time.Since(start).Milliseconds()
 	result := classifyResult(err)
 	level := determineLevel(result)
-	out := map[string]any{
-		"log_type":            "NEGOCIO",
-		"use_case":            "RegistrarUsuario",
-		"command":             safeCmd,
-		"result":              result,
-		"user_id":             userID,
-		"details":             map[string]any{},
-		"duration_usecase_ms": duration,
-		"trace_id":            traceID,
+	spanID := middleware.GetSpanIDFromCtx(ctx)
+	payload := telemetry.LogPayload{
+		LogType:     "NEGOCIO",
+		Level:       level,
+		Timestamp:   time.Now().UTC().Format(time.RFC3339),
+		TraceID:     traceID,
+		SpanID:      spanID,
+		ServiceName: "identidad",
+		Environment: "dev",
+		Negocio: &telemetry.NegocioFields{
+			UseCase:           "Registro",
+			Command:           safeCmd,
+			Result:            result,
+			UserID:            userID,
+			Details:           map[string]any{},
+			DurationUsecaseMs: float64(duration),
+		},
 	}
-	data, _ := json.Marshal(out)
+	data, _ := json.Marshal(payload)
 	prio := buffer.Media
 	if level == "ERROR" {
 		prio = buffer.Alta

@@ -13,7 +13,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/yolo': {
-        target: 'http://34.144.186.210:8000',
+        target: 'https://bunna-yolo.duckdns.org',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/yolo/, ''),
       },

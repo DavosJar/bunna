@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from ultralytics import YOLO
 from pathlib import Path
 from uuid import uuid4
@@ -15,6 +16,18 @@ PREDICT_DIR = Path("runs/predict")
 CONF_THRESHOLD = 0.20
 
 app = FastAPI(title=APP_TITLE, version=APP_VERSION)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://bunnaloja.netlify.app",
+        "https://bunnalojaa.netlify.app",
+        "http://localhost:5173",
+    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 model = None
 
 

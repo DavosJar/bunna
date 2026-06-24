@@ -13,7 +13,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/yolo': {
-        target: 'http://localhost:8000',
+        target: 'http://34.144.186.210:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/yolo/, ''),
       },

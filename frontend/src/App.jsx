@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { DiagnosisProvider } from './context/DiagnosisContext';
 import LandingPage from './pages/landing/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
@@ -44,8 +45,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
-        <ToastContainer />
+        <DiagnosisProvider>
+          <AppRoutes />
+          <ToastContainer />
+        </DiagnosisProvider>
       </AuthProvider>
     </BrowserRouter>
   );

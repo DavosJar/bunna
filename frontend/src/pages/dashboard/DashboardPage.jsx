@@ -1,17 +1,16 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useDiagnosis } from '../../context/DiagnosisContext';
 import { diagnosticar } from '../../services/yoloApi';
 import Layout from '../../components/layout/Layout';
 import './Dashboard.css';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { imagePreview, imageFile, results, setImage, setResults, clearDiagnosis } = useDiagnosis();
   const fileInputRef = useRef(null);
 
-  const [imagePreview, setImagePreview] = useState(null);
-  const [imageFile, setImageFile] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [results, setResults] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -58,14 +57,15 @@ export default function DashboardPage() {
     };
   }, [lightboxOpen]);
 
+  const loadImage = (file) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => setImage(file, ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (ev) => { setImagePreview(ev.target.result); setResults(null); };
-      reader.readAsDataURL(file);
-    }
+    if (file) loadImage(file);
   };
 
   const handleDrag = (e) => {
@@ -80,11 +80,8 @@ export default function DashboardPage() {
     e.stopPropagation();
     setDragActive(false);
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (ev) => { setImagePreview(ev.target.result); setResults(null); };
-      reader.readAsDataURL(file);
+    if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) {
+      loadImage(file);
     }
   };
 
@@ -94,9 +91,13 @@ export default function DashboardPage() {
     try {
       const data = await diagnosticar(imageFile);
       setResults(data);
-    } catch {
+    } catch (err) {
+      const serverMsg = err.response?.data?.detail || err.response?.data?.message;
+      const isNetwork = !err.response && err.message;
+      const recommendation = serverMsg
+        || (isNetwork ? `Error de conexión: ${err.message}` : 'No se pudo analizar la imagen. Intenta de nuevo.');
       setResults({
-        feedback: { level: 'unknown', label: 'Error', percentage: 0, recommendation: 'Ocurrió un error al analizar la imagen. Verifica que el servidor YOLO esté corriendo en el puerto 8000 e intenta de nuevo.' },
+        feedback: { level: 'unknown', label: 'Error', percentage: 0, recommendation },
         num_detections: 0, detections: [], avg_confidence: 0, image: null,
       });
     } finally {
@@ -105,9 +106,7 @@ export default function DashboardPage() {
   };
 
   const handleRemoveImage = () => {
-    setImagePreview(null);
-    setImageFile(null);
-    setResults(null);
+    clearDiagnosis();
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -133,7 +132,7 @@ export default function DashboardPage() {
               onDragOver={handleDrag}
               onDrop={handleDrop}
             >
-              <input ref={fileInputRef} type="file" accept="image/*" className="dropzone__input" onChange={handleFileChange} id="file-upload-input" />
+              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" className="dropzone__input" onChange={handleFileChange} id="file-upload-input" />
               <div className="dropzone__icon">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -142,7 +141,7 @@ export default function DashboardPage() {
                 </svg>
               </div>
               <p className="dropzone__text"><span>Haz clic aquí</span> o arrastra tu imagen</p>
-              <p className="dropzone__hint">PNG, JPG o WEBP — máximo 10MB</p>
+              <p className="dropzone__hint">PNG o JPG — máximo 10MB</p>
             </div>
           ) : (
             <div className="preview">
@@ -220,12 +219,20 @@ export default function DashboardPage() {
                 <div className="results-detections">
                   <p className="results-detections__title">Detalle de detecciones</p>
                   <div className="results-detections__list">
-                    {results.detections.map((det, i) => (
-                      <div key={i} className={`detection-chip detection-chip--${det.class_name === 'hoja_sana' ? 'sana' : 'deficiente'}`}>
-                        <span className="detection-chip__name">{det.class_name === 'hoja_sana' ? '🌿 Sana' : '⚠️ Deficiencia'}</span>
-                        <span className="detection-chip__conf">{(det.confidence * 100).toFixed(1)}%</span>
-                      </div>
-                    ))}
+                    {results.detections.map((det, i) => {
+                      const esSana = det.class_name === 'hoja_sana';
+                      const label = esSana
+                        ? '🌿 Hoja sana'
+                        : det.class_name === 'deficiencia_nitrogeno'
+                          ? '⚠️ Deficiencia de nitrógeno'
+                          : `⚠️ ${det.class_name}`;
+                      return (
+                        <div key={i} className={`detection-chip detection-chip--${esSana ? 'sana' : 'deficiente'}`}>
+                          <span className="detection-chip__name">{label}</span>
+                          <span className="detection-chip__conf">{(det.confidence * 100).toFixed(1)}%</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// En dev usa /yolo (proxy Vite → API remota). En prod puede ser la URL directa.
-const API_BASE = import.meta.env.VITE_YOLO_API_URL || '/yolo';
+// En dev usa /yolo (proxy Vite → API remota). En prod usa la URL directa de la VM por defecto.
+const API_BASE = import.meta.env.VITE_YOLO_API_URL || (import.meta.env.PROD ? 'https://i2u6hsbhf1.execute-api.us-east-2.amazonaws.com' : '/yolo');
 
 const yoloClient = axios.create({
   baseURL: API_BASE,

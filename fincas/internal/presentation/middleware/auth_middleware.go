@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/davosjar/bunna/services/fincas/internal/application"
+	"github.com/davosjar/bunna/services/fincas/internal/infrastructure/telemetry"
 	jwtvalidator "github.com/davosjar/bunna/services/fincas/internal/infrastructure/security/jwt"
 )
 
@@ -63,6 +64,8 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		}
 
 		c.Set(ClaveAuthContext, auth)
+		reqCtx := telemetry.WithUsuarioID(c.Request.Context(), usuarioID)
+		c.Request = c.Request.WithContext(reqCtx)
 		c.Next()
 	}
 }

@@ -1,9 +1,12 @@
 package registry
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
+	"strings"
+	"time"
 
 	fincasdomain "github.com/davosjar/bunna/services/fincas/internal/fincas/domain"
 	fincaspostgres "github.com/davosjar/bunna/services/fincas/internal/fincas/infrastructure/persistence/postgres"
@@ -13,6 +16,11 @@ import (
 	shared "github.com/davosjar/bunna/services/fincas/internal/shared/domain"
 	"github.com/davosjar/bunna/services/fincas/internal/shared/infrastructure/idgenerator"
 	"github.com/davosjar/bunna/services/fincas/internal/infrastructure/eventpublisher"
+	telemetryinfra "github.com/davosjar/bunna/services/fincas/internal/infrastructure/telemetry"
+	"github.com/davosjar/bunna/services/fincas/internal/infrastructure/telemetry/buffer"
+	"github.com/davosjar/bunna/services/fincas/internal/infrastructure/telemetry/decorator"
+	"github.com/davosjar/bunna/services/fincas/internal/infrastructure/telemetry/gormplugin"
+	telemetrymiddleware "github.com/davosjar/bunna/services/fincas/internal/infrastructure/telemetry/middleware"
 
 	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/registrarfinca"
 	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/desactivarfinca"
@@ -39,10 +47,10 @@ import (
 // Registry centraliza la creación y el ciclo de vida de todas las dependencias
 // del microservicio de fincas: configuración, base de datos, repositorios, casos de uso, etc.
 type Registry struct {
-	// Infraestructura base (privados)
 	db          *gorm.DB
 	generadorID shared.GeneradorID
 	publisher   application.EventPublisher
+	serverPort  string
 
 	// Repositorios (privados)
 	fincaRepo       fincasdomain.FincaRepositorio
@@ -58,26 +66,26 @@ type Registry struct {
 	// Servicios de dominio (privados)
 	fincaService *fincasdomain.FincaService
 
-	// Casos de uso — fincas (públicos)
-	RegistrarFinca  *registrarfinca.UseCase
-	DesactivarFinca *desactivarfinca.UseCase
+	// Casos de uso — fincas (públicos, ya decorados si telemetría activa)
+	RegistrarFinca  facades.RegistrarFincaUseCase
+	DesactivarFinca facades.DesactivarFincaUseCase
 
 	// Casos de uso — lotes (públicos)
-	AgregarLote  *agregarlote.UseCase
-	EliminarLote *eliminarlote.UseCase
+	AgregarLote  facades.AgregarLoteUseCase
+	EliminarLote facades.EliminarLoteUseCase
 
 	// Casos de uso — muestras (públicos)
-	TomarMuestra          *tomarmuestra.UseCase
-	ListarMuestrasPorLote *listarmuestrasporlote.UseCase
+	TomarMuestra          facades.TomarMuestraUseCase
+	ListarMuestrasPorLote facades.ListarMuestrasPorLoteUseCase
 
 	// Casos de uso — diagnósticos (públicos)
-	SolicitarDiagnosticoManual *solicitardiagnosticomanual.UseCase
-	RegistrarInferencia        *registrarinferencia.UseCase
-	AceptarDiagnostico         *aceptardiagnostico.UseCase
-	RechazarDiagnostico        *rechazardiagnostico.UseCase
+	SolicitarDiagnosticoManual facades.SolicitarDiagnosticoManualUseCase
+	RegistrarInferencia        decorator.UseCase[registrarinferencia.Command, *registrarinferencia.Salida]
+	AceptarDiagnostico         facades.AceptarDiagnosticoUseCase
+	RechazarDiagnostico        facades.RechazarDiagnosticoUseCase
 
 	// Casos de uso — reportes (públicos)
-	GenerarReportePorLote *generarreporteporlote.UseCase
+	GenerarReportePorLote facades.GenerarReportePorLoteUseCase
 
 	// Facades (privados)
 	fincasFacade       facades.FincasFacade
@@ -99,6 +107,11 @@ type Registry struct {
 
 	// Router (privado)
 	router *gin.Engine
+
+	// Telemetría
+	TelemetryWriter  buffer.BufferWriter
+	TelemetryEnabled bool
+	telemetryCancel  context.CancelFunc
 }
 
 // NewRegistry crea todas las dependencias, ejecuta auto-migrate y devuelve un Registry listo para usar.
@@ -111,6 +124,42 @@ func NewRegistry() *Registry {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Error conectando a BD: %v", err)
+	}
+
+	serviceInfo := telemetryinfra.ServiceInfo{
+		Name:        cfg.serviceName,
+		Environment: cfg.environment,
+	}
+
+	var telemetryWriter buffer.BufferWriter
+	var telemetryCancel context.CancelFunc = func() {}
+
+	if cfg.telemetryEnabled {
+		bufCfg := buffer.Config{
+			Capacity:             10000,
+			BatchSize:            1,
+			FlushIntervalSeconds: 1,
+			MaxRetries:           3,
+			BackoffBase:          100 * time.Millisecond,
+			BackoffMax:           2 * time.Second,
+			KafkaBrokers:         strings.Split(cfg.kafkaBrokers, ","),
+			KafkaTopic:           cfg.kafkaTopic,
+		}
+		ringBuf := buffer.NewRingBuffer(bufCfg)
+		producer := buffer.NewKafkaProducer(bufCfg)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		telemetryCancel = cancel
+		buffer.StartConsumer(ctx, ringBuf, producer, bufCfg)
+
+		telemetryWriter = ringBuf
+
+		gormPlugin := gormplugin.NewTelemetryPlugin(telemetryWriter, gormplugin.DefaultConfig())
+		if err := db.Use(gormPlugin); err != nil {
+			log.Fatalf("Error registrando plugin GORM de telemetría: %v", err)
+		}
+	} else {
+		telemetryWriter = buffer.NewNoopWriter()
 	}
 
 	// AutoMigrate
@@ -136,27 +185,52 @@ func NewRegistry() *Registry {
 	// Servicios de dominio
 	fincaService := fincasdomain.NewFincaService()
 
-	// Facades
-	fincasFacade := facades.NewFincasFacade(
-		registrarfinca.NewUseCase(fincaRepo, generador, publisher),
-		desactivarfinca.NewUseCase(fincaRepo, fincaService, generador, publisher),
-	)
-	lotesFacade := facades.NewLotesFacade(
-		agregarlote.NewUseCase(fincaRepo, loteRepo, generador, publisher),
-		eliminarlote.NewUseCase(loteRepo, generador, publisher),
-	)
-	muestrasFacade := facades.NewMuestrasFacade(
-		tomarmuestra.NewUseCase(loteRepo, muestraRepo, generador, publisher),
-		listarmuestrasporlote.NewUseCase(loteRepo, muestraRepo),
-	)
-	diagnosticosFacade := facades.NewDiagnosticosFacade(
-		solicitardiagnosticomanual.NewUseCase(muestraRepo, generador, publisher),
-		aceptardiagnostico.NewUseCase(diagnosticoRepo, generador, publisher),
-		rechazardiagnostico.NewUseCase(diagnosticoRepo, candidatoRepo, diagnosticoUoW, generador, publisher),
-	)
-	reportesFacade := facades.NewReportesFacade(
-		generarreporteporlote.NewUseCase(loteRepo, muestraRepo, diagnosticoRepo),
-	)
+	// Casos de uso — instancia única por UC
+	registrarFincaInner := registrarfinca.NewUseCase(fincaRepo, generador, publisher)
+	desactivarFincaInner := desactivarfinca.NewUseCase(fincaRepo, fincaService, generador, publisher)
+	agregarLoteInner := agregarlote.NewUseCase(fincaRepo, loteRepo, generador, publisher)
+	eliminarLoteInner := eliminarlote.NewUseCase(loteRepo, generador, publisher)
+	tomarMuestraInner := tomarmuestra.NewUseCase(loteRepo, muestraRepo, generador, publisher)
+	listarMuestrasInner := listarmuestrasporlote.NewUseCase(loteRepo, muestraRepo)
+	solicitarDiagnosticoInner := solicitardiagnosticomanual.NewUseCase(muestraRepo, generador, publisher)
+	registrarInferenciaInner := registrarinferencia.NewUseCase(muestraRepo, diagnosticoRepo, generador, publisher)
+	aceptarDiagnosticoInner := aceptardiagnostico.NewUseCase(diagnosticoRepo, generador, publisher)
+	rechazarDiagnosticoInner := rechazardiagnostico.NewUseCase(diagnosticoRepo, candidatoRepo, diagnosticoUoW, generador, publisher)
+	generarReporteInner := generarreporteporlote.NewUseCase(loteRepo, muestraRepo, diagnosticoRepo)
+
+	var registrarFincaUC facades.RegistrarFincaUseCase = registrarFincaInner
+	var desactivarFincaUC facades.DesactivarFincaUseCase = desactivarFincaInner
+	var agregarLoteUC facades.AgregarLoteUseCase = agregarLoteInner
+	var eliminarLoteUC facades.EliminarLoteUseCase = eliminarLoteInner
+	var tomarMuestraUC facades.TomarMuestraUseCase = tomarMuestraInner
+	var listarMuestrasUC facades.ListarMuestrasPorLoteUseCase = listarMuestrasInner
+	var solicitarDiagnosticoUC facades.SolicitarDiagnosticoManualUseCase = solicitarDiagnosticoInner
+	var registrarInferenciaUC decorator.UseCase[registrarinferencia.Command, *registrarinferencia.Salida] = registrarInferenciaInner
+	var aceptarDiagnosticoUC facades.AceptarDiagnosticoUseCase = aceptarDiagnosticoInner
+	var rechazarDiagnosticoUC facades.RechazarDiagnosticoUseCase = rechazarDiagnosticoInner
+	var generarReporteUC facades.GenerarReportePorLoteUseCase = generarReporteInner
+
+	// Decoradores de telemetría — capa NEGOCIO (APO)
+	if cfg.telemetryEnabled {
+		registrarFincaUC = decorator.WrapAuth("RegistrarFinca", telemetryWriter, serviceInfo, registrarFincaInner)
+		desactivarFincaUC = decorator.WrapAuth("DesactivarFinca", telemetryWriter, serviceInfo, desactivarFincaInner)
+		agregarLoteUC = decorator.WrapAuth("AgregarLote", telemetryWriter, serviceInfo, agregarLoteInner)
+		eliminarLoteUC = decorator.WrapAuth("EliminarLote", telemetryWriter, serviceInfo, eliminarLoteInner)
+		tomarMuestraUC = decorator.WrapAuth("TomarMuestra", telemetryWriter, serviceInfo, tomarMuestraInner)
+		listarMuestrasUC = decorator.WrapAuth("ListarMuestrasPorLote", telemetryWriter, serviceInfo, listarMuestrasInner)
+		solicitarDiagnosticoUC = decorator.WrapAuth("SolicitarDiagnosticoManual", telemetryWriter, serviceInfo, solicitarDiagnosticoInner)
+		registrarInferenciaUC = decorator.Wrap("RegistrarInferencia", telemetryWriter, serviceInfo, registrarInferenciaInner)
+		aceptarDiagnosticoUC = decorator.WrapAuth("AceptarDiagnostico", telemetryWriter, serviceInfo, aceptarDiagnosticoInner)
+		rechazarDiagnosticoUC = decorator.WrapAuth("RechazarDiagnostico", telemetryWriter, serviceInfo, rechazarDiagnosticoInner)
+		generarReporteUC = decorator.WrapAuth("GenerarReportePorLote", telemetryWriter, serviceInfo, generarReporteInner)
+	}
+
+	// Facades (reciben los mismos UC decorados)
+	fincasFacade := facades.NewFincasFacade(registrarFincaUC, desactivarFincaUC)
+	lotesFacade := facades.NewLotesFacade(agregarLoteUC, eliminarLoteUC)
+	muestrasFacade := facades.NewMuestrasFacade(tomarMuestraUC, listarMuestrasUC)
+	diagnosticosFacade := facades.NewDiagnosticosFacade(solicitarDiagnosticoUC, aceptarDiagnosticoUC, rechazarDiagnosticoUC)
+	reportesFacade := facades.NewReportesFacade(generarReporteUC)
 
 	// Token validator
 	tokenValidator := jwtvalidator.NewTokenValidator(jwtvalidator.Config{
@@ -164,30 +238,35 @@ func NewRegistry() *Registry {
 		Issuer: cfg.jwtIssuer,
 	})
 
-	// Auth middleware
 	authMiddleware := fincasmiddleware.NewAuthMiddleware(tokenValidator)
 
-	// Handlers
 	fincaHandler := handler.NewFincaHandler(fincasFacade)
 	loteHandler := handler.NewLoteHandler(lotesFacade)
 	muestraHandler := handler.NewMuestraHandler(muestrasFacade)
 	diagnosticoHandler := handler.NewDiagnosticoHandler(diagnosticosFacade)
 	reporteHandler := handler.NewReporteHandler(reportesFacade)
 
-	// Router
 	ginEngine := router.New(router.Config{
-		AuthMiddleware:      authMiddleware,
-		FincaHandler:        fincaHandler,
-		LoteHandler:         loteHandler,
-		MuestraHandler:      muestraHandler,
-		DiagnosticoHandler:  diagnosticoHandler,
-		ReporteHandler:      reporteHandler,
+		TelemetryEnabled: cfg.telemetryEnabled,
+		TelemetryWriter:  telemetryWriter,
+		TelemetryCfg: telemetrymiddleware.Config{
+			MaxDurationWarning: 500 * time.Millisecond,
+			MaxDurationError:   1000 * time.Millisecond,
+			Service:            serviceInfo,
+		},
+		AuthMiddleware:     authMiddleware,
+		FincaHandler:       fincaHandler,
+		LoteHandler:        loteHandler,
+		MuestraHandler:     muestraHandler,
+		DiagnosticoHandler: diagnosticoHandler,
+		ReporteHandler:     reporteHandler,
 	})
 
 	return &Registry{
 		db:             db,
 		generadorID:    generador,
 		publisher:      publisher,
+		serverPort:     cfg.serverPort,
 		fincaRepo:      fincaRepo,
 		loteRepo:       loteRepo,
 		muestraRepo:    muestraRepo,
@@ -197,17 +276,17 @@ func NewRegistry() *Registry {
 		diagnosticoUoW: diagnosticoUoW,
 		fincaService:   fincaService,
 
-		RegistrarFinca:             registrarfinca.NewUseCase(fincaRepo, generador, publisher),
-		DesactivarFinca:            desactivarfinca.NewUseCase(fincaRepo, fincaService, generador, publisher),
-		AgregarLote:                agregarlote.NewUseCase(fincaRepo, loteRepo, generador, publisher),
-		EliminarLote:               eliminarlote.NewUseCase(loteRepo, generador, publisher),
-		TomarMuestra:               tomarmuestra.NewUseCase(loteRepo, muestraRepo, generador, publisher),
-		ListarMuestrasPorLote:      listarmuestrasporlote.NewUseCase(loteRepo, muestraRepo),
-		SolicitarDiagnosticoManual: solicitardiagnosticomanual.NewUseCase(muestraRepo, generador, publisher),
-		RegistrarInferencia:        registrarinferencia.NewUseCase(muestraRepo, diagnosticoRepo, generador, publisher),
-		AceptarDiagnostico:         aceptardiagnostico.NewUseCase(diagnosticoRepo, generador, publisher),
-		RechazarDiagnostico:        rechazardiagnostico.NewUseCase(diagnosticoRepo, candidatoRepo, diagnosticoUoW, generador, publisher),
-		GenerarReportePorLote:      generarreporteporlote.NewUseCase(loteRepo, muestraRepo, diagnosticoRepo),
+		RegistrarFinca:             registrarFincaUC,
+		DesactivarFinca:            desactivarFincaUC,
+		AgregarLote:                agregarLoteUC,
+		EliminarLote:               eliminarLoteUC,
+		TomarMuestra:               tomarMuestraUC,
+		ListarMuestrasPorLote:      listarMuestrasUC,
+		SolicitarDiagnosticoManual: solicitarDiagnosticoUC,
+		RegistrarInferencia:        registrarInferenciaUC,
+		AceptarDiagnostico:         aceptarDiagnosticoUC,
+		RechazarDiagnostico:        rechazarDiagnosticoUC,
+		GenerarReportePorLote:      generarReporteUC,
 
 		fincasFacade:       fincasFacade,
 		lotesFacade:        lotesFacade,
@@ -224,7 +303,10 @@ func NewRegistry() *Registry {
 		diagnosticoHandler: diagnosticoHandler,
 		reporteHandler:     reporteHandler,
 
-		router: ginEngine,
+		router:           ginEngine,
+		TelemetryWriter:  telemetryWriter,
+		TelemetryEnabled: cfg.telemetryEnabled,
+		telemetryCancel:  telemetryCancel,
 	}
 }
 
@@ -274,13 +356,18 @@ func (r *Registry) DiagnosticoUnitOfWork() *diagnosticopostgres.UnitOfWorkDiagno
 	return r.diagnosticoUoW
 }
 
-// Close cierra la conexión a base de datos.
+func (r *Registry) ServerPort() string { return r.serverPort }
+
+// Close libera recursos: telemetría y conexión a BD.
 func (r *Registry) Close() {
+	if r.telemetryCancel != nil {
+		r.telemetryCancel()
+	}
 	sqlDB, err := r.db.DB()
 	if err == nil {
 		sqlDB.Close()
 	}
-	log.Println("Conexión a BD cerrada")
+	log.Println("Recursos liberados")
 }
 
 func (r *Registry) FincasFacade() facades.FincasFacade            { return r.fincasFacade }
@@ -298,14 +385,20 @@ func (r *Registry) ReporteHandler() *handler.ReporteHandler         { return r.r
 func (r *Registry) Router() *gin.Engine                             { return r.router }
 
 type config struct {
-	dbHost     string
-	dbPort     string
-	dbUser     string
-	dbPassword string
-	dbName     string
-	dbSSLMode  string
-	jwtSecret  string
-	jwtIssuer  string
+	dbHost            string
+	dbPort            string
+	dbUser            string
+	dbPassword        string
+	dbName            string
+	dbSSLMode         string
+	jwtSecret         string
+	jwtIssuer         string
+	serverPort        string
+	telemetryEnabled  bool
+	kafkaBrokers      string
+	kafkaTopic        string
+	serviceName       string
+	environment       string
 }
 
 func loadConfig() config {
@@ -315,14 +408,27 @@ func loadConfig() config {
 		}
 		return fallback
 	}
+	getEnvBool := func(key string, fallback bool) bool {
+		v := os.Getenv(key)
+		if v == "" {
+			return fallback
+		}
+		return v == "true" || v == "1"
+	}
 	return config{
-		dbHost:     getEnv("DB_HOST", "localhost"),
-		dbPort:     getEnv("DB_PORT", "5432"),
-		dbUser:     getEnv("DB_USER", "fincas_user"),
-		dbPassword: getEnv("DB_PASSWORD", "fincas_pass_dev"),
-		dbName:     getEnv("DB_NAME", "bunna_fincas"),
-		dbSSLMode:  getEnv("DB_SSLMODE", "disable"),
-		jwtSecret:  getEnv("JWT_SECRET", "clave-secreta-dev"),
-		jwtIssuer:  getEnv("JWT_ISSUER", ""),
+		dbHost:           getEnv("DB_HOST", "localhost"),
+		dbPort:           getEnv("DB_PORT", "5432"),
+		dbUser:           getEnv("DB_USER", "fincas_user"),
+		dbPassword:       getEnv("DB_PASSWORD", "fincas_pass_dev"),
+		dbName:           getEnv("DB_NAME", "bunna_fincas"),
+		dbSSLMode:        getEnv("DB_SSLMODE", "disable"),
+		jwtSecret:        getEnv("JWT_SECRET", "clave-secreta-dev"),
+		jwtIssuer:        getEnv("JWT_ISSUER", ""),
+		serverPort:       getEnv("SERVER_PORT", "8082"),
+		telemetryEnabled: getEnvBool("TELEMETRY_ENABLED", false),
+		kafkaBrokers:     getEnv("KAFKA_BROKERS", "localhost:9092"),
+		kafkaTopic:       getEnv("KAFKA_TOPIC", "telemetry"),
+		serviceName:      getEnv("SERVICE_NAME", "fincas"),
+		environment:      getEnv("ENVIRONMENT", "dev"),
 	}
 }

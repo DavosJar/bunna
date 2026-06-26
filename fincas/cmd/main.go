@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/davosjar/bunna/services/fincas/internal/registry"
@@ -12,7 +13,9 @@ func main() {
 	r := registry.NewRegistry()
 	defer r.Close()
 
-	log.Println("Aplicación de fincas iniciada correctamente")
-
-	select {}
+	port := r.ServerPort()
+	log.Printf("Servidor HTTP escuchando en :%s", port)
+	if err := r.Router().Run(fmt.Sprintf(":%s", port)); err != nil {
+		log.Fatalf("Error al iniciar servidor: %v", err)
+	}
 }

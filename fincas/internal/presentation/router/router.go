@@ -4,23 +4,34 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/davosjar/bunna/services/fincas/internal/infrastructure/telemetry/buffer"
+	telemetrymiddleware "github.com/davosjar/bunna/services/fincas/internal/infrastructure/telemetry/middleware"
 	"github.com/davosjar/bunna/services/fincas/internal/presentation/handler"
 	"github.com/davosjar/bunna/services/fincas/internal/presentation/middleware"
 )
 
 // Config contiene la configuración del router.
 type Config struct {
+	TelemetryEnabled bool
+	TelemetryWriter  buffer.BufferWriter
+	TelemetryCfg     telemetrymiddleware.Config
+
 	AuthMiddleware      *middleware.AuthMiddleware
-	FincaHandler       *handler.FincaHandler
-	LoteHandler        *handler.LoteHandler
-	MuestraHandler     *handler.MuestraHandler
-	DiagnosticoHandler *handler.DiagnosticoHandler
-	ReporteHandler     *handler.ReporteHandler
+	FincaHandler        *handler.FincaHandler
+	LoteHandler         *handler.LoteHandler
+	MuestraHandler      *handler.MuestraHandler
+	DiagnosticoHandler  *handler.DiagnosticoHandler
+	ReporteHandler      *handler.ReporteHandler
 }
 
 // New crea un nuevo engine Gin con todas las rutas registradas.
 func New(cfg Config) *gin.Engine {
 	r := gin.Default()
+
+	// Telemetría RECURSO (HTTP): trace_id/span_id + eventos API
+	if cfg.TelemetryEnabled && cfg.TelemetryWriter != nil {
+		r.Use(telemetrymiddleware.NewTelemetryMiddleware(cfg.TelemetryWriter, cfg.TelemetryCfg))
+	}
 
 	// Health check (público)
 	r.GET("/health", func(c *gin.Context) {

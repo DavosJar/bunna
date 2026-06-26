@@ -61,12 +61,7 @@ func New(all *facades.AllFacades, cfg Config) *gin.Engine {
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 	router.Use(corsMiddleware(cfg))
-	router.Use(middleware.NuevoRateLimitMiddleware(
-		cfg.RateLimitIPMaxRequests,
-		cfg.RateLimitIPVentana,
-	))
-
-	// Telemetría condicional
+	// Telemetría condicional (antes que rate limiter para medir la carga real)
 	if cfg.TelemetryEnabled && cfg.TelemetryWriter != nil {
 		router.Use(telemetry_middleware.NewTelemetryMiddleware(
 			cfg.TelemetryWriter,
@@ -76,6 +71,11 @@ func New(all *facades.AllFacades, cfg Config) *gin.Engine {
 			},
 		))
 	}
+
+	router.Use(middleware.NuevoRateLimitMiddleware(
+		cfg.RateLimitIPMaxRequests,
+		cfg.RateLimitIPVentana,
+	))
 
 	// Cuando está detrás de API Gateway, confiar en el proxy
 	// y usar X-Forwarded-For para la IP real del cliente

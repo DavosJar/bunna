@@ -16,10 +16,23 @@ import (
 
 type ctxKey struct{}
 
+type spanCtxKey struct{}
+
 // GetTraceIDFromCtx extracts the trace_id previously stored by the middleware.
 // Returns empty string if not found.
 func GetTraceIDFromCtx(ctx context.Context) string {
 	if v := ctx.Value(ctxKey{}); v != nil {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
+// GetSpanIDFromCtx extracts the span_id previously stored by the middleware.
+// Returns empty string if not found.
+func GetSpanIDFromCtx(ctx context.Context) string {
+	if v := ctx.Value(spanCtxKey{}); v != nil {
 		if s, ok := v.(string); ok {
 			return s
 		}
@@ -69,8 +82,9 @@ func NewTelemetryMiddleware(writer buffer.BufferWriter, cfg Config) gin.HandlerF
 		}
 		// Anonymize: mask last octet for IPv4
 		clientIP = anonymizeIP(clientIP)
-		// store trace_id in context
+		// store trace_id and span_id in context
 		reqCtx := context.WithValue(c.Request.Context(), ctxKey{}, traceID)
+		reqCtx = context.WithValue(reqCtx, spanCtxKey{}, spanID)
 		c.Request = c.Request.WithContext(reqCtx)
 		// proceed
 		c.Next()

@@ -77,6 +77,8 @@ CREATE TABLE IF NOT EXISTS hardware_metricas (
     node_id String,
     timestamp DateTime64(3),
     interval_ms UInt32,
+    cloud_provider String DEFAULT '',
+    node_hostname String DEFAULT '',
     cpu_usage_percent Float64,
     cpu_cores UInt16,
     ram_total_mb UInt64,
@@ -107,6 +109,8 @@ SETTINGS index_granularity = 8192;
 CREATE TABLE IF NOT EXISTS hardware_alertas (
     _v UInt8 DEFAULT 1,
     node_id String,
+    node_hostname String DEFAULT '',
+    cloud_provider String DEFAULT '',
     timestamp DateTime64(3),
     metric LowCardinality(String),
     severity LowCardinality(String),

@@ -48,3 +48,7 @@ __pycache__/
 *.zip
 *.tar.gz
 identidad/bin/identidad
+
+
+#servicio monitoreo
+ 

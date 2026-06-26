@@ -5,6 +5,34 @@ use tokio::sync::mpsc;
 use tracing::{info, error};
 use std::time::Duration;
 use std::process;
+
+fn get_hostname() -> String {
+    // 1. Intentar desde archivo montado por Docker (/etc/hostname del host)
+    if let Ok(content) = std::fs::read_to_string("/etc/host_hostname") {
+        let trimmed = content.trim().to_string();
+        if !trimmed.is_empty() {
+            return trimmed;
+        }
+    }
+    // 2. Intentar con variable de entorno
+    if let Ok(hostname) = std::env::var("NODE_HOSTNAME") {
+        if !hostname.is_empty() {
+            return hostname;
+        }
+    }
+    // 3. Fallback a gethostname() del sistema
+    let mut buf = vec![0u8; 256];
+    let result = unsafe {
+        libc::gethostname(buf.as_mut_ptr() as *mut libc::c_char, 256)
+    };
+    if result == 0 {
+        let len = buf.iter().position(|&b| b == 0).unwrap_or(256);
+        String::from_utf8_lossy(&buf[..len]).to_string()
+    } else {
+        "unknown".to_string()
+    }
+}
+
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
     // Cargar variables de entorno desde .env
@@ -32,6 +60,8 @@ async fn main() -> anyhow::Result<()> {
     let aggregator = Aggregator::new(
         config.node_id.clone(),
         config.interval_ms,
+        config.cloud_provider.clone(),
+        get_hostname(),
         metrics_rx,
         snapshot_for_publisher_tx,
         snapshot_for_guardian_tx,

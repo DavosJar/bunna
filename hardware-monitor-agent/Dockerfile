@@ -13,7 +13,7 @@ WORKDIR /app
 COPY . .
 
 # Build the release binary
-RUN cargo build
+RUN cargo build --release
 
 # Stage 2: Minimal runtime image
 FROM debian:sid-slim
@@ -25,6 +25,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the compiled binary from the build stage
-COPY --from=builder /app/target/debug/hardware-monitor-agent /usr/local/bin/hardware-monitor-agent
+COPY --from=builder /app/target/release/hardware-monitor-agent /usr/local/bin/hardware-monitor-agent
 
 ENTRYPOINT ["/usr/local/bin/hardware-monitor-agent"]

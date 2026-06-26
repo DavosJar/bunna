@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { confirmarVerificacion } from '../../services/identidadApi';
 import LogoIcon from '../../components/LogoIcon';
+import { IconCheckCircle, IconAlert } from '../../components/icons/Icons';
 import './Auth.css';
 
 export default function VerificacionCorreoPage() {
@@ -42,7 +43,7 @@ export default function VerificacionCorreoPage() {
 
           {estado === 'exito' && (
             <>
-              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
+              <div className="auth-status-icon auth-status-icon--success"><IconCheckCircle size={48} /></div>
               <h2 className="auth-form__title">¡Correo verificado!</h2>
               <p className="auth-form__description">Tu cuenta está activa. Ya puedes usar Bunna.</p>
               <Link to="/dashboard" className="btn-primary" style={{ display: 'flex', marginTop: '2rem' }}>
@@ -53,7 +54,7 @@ export default function VerificacionCorreoPage() {
 
           {estado === 'error' && (
             <>
-              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>❌</div>
+              <div className="auth-status-icon auth-status-icon--error"><IconAlert size={48} /></div>
               <h2 className="auth-form__title">Enlace inválido</h2>
               <p className="auth-form__description">El enlace de verificación expiró o no es válido.</p>
               <Link to="/login" className="auth-footer__link" style={{ display: 'inline-block', marginTop: '1.5rem' }}>

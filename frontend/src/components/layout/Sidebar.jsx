@@ -1,6 +1,6 @@
-import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { usePermisos } from '../../hooks/usePermisos';
 import LogoIcon from '../LogoIcon';
 import './Sidebar.css';
 
@@ -35,27 +35,43 @@ const IconLogout = ({ className }) => (
   </svg>
 );
 
+const IconFincas = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+    <polyline points="9 22 9 12 15 12 15 22"/>
+  </svg>
+);
+
+const IconSettings = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+);
+
 const IconChevron = ({ className }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="15 18 9 12 15 6"/>
   </svg>
 );
 
-const IconMenu = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
-  </svg>
-);
+const NAV_ICONS = {
+  '/fincas': IconFincas,
+  '/dashboard': IconDashboard,
+  '/perfil': IconPerfil,
+  '/admin': IconAdmin,
+  '/finca-config': IconSettings,
+};
 
 export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
   const { user, logout } = useAuth();
+  const { navItems, rolLabel, rolProfile } = usePermisos();
   const navigate = useNavigate();
 
-  const handleLogout = () => { logout(); navigate('/login'); };
+  const handleLogout = async () => { await logout(); navigate('/login'); };
 
-  const initials = user?.nombre
-    ? user.nombre.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
-    : '??';
+  const operacion = navItems.filter((i) => i.section === 'operacion');
+  const admin = navItems.filter((i) => i.section === 'admin');
 
   const sidebarClass = [
     'sidebar',
@@ -63,48 +79,52 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
     mobileOpen ? 'sidebar--mobile-open' : '',
   ].filter(Boolean).join(' ');
 
+  const renderLink = (item) => {
+    const Icon = NAV_ICONS[item.to] || IconDashboard;
+    return (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        className={({ isActive }) => `sidebar__item ${isActive ? 'sidebar__item--active' : ''}`}
+      >
+        <Icon className="sidebar__item-icon" />
+        <span className="sidebar__item-text">{item.label}</span>
+      </NavLink>
+    );
+  };
+
   return (
     <>
       {mobileOpen && <div className="sidebar-overlay" onClick={onMobileClose} />}
       <aside className={sidebarClass}>
-        {/* Brand */}
         <div className="sidebar__brand">
           <div className="sidebar__brand-left">
             <LogoIcon className="sidebar__logo" imgClassName="sidebar__logo-img" />
             <span className="sidebar__brand-name">Bunna</span>
           </div>
           <button className="sidebar__toggle" onClick={onToggle} aria-label="Colapsar menú">
-            <IconChevron className={undefined} />
+            <IconChevron />
           </button>
         </div>
 
-        {/* Nav */}
+        {!collapsed && user?.rol && (
+          <div className={`sidebar__role-badge sidebar__role-badge--${rolProfile.accent}`} title={`Rol: ${rolLabel}`}>
+            {rolLabel}
+          </div>
+        )}
+
         <nav className="sidebar__nav">
-          <span className="sidebar__section-label">General</span>
+          <span className="sidebar__section-label">Operación</span>
+          {operacion.map(renderLink)}
 
-          <NavLink to="/dashboard" className={({ isActive }) => `sidebar__item ${isActive ? 'sidebar__item--active' : ''}`}>
-            <IconDashboard className="sidebar__item-icon" />
-            <span className="sidebar__item-text">Dashboard</span>
-          </NavLink>
-
-          <NavLink to="/perfil" className={({ isActive }) => `sidebar__item ${isActive ? 'sidebar__item--active' : ''}`}>
-            <IconPerfil className="sidebar__item-icon" />
-            <span className="sidebar__item-text">Mi Perfil</span>
-          </NavLink>
-
-          {(user?.rol === 'sys_admin' || user?.rol === 'administrador') && (
+          {admin.length > 0 && (
             <>
               <span className="sidebar__section-label">Administración</span>
-
-              <NavLink to="/admin" className={({ isActive }) => `sidebar__item ${isActive ? 'sidebar__item--active' : ''}`}>
-                <IconAdmin className="sidebar__item-icon" />
-                <span className="sidebar__item-text">Panel Admin</span>
-              </NavLink>
+              {admin.map(renderLink)}
             </>
           )}
         </nav>
 
-        {/* Footer */}
         <div className="sidebar__footer">
           <button className="sidebar__item sidebar__item--danger" onClick={handleLogout}>
             <IconLogout className="sidebar__item-icon" />

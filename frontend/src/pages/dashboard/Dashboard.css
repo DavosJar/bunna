@@ -343,7 +343,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  color: var(--color-gray-400);
 }
 
 .results-empty__text {
@@ -588,6 +588,9 @@
 
 .detection-chip__name {
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .detection-chip__conf {

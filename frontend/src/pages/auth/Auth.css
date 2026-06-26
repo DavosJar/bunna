@@ -361,3 +361,17 @@
     padding: var(--space-8) var(--space-6);
   }
 }
+
+.auth-status-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.auth-status-icon--success {
+  color: var(--color-green-600);
+}
+
+.auth-status-icon--error {
+  color: var(--color-red-500);
+}

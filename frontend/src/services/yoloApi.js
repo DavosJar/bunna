@@ -29,3 +29,20 @@ export async function diagnosticar(imagen) {
   const response = await yoloClient.post('/api/v1/diagnostico', formData);
   return response.data;
 }
+
+/**
+ * Re-ejecuta diagnóstico sobre un archivo ya subido al servidor YOLO.
+ * GET /api/v1/diagnostico/{image_name}
+ */
+export async function diagnosticarPorNombre(imageName) {
+  const response = await yoloClient.get(`/api/v1/diagnostico/${encodeURIComponent(imageName)}`);
+  return response.data;
+}
+
+/** Re-analiza desde data URL base64 (re-sube la imagen vía POST) */
+export async function diagnosticarDesdeBase64(dataUrl, filename = 'imagen.jpg') {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
+  return diagnosticar(file);
+}

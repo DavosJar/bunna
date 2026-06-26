@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import LogoIcon from '../../components/LogoIcon';
 import { validateEmail } from '../../services/authApi';
@@ -11,11 +11,16 @@ export default function RegisterPage() {
   const [apellido, setApellido] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [telefono, setTelefono] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const { register, loading, error, setError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnUrl = new URLSearchParams(location.search).get('returnUrl');
+  const esInvitado = returnUrl?.includes('/aceptar-invitacion');
+  const loginUrl = returnUrl ? `/login?returnUrl=${encodeURIComponent(returnUrl)}` : '/login';
 
   useEffect(() => { setError(null); }, [setError]);
 
@@ -33,13 +38,12 @@ export default function RegisterPage() {
       setEmailError(validation.errors[0]);
       return;
     }
-    const result = await register({ nombre, apellido, correo: email, password });
+    const result = await register({ nombre, apellido, correo: email, password, telefono: telefono || undefined });
     if (result.success) {
-      navigate('/login', {
-        state: {
-          mensaje: `Cuenta creada exitosamente. Revisa tu correo ${result.correo} para activar tu cuenta antes de iniciar sesión.`
-        }
-      });
+      const mensaje = esInvitado
+        ? `Cuenta creada. Revisa ${result.correo} para verificarla, luego inicia sesión para aceptar tu invitación.`
+        : `Cuenta creada exitosamente. Revisa tu correo ${result.correo} para activar tu cuenta antes de iniciar sesión.`;
+      navigate(loginUrl, { state: { mensaje } });
     }
   };
 
@@ -64,10 +68,39 @@ export default function RegisterPage() {
 
       <div className="auth-form-panel">
         <div className="auth-form-container">
+          {esInvitado && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '0.75rem',
+              padding: '0.9rem 1rem',
+              marginBottom: '1.25rem',
+              background: 'linear-gradient(135deg, #faf5ff 0%, #f0fdf4 100%)',
+              border: '1px solid #d1fae5',
+              borderLeft: '4px solid #16a34a',
+              borderRadius: '0.75rem',
+              color: '#166534',
+              fontSize: '0.875rem',
+              lineHeight: 1.5,
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+              </svg>
+              <div>
+                <p style={{ margin: '0 0 0.2rem', fontWeight: 700 }}>🎉 Fuiste invitado a una finca</p>
+                <p style={{ margin: 0 }}>Crea tu cuenta y luego inicia sesión para aceptar la invitación automáticamente.</p>
+              </div>
+            </div>
+          )}
+
           <p className="auth-form__subtitle">Empieza ahora</p>
           <h2 className="auth-form__title">Crear cuenta</h2>
           <p className="auth-form__description">
-            Crea tu cuenta para empezar a diagnosticar tus plantas.
+            {esInvitado
+              ? <><strong>Te invitaron a una finca.</strong> Crea tu cuenta para aceptar la invitación.</>  
+              : <>Crea tu cuenta para empezar a diagnosticar tus plantas. Serás <strong>Administrador</strong> de tu propia finca.</>
+            }
           </p>
 
           {error && (
@@ -97,6 +130,11 @@ export default function RegisterPage() {
               <label className="form-label" htmlFor="reg-email">Correo electrónico</label>
               <input id="reg-email" className="form-input" type="email" placeholder="tu@correo.com" value={email} onChange={(e) => { setEmail(e.target.value); setEmailError(''); }} autoComplete="email" required disabled={loading} />
               {emailError && <p className="form-error">{emailError}</p>}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="reg-telefono">Teléfono (opcional)</label>
+              <input id="reg-telefono" className="form-input" type="tel" placeholder="+57 300 000 0000" value={telefono} onChange={(e) => setTelefono(e.target.value)} disabled={loading} />
             </div>
 
             <div className="form-group">
@@ -142,7 +180,7 @@ export default function RegisterPage() {
 
           <p className="auth-footer">
             ¿Ya tienes cuenta?{' '}
-            <Link to="/login" className="auth-footer__link">Iniciar sesión</Link>
+            <Link to={loginUrl} className="auth-footer__link">Iniciar sesión</Link>
           </p>
         </div>
       </div>

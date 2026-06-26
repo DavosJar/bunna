@@ -102,3 +102,27 @@ export async function refreshTokenAPI(refreshToken) {
   const response = await authClient.post('/api/v1/auth/refresh', { refresh_token: refreshToken });
   return response.data;
 }
+
+/**
+ * Cerrar sesión actual en el servidor.
+ * POST /api/v1/auth/logout
+ */
+export async function logoutUsuario() {
+  const token = localStorage.getItem('bunna_access_token');
+  const response = await authClient.post('/api/v1/auth/logout', {}, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+}
+
+/**
+ * Cerrar todas las sesiones del usuario.
+ * POST /api/v1/auth/logout/all
+ */
+export async function logoutAllSesiones() {
+  const token = localStorage.getItem('bunna_access_token');
+  const response = await authClient.post('/api/v1/auth/logout/all', {}, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+}

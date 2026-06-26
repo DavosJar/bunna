@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { solicitarRecuperacion } from '../../services/identidadApi';
 import LogoIcon from '../../components/LogoIcon';
 import { useAuth } from '../../context/AuthContext';
+import { IconMail } from '../../components/icons/Icons';
 import './Auth.css';
 
 export default function ForgotPasswordPage() {
@@ -62,7 +63,7 @@ export default function ForgotPasswordPage() {
 
           {enviado ? (
             <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📬</div>
+              <div className="auth-status-icon auth-status-icon--success"><IconMail size={40} /></div>
               <p style={{ fontWeight: 600, color: 'var(--color-gray-800)', marginBottom: '0.5rem' }}>
                 Revisa tu correo
               </p>

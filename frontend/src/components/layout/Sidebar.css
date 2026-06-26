@@ -196,6 +196,29 @@
   transition: opacity var(--transition-fast);
 }
 
+.sidebar__role-badge {
+  margin: 0 var(--space-3) var(--space-2);
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-full);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar__role-badge--green { background: rgba(34, 197, 94, 0.15); color: #86efac; }
+.sidebar__role-badge--blue { background: rgba(59, 130, 246, 0.15); color: #93c5fd; }
+.sidebar__role-badge--earth { background: rgba(234, 179, 8, 0.15); color: #fcd34d; }
+.sidebar__role-badge--purple { background: rgba(139, 92, 246, 0.15); color: #c4b5fd; }
+
+.sidebar--collapsed .sidebar__role-badge {
+  display: none;
+}
+
 .sidebar--collapsed .sidebar__section-label {
   opacity: 0;
 }

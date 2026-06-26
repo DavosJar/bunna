@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { formatRol } from '../../utils/roleAccess';
 import './TenantSwitcher.css';
 
 export default function TenantSwitcher() {
-  const { user, availableTenants, currentTenant, switchTenant, loading } = useAuth();
+  const { user, availableTenants, currentTenant, ownTenantId, switchTenant, loading } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -20,7 +21,7 @@ export default function TenantSwitcher() {
   if (!availableTenants?.length || availableTenants.length <= 1) return null;
 
   const displayName = currentTenant?.nombre || availableTenants[0]?.nombre || 'Tenant';
-  const displayRole = currentTenant?.rol || availableTenants[0]?.rol || '';
+  const displayRole = formatRol(user?.rol || currentTenant?.rol || '');
 
   const handleSwitch = async (tenantId) => {
     await switchTenant(tenantId);
@@ -60,7 +61,7 @@ export default function TenantSwitcher() {
           </div>
           {availableTenants.map(t => {
             const isActive = t.id === user?.tenantID;
-            const isOwn = t.id === user?.ownTenantID;
+            const isOwn = t.es_propio || t.id === ownTenantId;
             return (
               <button
                 key={t.id}
@@ -71,9 +72,9 @@ export default function TenantSwitcher() {
                 <div className="tenant-switcher__option-left">
                   <span className="tenant-switcher__option-name">
                     {t.nombre}
-                    {isOwn && <span className="tenant-switcher__own-badge" title="Mi finca">Propia</span>}
+                    {isOwn && <span className="tenant-switcher__own-badge" title="Mi organización">Propia</span>}
                   </span>
-                  <span className="tenant-switcher__option-role">{t.rol}</span>
+                  <span className="tenant-switcher__option-role">{formatRol(t.rol)}</span>
                 </div>
                 {isActive && (
                   <span className="tenant-switcher__check">

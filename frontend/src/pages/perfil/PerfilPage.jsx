@@ -1,12 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getMiPerfil, updateMiPerfil, updateMiPassword } from '../../services/identidadApi';
+import { getMiPerfil, updateMiPerfil, updateMiPassword, reenviarVerificacion } from '../../services/identidadApi';
 import { validarPassword } from '../../services/validacionPassword';
+import { getGlobalFarmStats } from '../../utils/farmAnalytics';
+import StatCard from '../../components/ui/StatCard';
+import { usePermisos } from '../../hooks/usePermisos';
+import { IconFarm, IconSample, IconCheck, IconClock } from '../../components/icons/Icons';
+import RoleAccessCard from '../../components/perfil/RoleAccessCard';
 import Layout from '../../components/layout/Layout';
+import '../../components/ui/StatCard.css';
 import './Perfil.css';
 
 export default function PerfilPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { puedeConfigurarTenant, rolLabel } = usePermisos();
+  const farmStats = useMemo(() => getGlobalFarmStats(user?.id), [user?.id]);
 
   const [perfil, setPerfil] = useState(null);
   const [nombre, setNombre] = useState('');
@@ -17,6 +27,8 @@ export default function PerfilPage() {
   const [loadingPassword, setLoadingPassword] = useState(false);
   const [msgPerfil, setMsgPerfil] = useState(null);
   const [msgPassword, setMsgPassword] = useState(null);
+  const [msgSesion, setMsgSesion] = useState(null);
+  const [msgVerificacion, setMsgVerificacion] = useState(null);
 
   useEffect(() => {
     getMiPerfil().then((d) => {
@@ -66,7 +78,16 @@ export default function PerfilPage() {
     : '??';
 
   return (
-    <Layout title="Mi Perfil" subtitle="Gestiona tu información personal y contraseña.">
+    <Layout title="Mi Perfil" subtitle={`Cuenta de ${rolLabel} — gestiona tu información personal.`}>
+      <div className="stat-grid" style={{ marginBottom: '1.5rem' }}>
+        <StatCard icon={<IconFarm />} label="Mis fincas" value={farmStats.fincas} accent="green" />
+        <StatCard icon={<IconSample />} label="Análisis realizados" value={farmStats.muestras + farmStats.diagnosticos} accent="blue" />
+        <StatCard icon={<IconCheck />} label="Aceptados" value={farmStats.aceptados} accent="green" />
+        <StatCard icon={<IconClock />} label="Pendientes" value={farmStats.pendientes} accent="amber" />
+      </div>
+
+      <RoleAccessCard />
+
       {/* Info personal */}
       <div className="perfil-card">
         <h2 className="perfil-card__title">Información personal</h2>
@@ -75,7 +96,14 @@ export default function PerfilPage() {
           <div className="perfil-avatar__info">
             <p className="perfil-avatar__name">{perfil ? `${perfil.nombre} ${perfil.apellido}` : '...'}</p>
             <p>{perfil?.correo}</p>
-            <p>Estado: {perfil?.estado}</p>
+            <p>
+              Estado: {perfil?.estado}
+              {perfil?.correo_verificado != null && (
+                <span className={`perfil-verif-badge ${perfil.correo_verificado ? 'perfil-verif-badge--ok' : 'perfil-verif-badge--pending'}`}>
+                  {perfil.correo_verificado ? 'Correo verificado' : 'Correo pendiente'}
+                </span>
+              )}
+            </p>
           </div>
         </div>
 
@@ -125,6 +153,40 @@ export default function PerfilPage() {
             {loadingPassword ? 'Actualizando...' : 'Actualizar contraseña'}
           </button>
         </form>
+      </div>
+
+      {puedeConfigurarTenant() && (
+      <div className="perfil-card">
+        <h2 className="perfil-card__title">Organización / Tenant</h2>
+        <p style={{ marginBottom: '1rem', color: 'var(--color-gray-600)', fontSize: '0.9rem' }}>
+          Configura el nombre y slug de tu organización.
+        </p>
+        <Link to="/finca-config" className="btn-perfil btn-perfil--primary" style={{ display: 'inline-block', textAlign: 'center', textDecoration: 'none' }}>
+          Configurar tenant
+        </Link>
+      </div>
+      )}
+
+      <div className="perfil-card">
+        <h2 className="perfil-card__title">Verificación de correo</h2>
+        {msgVerificacion && <div className={msgVerificacion.tipo === 'exito' ? 'perfil-success' : 'perfil-error'}>{msgVerificacion.texto}</div>}
+        <button type="button" className="btn-perfil btn-perfil--primary" onClick={async () => {
+          try {
+            await reenviarVerificacion();
+            setMsgVerificacion({ tipo: 'exito', texto: 'Correo de verificación reenviado.' });
+          } catch {
+            setMsgVerificacion({ tipo: 'error', texto: 'No se pudo reenviar el correo.' });
+          }
+        }}>Reenviar verificación</button>
+      </div>
+
+      <div className="perfil-card">
+        <h2 className="perfil-card__title">Sesiones</h2>
+        {msgSesion && <div className={msgSesion.tipo === 'exito' ? 'perfil-success' : 'perfil-error'}>{msgSesion.texto}</div>}
+        <button type="button" className="btn-perfil btn-perfil--primary" onClick={async () => {
+          await logout({ allSessions: true });
+          navigate('/login');
+        }}>Cerrar todas las sesiones</button>
       </div>
     </Layout>
   );

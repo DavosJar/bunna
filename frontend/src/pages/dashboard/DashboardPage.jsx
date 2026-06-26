@@ -1,16 +1,32 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useDiagnosis } from '../../context/DiagnosisContext';
-import { diagnosticar } from '../../services/yoloApi';
+import { diagnosticar, diagnosticarDesdeBase64 } from '../../services/yoloApi';
+import VincularDiagnosticoPanel from '../../components/fincas/VincularDiagnosticoPanel';
+import DashboardOverview from '../../components/dashboard/DashboardOverview';
+import ServiceStatusBar from '../../components/ui/ServiceStatusBar';
+import { IconFlask, IconLeaf, IconAlert, IconX, IconCheckCircle, IconLink } from '../../components/icons/Icons';
+import { getGlobalFarmStats } from '../../utils/farmAnalytics';
 import Layout from '../../components/layout/Layout';
+import '../../components/fincas/VincularDiagnosticoPanel.css';
+import '../../components/dashboard/DashboardOverview.css';
+import '../../components/ui/StatCard.css';
 import './Dashboard.css';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { imagePreview, imageFile, results, setImage, setResults, clearDiagnosis } = useDiagnosis();
+  const navigate = useNavigate();
+  const {
+    imagePreview, imageFile, results, historial, activeHistorialId,
+    setImage, setResultsAndHistorial, clearDiagnosis,
+    restoreFromHistorial, getActiveHistorialEntry,
+  } = useDiagnosis();
   const fileInputRef = useRef(null);
 
   const [analyzing, setAnalyzing] = useState(false);
+  const [rediagnosingId, setRediagnosingId] = useState(null);
+  const [tab, setTab] = useState('resumen');
   const [dragActive, setDragActive] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -44,6 +60,8 @@ export default function DashboardPage() {
   }, [isPanning]);
 
   const handlePointerUp = useCallback(() => setIsPanning(false), []);
+
+  const farmStats = useMemo(() => getGlobalFarmStats(user?.id), [user?.id, historial.length, results]);
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') closeLightbox(); };
@@ -85,24 +103,59 @@ export default function DashboardPage() {
     }
   };
 
+  const applyYoloResult = (data, meta = {}) => {
+    setResultsAndHistorial(data, {
+      ...meta,
+      originalPreview: meta.originalPreview || imagePreview,
+      nombreArchivo: meta.nombreArchivo || imageFile?.name,
+    });
+    setTab('analisis');
+  };
+
   const handleAnalyze = async () => {
     if (!imageFile) return;
     setAnalyzing(true);
     try {
       const data = await diagnosticar(imageFile);
-      setResults(data);
+      applyYoloResult(data, { nombreArchivo: imageFile.name, originalPreview: imagePreview });
     } catch (err) {
       const serverMsg = err.response?.data?.detail || err.response?.data?.message;
       const isNetwork = !err.response && err.message;
       const recommendation = serverMsg
         || (isNetwork ? `Error de conexión: ${err.message}` : 'No se pudo analizar la imagen. Intenta de nuevo.');
-      setResults({
+      applyYoloResult({
         feedback: { level: 'unknown', label: 'Error', percentage: 0, recommendation },
         num_detections: 0, detections: [], avg_confidence: 0, image: null,
       });
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  const handleRediagnosticar = async (entry) => {
+    const source = entry.originalPreview || entry.image;
+    if (!source) return;
+    setRediagnosingId(entry.id);
+    try {
+      const data = await diagnosticarDesdeBase64(source, entry.nombreArchivo || 'imagen.jpg');
+      restoreFromHistorial(entry);
+      applyYoloResult(data, {
+        historialId: entry.id,
+        nombreArchivo: entry.nombreArchivo,
+        originalPreview: entry.originalPreview || source,
+        vinculado: entry.vinculado,
+      });
+    } catch (err) {
+      const serverMsg = err.response?.data?.detail || err.message;
+      alert(`No se pudo re-analizar: ${serverMsg}`);
+    } finally {
+      setRediagnosingId(null);
+    }
+  };
+
+  const handleVerHistorial = (entry) => {
+    restoreFromHistorial(entry);
+    setTab('analisis');
   };
 
   const handleRemoveImage = () => {
@@ -112,14 +165,79 @@ export default function DashboardPage() {
 
   const feedback = results?.feedback;
   const confidenceStr = results?.avg_confidence ? `${(results.avg_confidence * 100).toFixed(1)}%` : '-';
+  const activeEntry = getActiveHistorialEntry();
 
   return (
     <Layout
-      title={`Hola, ${user?.nombre || 'Caficultor'} 👋`}
-      subtitle="Sube una foto de tus hojas de café para analizar el nivel de nitrógeno."
+      title={`Hola, ${user?.nombre || 'Caficultor'}`}
+      subtitle="Panel de control — diagnóstico de nitrógeno con inteligencia artificial."
     >
+      <ServiceStatusBar compact />
+
+      <div className="dash-tabs">
+        <button type="button" className={`dash-tabs__btn ${tab === 'resumen' ? 'dash-tabs__btn--active' : ''}`} onClick={() => setTab('resumen')}>
+          Resumen
+        </button>
+        <button type="button" className={`dash-tabs__btn ${tab === 'analisis' ? 'dash-tabs__btn--active' : ''}`} onClick={() => setTab('analisis')}>
+          Análisis
+        </button>
+        <button type="button" className={`dash-tabs__btn ${tab === 'historial' ? 'dash-tabs__btn--active' : ''}`} onClick={() => setTab('historial')}>
+          Historial ({historial.length})
+        </button>
+      </div>
+
+      {tab === 'resumen' && (
+        <DashboardOverview stats={farmStats} onNavigate={setTab} />
+      )}
+
+      {tab === 'historial' ? (
+        <div className="results-card">
+          <h2 className="results-card__title">Historial de diagnósticos</h2>
+          {historial.length === 0 ? <p className="results-empty__hint">Sin análisis previos.</p> : (
+            <div style={{ display: 'grid', gap: '1rem' }}>
+              {historial.map((h) => (
+                <div key={h.id} className={`historial-card ${h.vinculado ? 'historial-card--vinculado' : ''}`}>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-gray-500)' }}>
+                    {new Date(h.fecha).toLocaleString()} — {h.nombreArchivo}
+                  </p>
+                  <p><strong>{h.feedback?.label}</strong> · {h.num_detections} detecciones · {h.avg_confidence ? `${(h.avg_confidence * 100).toFixed(1)}%` : '—'}</p>
+                  {h.vinculado && (
+                    <p className="historial-vinculado">
+                      <IconLink size={14} /> Vinculado: {h.vinculado.fincaNombre} → {h.vinculado.loteNombre}
+                    </p>
+                  )}
+                  {h.image && <img src={h.image} alt="" style={{ maxWidth: '100%', marginTop: '0.5rem', borderRadius: '0.5rem' }} />}
+                  <div className="historial-actions">
+                    <button type="button" className="btn-admin btn-admin--primary" onClick={() => handleVerHistorial(h)}>Ver resultados</button>
+                    <button
+                      type="button"
+                      className="btn-admin"
+                      onClick={() => handleRediagnosticar(h)}
+                      disabled={rediagnosingId === h.id || !h.originalPreview && !h.image}
+                    >
+                      {rediagnosingId === h.id ? 'Re-analizando...' : 'Re-analizar'}
+                    </button>
+                    {h.vinculado ? (
+                      <button
+                        type="button"
+                        className="btn-admin"
+                        onClick={() => navigate('/fincas', { state: { fincaId: h.vinculado.fincaId, loteId: h.vinculado.loteId } })}
+                      >
+                        Ver en finca
+                      </button>
+                    ) : (
+                      <button type="button" className="btn-admin" onClick={() => { handleVerHistorial(h); setTab('analisis'); }}>
+                        Vincular a finca
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : tab === 'analisis' ? (
       <div className="upload-section">
-        {/* Upload Card */}
         <div className="upload-card" id="upload-card">
           <h2 className="upload-card__title">Subir imagen</h2>
           <p className="upload-card__desc">Arrastra una foto o selecciónala desde tu dispositivo.</p>
@@ -146,7 +264,9 @@ export default function DashboardPage() {
           ) : (
             <div className="preview">
               <img src={imagePreview} alt="Vista previa de la hoja" className="preview__img" />
-              <button className="preview__remove" onClick={handleRemoveImage} aria-label="Eliminar imagen">✕</button>
+              <button className="preview__remove" onClick={handleRemoveImage} aria-label="Eliminar imagen">
+                <IconX size={16} />
+              </button>
             </div>
           )}
 
@@ -169,14 +289,13 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Results Card */}
         <div className="results-card" id="results-card">
           <h2 className="results-card__title">Resultados</h2>
           <p className="results-card__desc">Diagnóstico de nitrógeno basado en IA.</p>
 
           {!results ? (
             <div className="results-empty">
-              <div className="results-empty__icon">🔬</div>
+              <div className="results-empty__icon"><IconFlask size={40} /></div>
               <p className="results-empty__text">Sin resultados aún</p>
               <p className="results-empty__hint">Sube una imagen y presiona "Analizar" para obtener el diagnóstico.</p>
             </div>
@@ -222,13 +341,16 @@ export default function DashboardPage() {
                     {results.detections.map((det, i) => {
                       const esSana = det.class_name === 'hoja_sana';
                       const label = esSana
-                        ? '🌿 Hoja sana'
+                        ? 'Hoja sana'
                         : det.class_name === 'deficiencia_nitrogeno'
-                          ? '⚠️ Deficiencia de nitrógeno'
-                          : `⚠️ ${det.class_name}`;
+                          ? 'Deficiencia de nitrógeno'
+                          : det.class_name;
                       return (
                         <div key={i} className={`detection-chip detection-chip--${esSana ? 'sana' : 'deficiente'}`}>
-                          <span className="detection-chip__name">{label}</span>
+                          <span className="detection-chip__name">
+                            {esSana ? <IconLeaf size={14} /> : <IconAlert size={14} />}
+                            {label}
+                          </span>
                           <span className="detection-chip__conf">{(det.confidence * 100).toFixed(1)}%</span>
                         </div>
                       );
@@ -247,15 +369,42 @@ export default function DashboardPage() {
                   <p className="results-rec__text">{feedback.recommendation}</p>
                 </div>
               )}
+
+              {feedback && feedback.label !== 'Error' && !activeEntry?.vinculado && (
+                <VincularDiagnosticoPanel
+                  yoloResults={results}
+                  historialId={activeHistorialId}
+                  onVinculado={(v) => navigate('/fincas', { state: { fincaId: v.fincaId, loteId: v.loteId } })}
+                />
+              )}
+              {activeEntry?.vinculado && (
+                <div className="vincular-panel" style={{ marginTop: '1rem' }}>
+                  <p className="historial-vinculado" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <IconCheckCircle size={16} /> Vinculado a {activeEntry.vinculado.fincaNombre} → {activeEntry.vinculado.loteNombre}
+                  </p>
+                  <button
+                    type="button"
+                    className="btn-admin btn-admin--primary"
+                    style={{ marginTop: '0.5rem' }}
+                    onClick={() => navigate('/fincas', {
+                      state: { fincaId: activeEntry.vinculado.fincaId, loteId: activeEntry.vinculado.loteId },
+                    })}
+                  >
+                    Ver en Mis Fincas
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
+      ) : null}
 
-      {/* Lightbox */}
       {lightboxOpen && results?.image && (
         <div className="lightbox" onClick={closeLightbox}>
-          <button className="lightbox__close" onClick={closeLightbox} aria-label="Cerrar">✕</button>
+          <button className="lightbox__close" onClick={closeLightbox} aria-label="Cerrar">
+            <IconX size={20} />
+          </button>
           <div className="lightbox__zoom-info">{Math.round(zoom * 100)}%</div>
           <div
             className="lightbox__container"

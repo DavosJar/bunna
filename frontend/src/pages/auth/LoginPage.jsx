@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { usePermisos } from '../../hooks/usePermisos';
 import LogoIcon from '../../components/LogoIcon';
-import { solicitarVerificacion } from '../../services/identidadApi';
+import { solicitarVerificacion, reenviarVerificacion } from '../../services/identidadApi';
+import { getRutaInicio } from '../../utils/roleAccess';
 import './Auth.css';
 
 export default function LoginPage() {
@@ -14,6 +16,8 @@ export default function LoginPage() {
   const location = useLocation();
   const mensajeBienvenida = location.state?.mensaje;
   const returnUrl = new URLSearchParams(location.search).get('returnUrl');
+  const tieneTokenInvitacion = returnUrl?.includes('/aceptar-invitacion');
+  const registerUrl = returnUrl ? `/register?returnUrl=${encodeURIComponent(returnUrl)}` : '/register';
 
   const [correoNoVerificado, setCorreoNoVerificado] = useState(false);
   const [reenvioExitoso, setReenvioExitoso] = useState(false);
@@ -26,7 +30,7 @@ export default function LoginPage() {
     setCorreoNoVerificado(false);
     const result = await login(email, password);
     if (result.success) {
-      const destino = returnUrl || (result.user?.rol === 'administrador' ? '/admin' : '/dashboard');
+      const destino = returnUrl || getRutaInicio(result.user, []);
       navigate(destino);
     } else if (result.error?.includes('verificar tu correo')) {
       setCorreoNoVerificado(true);
@@ -37,7 +41,11 @@ export default function LoginPage() {
     setReenvioExitoso(false);
     setReenvioError(false);
     try {
-      await solicitarVerificacion();
+      try {
+        await reenviarVerificacion();
+      } catch {
+        await solicitarVerificacion();
+      }
       setReenvioExitoso(true);
       setTimeout(() => setReenvioExitoso(false), 5000);
     } catch {
@@ -66,6 +74,31 @@ export default function LoginPage() {
           <p className="auth-form__subtitle">Bienvenido de vuelta</p>
           <h2 className="auth-form__title">Iniciar sesión</h2>
           <p className="auth-form__description">Accede con tu correo y contraseña.</p>
+
+          {tieneTokenInvitacion && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '0.75rem',
+              padding: '0.9rem 1rem',
+              marginBottom: '1.25rem',
+              background: 'linear-gradient(135deg, #faf5ff 0%, #f0fdf4 100%)',
+              border: '1px solid #d1fae5',
+              borderLeft: '4px solid #16a34a',
+              borderRadius: '0.75rem',
+              color: '#166534',
+              fontSize: '0.875rem',
+              lineHeight: 1.5,
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.9 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+              <div>
+                <p style={{ margin: '0 0 0.25rem', fontWeight: 700 }}>🎉 Tienes una invitación pendiente</p>
+                <p style={{ margin: 0, color: '#166534' }}>Inicia sesión para unirte a la finca. Si no tienes cuenta aún, <a href={registerUrl} style={{ color: '#15803d', fontWeight: 600, textDecoration: 'underline' }}>regístrate aquí</a>.</p>
+              </div>
+            </div>
+          )}
 
           {mensajeBienvenida && (
             <div style={{
@@ -208,7 +241,7 @@ export default function LoginPage() {
 
           <p className="auth-footer">
             ¿No tienes cuenta?{' '}
-            <Link to="/register" className="auth-footer__link">Crear cuenta</Link>
+            <Link to={registerUrl} className="auth-footer__link">Crear cuenta</Link>
           </p>
         </div>
       </div>

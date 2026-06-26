@@ -1,0 +1,254 @@
+.analizar-finca__intro {
+  font-size: 0.9rem;
+  color: #4b5563;
+  margin: 0 0 1rem;
+}
+
+.analizar-finca__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.analizar-finca__dropzone {
+  border: 2px dashed #d1d5db;
+  border-radius: 0.75rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  background: #fafafa;
+  transition: border-color 0.15s, background 0.15s;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.analizar-finca__dropzone:hover,
+.analizar-finca__dropzone--active {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.analizar-finca__input {
+  display: none;
+}
+
+.analizar-finca__icon {
+  margin-bottom: 0.5rem;
+  color: var(--color-green-600);
+  display: flex;
+  justify-content: center;
+}
+
+.analizar-finca__hint {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  margin: 0.25rem 0 0;
+}
+
+.analizar-finca__preview {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 0.5rem;
+  object-fit: contain;
+}
+
+.analizar-finca__coords {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.analizar-finca__coords .form-input {
+  flex: 1;
+  min-width: 120px;
+}
+
+.analizar-finca__submit {
+  align-self: flex-start;
+}
+
+.analizar-finca__resultado {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 0.5rem;
+}
+
+.analizar-finca__resultado p {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+.analizar-finca__yolo-img {
+  max-width: 100%;
+  max-height: 280px;
+  border-radius: 0.5rem;
+}
+
+.analizar-finca__cola {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background: #fafafa;
+}
+
+.analizar-finca__cola-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.analizar-finca__cola-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.analizar-finca__cola-item {
+  position: relative;
+  width: 100px;
+  text-align: center;
+}
+
+.analizar-finca__cola-thumb {
+  width: 100px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+}
+
+.analizar-finca__cola-name {
+  display: block;
+  font-size: 0.65rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analizar-finca__cola-remove svg {
+  width: 12px;
+  height: 12px;
+}
+
+.btn-admin--icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.analizar-finca__cola-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: #ef4444;
+  color: white;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.analizar-finca__resultados-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.analizar-finca__resultado-item {
+  background: white;
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+}
+
+.analizar-finca__resultado-label {
+  font-size: 0.8rem;
+  margin: 0 0 0.5rem;
+}
+
+.fincas-step--clickable {
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+}
+
+.fincas-step--clickable:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+
+.fincas-step--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fincas-guide {
+  padding: 1rem 1.25rem;
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #1e40af;
+}
+
+.fincas-guide strong {
+  color: #1e3a8a;
+}
+
+.fincas-siguiente {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.fincas-report-empty {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: linear-gradient(180deg, var(--color-green-50), var(--color-white));
+  border: 1px dashed var(--color-green-200);
+  border-radius: var(--radius-xl);
+  margin-top: 0.5rem;
+}
+
+.fincas-report-empty__icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  color: var(--color-green-600);
+}
+
+.fincas-step__check {
+  vertical-align: middle;
+  margin-right: 0.2rem;
+}
+
+.fincas-report-empty h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: var(--color-gray-800);
+}
+
+.fincas-report-empty p {
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  color: var(--color-gray-500);
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { loginUsuario, registrarUsuario, parseJWT, isTokenExpired, switchTenantAPI } from '../services/authApi';
-import { getMisTenants, getMisPermisos } from '../services/identidadApi';
+import { loginUsuario, registrarUsuario, parseJWT, isTokenExpired, switchTenantAPI, logoutUsuario, logoutAllSesiones } from '../services/authApi';
+import { getMisTenants, getMisPermisos, getMiPerfil } from '../services/identidadApi';
+import { loadRolPreview, saveRolPreview } from '../utils/roleAccess';
 
 const AuthContext = createContext(null);
 
@@ -38,6 +39,28 @@ function saveSession(accessToken, refreshToken, userData) {
   localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
 }
 
+async function buildUserFromLogin(data, correo) {
+  const payload = parseJWT(data.access_token);
+  let nombre = correo.split('@')[0];
+  let apellido = '';
+  try {
+    const perfil = await getMiPerfil();
+    nombre = perfil.nombre || nombre;
+    apellido = perfil.apellido || '';
+  } catch { /* usar fallback */ }
+
+  return {
+    id: data.usuario_id,
+    email: correo,
+    nombre,
+    apellido,
+    tenantID: data.tenant_id,
+    ownTenantID: data.tenant_id,
+    rol: data.rol || 'caficultor',
+    sessionId: payload?.sid,
+  };
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(loadStoredUser);
   const [loading, setLoading] = useState(false);
@@ -45,8 +68,8 @@ export function AuthProvider({ children }) {
   const [availableTenants, setAvailableTenants] = useState([]);
   const [ownTenantId, setOwnTenantId] = useState(null);
   const [permisos, setPermisos] = useState([]);
+  const [rolPreview, setRolPreviewState] = useState(loadRolPreview);
 
-  // Derived: current tenant object
   const currentTenant = useMemo(
     () => availableTenants?.find(t => t.id === user?.tenantID) || null,
     [availableTenants, user?.tenantID]
@@ -59,14 +82,16 @@ export function AuthProvider({ children }) {
     }
   }, [error]);
 
-  // Cargar tenants del usuario al montar si ya está autenticado
   const fetchMisTenants = useCallback(async () => {
     try {
       const data = await getMisTenants();
       setAvailableTenants(data.tenants || []);
-      setOwnTenantId(data.propio_id || null);
+      const propioId = data.propio_id || null;
+      setOwnTenantId(propioId);
+      if (propioId) {
+        setUser((prev) => (prev && prev.ownTenantID !== propioId ? { ...prev, ownTenantID: propioId } : prev));
+      }
     } catch {
-      // Silently fail — the user might not be fully authenticated yet
       setAvailableTenants([]);
       setOwnTenantId(null);
     }
@@ -75,8 +100,6 @@ export function AuthProvider({ children }) {
   const fetchMisPermisos = useCallback(async () => {
     try {
       const data = await getMisPermisos();
-      // data is now [{codigo, nombre, descripcion, modulo}, ...]
-      // Extract just codes for permission checking (puede())
       setPermisos(data.map(p => p.codigo));
     } catch {
       setPermisos([]);
@@ -96,17 +119,7 @@ export function AuthProvider({ children }) {
     try {
       const res = await loginUsuario({ correo, password });
       const data = res.data;
-      const payload = parseJWT(data.access_token);
-
-      const userData = {
-        id: data.usuario_id,
-        email: correo,
-        nombre: correo.split('@')[0],
-        tenantID: data.tenant_id,
-        ownTenantID: data.tenant_id,
-        rol: data.rol || 'caficultor',
-        sessionId: payload?.sid,
-      };
+      const userData = await buildUserFromLogin(data, correo);
 
       saveSession(data.access_token, data.refresh_token, userData);
       setUser(userData);
@@ -120,7 +133,7 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [fetchMisTenants]);
+  }, [fetchMisTenants, fetchMisPermisos]);
 
   const switchTenant = useCallback(async (tenantId) => {
     setLoading(true);
@@ -149,7 +162,7 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [user, fetchMisTenants]);
+  }, [user, fetchMisTenants, fetchMisPermisos]);
 
   const register = useCallback(async ({ nombre, apellido, correo, password, telefono }) => {
     setLoading(true);
@@ -172,23 +185,42 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async ({ allSessions = false } = {}) => {
+    const userId = user?.id;
+    try {
+      if (allSessions) await logoutAllSesiones();
+      else await logoutUsuario();
+    } catch { /* limpiar local aunque falle el servidor */ }
     clearStorage();
+    saveRolPreview(null);
+    setRolPreviewState(null);
     setUser(null);
     setError(null);
+    setAvailableTenants([]);
+    setPermisos([]);
+  }, [user]);
+
+  const setRolPreview = useCallback((rol) => {
+    saveRolPreview(rol);
+    setRolPreviewState(rol);
   }, []);
 
   const getAccessToken = useCallback(() => {
     const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
     if (!token || isTokenExpired(token)) {
-      logout();
+      clearStorage();
+      setUser(null);
       return null;
     }
     return token;
-  }, [logout]);
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, permisos, loading, error, login, register, logout, getAccessToken, setError, availableTenants, ownTenantId, currentTenant, switchTenant, fetchMisTenants, fetchMisPermisos }}>
+    <AuthContext.Provider value={{
+      user, permisos, rolPreview, setRolPreview, loading, error, login, register, logout, getAccessToken,
+      setError, availableTenants, ownTenantId, currentTenant, switchTenant,
+      fetchMisTenants, fetchMisPermisos,
+    }}>
       {children}
     </AuthContext.Provider>
   );

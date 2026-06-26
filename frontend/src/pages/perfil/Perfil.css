@@ -147,3 +147,22 @@
   font-size: 0.85rem;
   font-weight: 500;
 }
+
+.perfil-verif-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-full);
+}
+
+.perfil-verif-badge--ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.perfil-verif-badge--pending {
+  background: #fef3c7;
+  color: #92400e;
+}

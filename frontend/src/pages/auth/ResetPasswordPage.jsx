@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { validarTokenRecuperacion, confirmarRecuperacion } from '../../services/identidadApi';
 import LogoIcon from '../../components/LogoIcon';
 import { validarPassword } from '../../services/validacionPassword';
+import { IconCheckCircle, IconAlert } from '../../components/icons/Icons';
 import './Auth.css';
 
 export default function ResetPasswordPage() {
@@ -72,7 +73,7 @@ export default function ResetPasswordPage() {
 
           {tokenValido === false && (
             <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>❌</div>
+              <div className="auth-status-icon auth-status-icon--error"><IconAlert size={40} /></div>
               <p style={{ fontWeight: 600, color: 'var(--color-gray-800)', marginBottom: '0.5rem' }}>
                 Enlace inválido o expirado
               </p>
@@ -139,7 +140,7 @@ export default function ResetPasswordPage() {
 
           {exito && (
             <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
+              <div className="auth-status-icon auth-status-icon--success"><IconCheckCircle size={40} /></div>
               <p style={{ fontWeight: 600, color: 'var(--color-gray-800)', marginBottom: '0.5rem' }}>
                 ¡Contraseña actualizada!
               </p>

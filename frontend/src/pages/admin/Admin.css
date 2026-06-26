@@ -27,6 +27,21 @@
   color: var(--color-gray-500);
 }
 
+.admin-role-hint {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  font-size: 0.85rem;
+  color: #166534;
+}
+
+.admin-role-hint a {
+  color: #15803d;
+  font-weight: 600;
+}
+
 .admin-tabs {
   display: flex;
   gap: var(--space-2);

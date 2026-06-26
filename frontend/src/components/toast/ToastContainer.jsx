@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { onToast } from '../../services/toastService';
+import { IconX } from '../icons/Icons';
 import './Toast.css';
 
 const MAX_TOASTS = 1;
@@ -46,7 +47,7 @@ export default function ToastContainer() {
             onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
             aria-label="Cerrar"
           >
-            ✕
+            <IconX size={14} />
           </button>
         </div>
       ))}

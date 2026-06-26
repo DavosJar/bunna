@@ -1,7 +1,13 @@
 import axios from 'axios';
 import { showToast } from './toastService';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://3.142.93.237:8080';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
+const AUTH_KEYS = ['bunna_access_token', 'bunna_refresh_token', 'bunna_user'];
+
+function clearAuthStorage() {
+  AUTH_KEYS.forEach((k) => localStorage.removeItem(k));
+}
 
 const client = axios.create({
   baseURL: API_BASE,
@@ -55,7 +61,7 @@ client.interceptors.response.use(
       const refreshToken = localStorage.getItem('bunna_refresh_token');
       if (!refreshToken) {
         isRefreshing = false;
-        localStorage.clear();
+        clearAuthStorage();
         window.location.href = '/login';
         return Promise.reject(error);
       }
@@ -73,7 +79,7 @@ client.interceptors.response.use(
         return client(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        localStorage.clear();
+        clearAuthStorage();
         window.location.href = '/login';
         return Promise.reject(refreshError);
       } finally {
@@ -110,6 +116,17 @@ export async function updateMiPassword({ password_actual, nueva_password }) {
 // ── Tenants ────────────────────────────────────────────────
 export async function getMisTenants() {
   const res = await client.get('/api/v1/tenants/mis-tenants');
+  return res.data.data;
+}
+
+export async function configurarTenant(tenantID, { nombre, slug }) {
+  const res = await client.put(`/api/v1/tenants/${tenantID}`, { nombre, slug });
+  return res.data.data;
+}
+
+// ── Credenciales (admin) ───────────────────────────────────
+export async function getCredenciales(usuarioID) {
+  const res = await client.get(`/api/v1/credenciales/${usuarioID}`);
   return res.data.data;
 }
 
@@ -247,10 +264,32 @@ export async function aceptarInvitacion({ token }) {
   return res.data.data;
 }
 
+export async function getInvitaciones({ pagina = 1, tamano = 20, estado = '' } = {}) {
+  const params = { pagina, tamano };
+  if (estado) params.estado = estado;
+  try {
+    const res = await client.get('/api/v1/invitaciones', { params });
+    return res.data.data;
+  } catch {
+    return { invitaciones: [], total: 0 };
+  }
+}
+
+export async function reenviarInvitacion(invitacionID) {
+  try {
+    const res = await client.post(`/api/v1/invitaciones/${invitacionID}/reenviar`);
+    return res.data.data;
+  } catch {
+    return null;
+  }
+}
+
+
 // ── Permisos de roles ──────────────────────────────────────────
 export async function getPermisos() {
   const res = await client.get('/api/v1/permisos');
-  return res.data?.data || {};
+  const data = res.data?.data || {};
+  return data.permisos || data || [];
 }
 
 export async function getMisPermisos() {

@@ -1,0 +1,43 @@
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin: 1.25rem 0;
+}
+
+.chart-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.chart-card__header {
+  padding: 1rem 1.15rem 0.5rem;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.chart-card__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-gray-800);
+  margin: 0;
+}
+
+.chart-card__subtitle {
+  font-size: 0.75rem;
+  color: var(--color-gray-500);
+  margin: 0.2rem 0 0;
+}
+
+.chart-card__body {
+  padding: 0.75rem 0.5rem 0.5rem;
+}
+
+.chart-card__empty {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-gray-400);
+}

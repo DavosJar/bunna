@@ -9,7 +9,7 @@ import (
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/facades"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/middleware"
 	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
-	presentation "github.com/davosjar/bunna/services/identidad/shared/presentation"
+	presentation "github.com/davosjar/bunna/services/identidad/internal/shared/presentation"
 )
 
 // ── Cambiar Mi Contraseña ──────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ package facades
 import (
 	"context"
 
+	decorator "github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/decorator"
 	uc_assignpermissiontorole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignpermissiontorole"
 	uc_assignrole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignrole"
 	uc_createrole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/createrole"
@@ -155,29 +156,29 @@ type RbacFacade interface {
 }
 
 type rbacFacadeImpl struct {
-	listarRoles         *uc_listroles.ListarRolesCasoDeUso
+	listarRoles         decorator.UseCase[*uc_listroles.ComandoListarRoles, *uc_listroles.RespuestaListarRoles]
 	listarPermisos      *uc_listpermisos.ListarPermisosCasoDeUso
 	listarMisPermisos   *uc_listarmispermisos.ListarMisPermisosCasoDeUso
-	crearRol            *uc_createrole.CrearRolCasoDeUso
-	modificarRol        *uc_updaterole.ModificarRolCasoDeUso
-	eliminarRol         *uc_deleterole.EliminarRolCasoDeUso
-	asignarRol          *uc_assignrole.AsignarRolCasoDeUso
-	revocarRol          *uc_revokerole.RevocarRolCasoDeUso
-	asignarPermisoARol  *uc_assignpermissiontorole.AsignarPermisoARolCasoDeUso
-	revocarPermisoDeRol *uc_revokepermissionfromrole.RevocarPermisoDeRolCasoDeUso
+	crearRol            decorator.UseCase[*uc_createrole.ComandoCrearRol, *uc_createrole.RespuestaCrearRol]
+	modificarRol        decorator.UseCase[*uc_updaterole.ComandoModificarRol, *uc_updaterole.RespuestaModificarRol]
+	eliminarRol         decorator.UseCase[*uc_deleterole.ComandoEliminarRol, *uc_deleterole.RespuestaEliminarRol]
+	asignarRol          decorator.UseCase[*uc_assignrole.ComandoAsignarRol, *uc_assignrole.RespuestaAsignarRol]
+	revocarRol          decorator.UseCase[*uc_revokerole.ComandoRevocarRol, *uc_revokerole.RespuestaRevocarRol]
+	asignarPermisoARol  decorator.UseCase[*uc_assignpermissiontorole.ComandoAsignarPermisoARol, *uc_assignpermissiontorole.RespuestaAsignarPermisoARol]
+	revocarPermisoDeRol decorator.UseCase[*uc_revokepermissionfromrole.ComandoRevocarPermisoDeRol, *uc_revokepermissionfromrole.RespuestaRevocarPermisoDeRol]
 }
 
 func NewRbacFacade(
-	listarRoles *uc_listroles.ListarRolesCasoDeUso,
+	listarRoles decorator.UseCase[*uc_listroles.ComandoListarRoles, *uc_listroles.RespuestaListarRoles],
 	listarPermisos *uc_listpermisos.ListarPermisosCasoDeUso,
 	listarMisPermisos *uc_listarmispermisos.ListarMisPermisosCasoDeUso,
-	crearRol *uc_createrole.CrearRolCasoDeUso,
-	modificarRol *uc_updaterole.ModificarRolCasoDeUso,
-	eliminarRol *uc_deleterole.EliminarRolCasoDeUso,
-	asignarRol *uc_assignrole.AsignarRolCasoDeUso,
-	revocarRol *uc_revokerole.RevocarRolCasoDeUso,
-	asignarPermisoARol *uc_assignpermissiontorole.AsignarPermisoARolCasoDeUso,
-	revocarPermisoDeRol *uc_revokepermissionfromrole.RevocarPermisoDeRolCasoDeUso,
+	crearRol decorator.UseCase[*uc_createrole.ComandoCrearRol, *uc_createrole.RespuestaCrearRol],
+	modificarRol decorator.UseCase[*uc_updaterole.ComandoModificarRol, *uc_updaterole.RespuestaModificarRol],
+	eliminarRol decorator.UseCase[*uc_deleterole.ComandoEliminarRol, *uc_deleterole.RespuestaEliminarRol],
+	asignarRol decorator.UseCase[*uc_assignrole.ComandoAsignarRol, *uc_assignrole.RespuestaAsignarRol],
+	revocarRol decorator.UseCase[*uc_revokerole.ComandoRevocarRol, *uc_revokerole.RespuestaRevocarRol],
+	asignarPermisoARol decorator.UseCase[*uc_assignpermissiontorole.ComandoAsignarPermisoARol, *uc_assignpermissiontorole.RespuestaAsignarPermisoARol],
+	revocarPermisoDeRol decorator.UseCase[*uc_revokepermissionfromrole.ComandoRevocarPermisoDeRol, *uc_revokepermissionfromrole.RespuestaRevocarPermisoDeRol],
 ) RbacFacade {
 	return &rbacFacadeImpl{
 		listarRoles:         listarRoles,

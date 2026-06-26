@@ -163,10 +163,10 @@ func TestRenovarSesionSesionNoValida(t *testing.T) {
 		claims: &sesiones_domain.TokenClaims{UsuarioID: "user-id-1"},
 	}
 	uow := &mockUnitOfWork{
-		sesionRepo:    &mockSesionRepo{err: errors.New("not found")},
+		sesionRepo:    &mockSesionRepo{err: errors.New("no encontrado")},
 		tokenServicio: tokenSvc,
 	}
-	sesionRepoMock := &mockSesionRepo{err: errors.New("not found")}
+	sesionRepoMock := &mockSesionRepo{err: errors.New("no encontrado")}
 	uow.sesionRepo = sesionRepoMock
 
 	uc := refresh.NewRenovarSesionCasoDeUso(uow, refresh.ConfigRefresh{}, nil, nil)

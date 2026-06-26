@@ -116,7 +116,7 @@ func TestListarUsuariosAuthError(t *testing.T) {
 func TestListarUsuariosRepoError(t *testing.T) {
 	repo := &mockUsuarioRepoList{
 		listar: func(ctx context.Context, spec usuariodomain.EspecificacionUsuario, pag shareddomain.Paginacion) ([]*usuariodomain.Usuario, error) {
-			return nil, errors.New("db error")
+			return nil, errors.New("error de BD")
 		},
 	}
 	uc := listusers.NewListarUsuariosCasoDeUso(repo, &mockAuthSvcList{ok: true})

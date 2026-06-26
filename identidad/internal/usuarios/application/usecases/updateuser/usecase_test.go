@@ -97,7 +97,7 @@ func TestModificarUsuarioAuthError(t *testing.T) {
 func TestModificarUsuarioNoEncontrado(t *testing.T) {
 	repo := &mockUsuarioRepoUpdate{
 		obtenerPorID: func(ctx context.Context, id string) (*usuariodomain.Usuario, error) {
-			return nil, errors.New("not found")
+			return nil, errors.New("no encontrado")
 		},
 	}
 	uc := updateuser.NewModificarUsuarioCasoDeUso(repo, &mockAuthSvcUpdate{ok: true})

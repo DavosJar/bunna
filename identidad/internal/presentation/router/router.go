@@ -142,7 +142,6 @@ func New(all *facades.AllFacades, cfg Config) *gin.Engine {
 	handlers.NewListarMisPermisosHandler(all.Rbac).Register(api)
 
 	// Registrar handlers — Tenants
-	handlers.NewConfigurarTenantHandler(all.Tenant).Register(api)
 	handlers.NewListarMisTenantsHandler(all.Tenant).Register(api)
 
 	// Registrar handlers — Verificación

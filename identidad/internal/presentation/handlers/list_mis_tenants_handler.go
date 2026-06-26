@@ -8,7 +8,7 @@ import (
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/dto"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/facades"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/middleware"
-	presentation "github.com/davosjar/bunna/services/identidad/shared/presentation"
+	presentation "github.com/davosjar/bunna/services/identidad/internal/shared/presentation"
 )
 
 // ListarMisTenantsOutput es el output del endpoint GET /api/v1/tenants/mis-tenants.

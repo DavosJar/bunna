@@ -122,7 +122,7 @@ func TestCerrarSesionUsuarioIDVacio(t *testing.T) {
 }
 
 func TestCerrarSesionNoEncontrada(t *testing.T) {
-	repo := &mockSesionRepo{err: errors.New("not found")}
+	repo := &mockSesionRepo{err: errors.New("no encontrado")}
 	uow := &mockUnitOfWork{sesionRepo: repo}
 	uc := logout.NewCerrarSesionCasoDeUso(uow)
 	_, err := uc.Ejecutar(context.Background(), logout.ComandoCerrarSesion{

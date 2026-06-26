@@ -12,6 +12,7 @@ import (
 
 	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry"
 	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/buffer"
+	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/middleware"
 )
 
 // TelemetryPlugin implements gorm.Plugin to capture database operation metrics.
@@ -107,15 +108,13 @@ func hashQuery(sql string) string {
 	return hex.EncodeToString(h[:])
 }
 
-// extractTraceID reads trace_id from context if available.
+// extractTraceID reads trace_id from context using the typed key set by
+// the telemetry middleware. Falls back to empty string if not found.
 func extractTraceID(ctx context.Context) string {
 	if ctx == nil {
 		return ""
 	}
-	if tid, ok := ctx.Value("trace_id").(string); ok {
-		return tid
-	}
-	return ""
+	return middleware.GetTraceIDFromCtx(ctx)
 }
 
 // determineLevel computes log level based on duration, rows, and error.

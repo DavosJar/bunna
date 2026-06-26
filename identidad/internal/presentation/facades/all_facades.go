@@ -18,7 +18,7 @@ func NewAllFacades(reg *registry.Registry) *AllFacades {
 	return &AllFacades{
 		Auth: NewAuthFacade(
 			reg.GetRegistrarUsuarioCasoDeUso(),
-			reg.VerificarCorreoCasoDeUso,
+			reg.SolicitarVerificacionCasoDeUso,
 			reg.IniciarSesionCasoDeUso,
 			reg.RenovarSesionCasoDeUso,
 			reg.CerrarSesionCasoDeUso,
@@ -58,16 +58,19 @@ func NewAllFacades(reg *registry.Registry) *AllFacades {
 			reg.RevocarPermisoDeRolCasoDeUso,
 		),
 		Tenant: NewTenantFacade(
-			reg.ConfigurarTenantCasoDeUso,
-			reg.TenantRepository(),
+			reg.ListarMisTenantsCasoDeUso,
 			reg.MembresiaRepository(),
 			reg.UsuarioTenantRolRepositorio(),
 		),
 		Verificacion: NewVerificacionFacade(
-			reg.VerificarCorreoCasoDeUso,
+			reg.SolicitarVerificacionCasoDeUso,
+			reg.ConfirmarVerificacionCasoDeUso,
+			reg.ReenviarVerificacionCasoDeUso,
 		),
 		Recuperacion: NewRecuperacionFacade(
-			reg.RecuperarContrasenaCasoDeUso,
+			reg.SolicitarRecuperacionCasoDeUso,
+			reg.ValidarTokenRecuperacionCasoDeUso,
+			reg.ConfirmarRecuperacionCasoDeUso,
 		),
 		Invitacion: NewInvitacionFacade(
 			reg.CrearInvitacionCasoDeUso,

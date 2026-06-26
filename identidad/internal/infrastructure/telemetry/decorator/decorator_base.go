@@ -12,7 +12,7 @@ type businessError interface{ BusinessError() }
 // infrastructureError marks infra errors.
 type infrastructureError interface{ InfrastructureError() }
 
-func classifyResult(err error) string {
+func ClassifyResult(err error) string {
     if err == nil {
         return "success"
     }
@@ -37,7 +37,7 @@ func implements(err error, target interface{}) bool {
     return errType.Implements(targetType)
 }
 
-func determineLevel(result string) string {
+func DetermineLevel(result string) string {
     switch result {
     case "success":
         return "INFO"
@@ -50,7 +50,7 @@ func determineLevel(result string) string {
     }
 }
 
-func safeCommand(cmd interface{}) map[string]any {
+func SafeCommand(cmd interface{}) map[string]any {
     if cmd == nil {
         return map[string]any{}
     }

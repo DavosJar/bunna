@@ -122,7 +122,7 @@ func TestConsultarCredencialesAuthError(t *testing.T) {
 func TestConsultarCredencialesNoEncontradas(t *testing.T) {
 	repo := &mockCredRepoView{
 		obtenerPorUsuarioID: func(ctx context.Context, uid string) (*seguridadDomain.CredencialesUsuario, error) {
-			return nil, errors.New("not found")
+			return nil, errors.New("no encontrado")
 		},
 	}
 	uc := viewcredentials.NewConsultarCredencialesCasoDeUso(repo, &mockAuthSvcView{ok: true})

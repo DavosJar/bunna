@@ -112,7 +112,7 @@ func TestListarSesionesAuthError(t *testing.T) {
 func TestListarSesionesRepoError(t *testing.T) {
 	repo := &mockSesionRepoList{
 		listarActivas: func(ctx context.Context, uid string, ahora time.Time) ([]*sesiones.Sesion, error) {
-			return nil, errors.New("db error")
+			return nil, errors.New("error de BD")
 		},
 	}
 	uc := listsessions.NewListarSesionesCasoDeUso(repo, &mockAuthSvcListSes{ok: true})

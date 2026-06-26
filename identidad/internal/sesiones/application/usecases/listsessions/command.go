@@ -8,3 +8,16 @@ type ComandoListarSesiones struct {
 	TenantID   string
 	EjecutorID string
 }
+
+// ToLog returns a safe representation — no sensitive fields.
+func (c ComandoListarSesiones) ToLog() map[string]any {
+	return map[string]any{
+		"usuario_id":  c.UsuarioID,
+		"paginacion": map[string]any{
+			"pagina":        c.Paginacion.Pagina,
+			"tamano_pagina": c.Paginacion.TamanoPagina,
+		},
+		"tenant_id":   c.TenantID,
+		"ejecutor_id": c.EjecutorID,
+	}
+}

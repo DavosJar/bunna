@@ -5,34 +5,35 @@ import (
 	"fmt"
 	"time"
 
+	decorator "github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/decorator"
 	uc_sesiones_login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/login"
 	uc_sesiones_logout "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/logout"
 	uc_sesiones_refresh "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/refresh"
 	uc_sesiones_switchtenant "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/switchtenant"
 	uc_register "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/register"
-	uc_verifyemail "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/verifyemail"
+	uc_solicitar "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/solicitarverificacion"
 )
 
 type authFacadeImpl struct {
-	registroUseCase      RegistroUseCase
-	verificacionUseCase  *uc_verifyemail.VerificarCorreoCasoDeUso
-	loginUseCase         LoginUseCase
-	refreshUseCase       RefreshUseCase
-	logoutUseCase        LogoutUseCase
-	switchTenantUseCase  *uc_sesiones_switchtenant.CambiarTenantCasoDeUso
+	registroUseCase     RegistroUseCase
+	solicitarUseCase    decorator.UseCase[*uc_solicitar.ComandoSolicitarVerificacion, *uc_solicitar.RespuestaSolicitarVerificacion]
+	loginUseCase        LoginUseCase
+	refreshUseCase      RefreshUseCase
+	logoutUseCase       LogoutUseCase
+	switchTenantUseCase decorator.UseCase[uc_sesiones_switchtenant.ComandoCambiarTenant, *uc_sesiones_switchtenant.RespuestaCambiarTenant]
 }
 
 func NewAuthFacade(
 	registroUseCase RegistroUseCase,
-	verificacionUseCase *uc_verifyemail.VerificarCorreoCasoDeUso,
+	solicitarUseCase decorator.UseCase[*uc_solicitar.ComandoSolicitarVerificacion, *uc_solicitar.RespuestaSolicitarVerificacion],
 	loginUseCase LoginUseCase,
 	refreshUseCase RefreshUseCase,
 	logoutUseCase LogoutUseCase,
-	switchTenantUseCase *uc_sesiones_switchtenant.CambiarTenantCasoDeUso,
+	switchTenantUseCase decorator.UseCase[uc_sesiones_switchtenant.ComandoCambiarTenant, *uc_sesiones_switchtenant.RespuestaCambiarTenant],
 ) AuthFacade {
 	return &authFacadeImpl{
 		registroUseCase:     registroUseCase,
-		verificacionUseCase: verificacionUseCase,
+		solicitarUseCase:    solicitarUseCase,
 		loginUseCase:        loginUseCase,
 		refreshUseCase:      refreshUseCase,
 		logoutUseCase:       logoutUseCase,
@@ -54,10 +55,10 @@ func (f *authFacadeImpl) Registrar(ctx context.Context, cmd ComandoRegistro) (*R
 
 	// Post-registro: enviar email de verificación (best-effort)
 	go func() {
-		if f.verificacionUseCase == nil {
+		if f.solicitarUseCase == nil {
 			return
 		}
-		if _, err := f.verificacionUseCase.Solicitar(context.Background(), uc_verifyemail.ComandoSolicitarVerificacion{
+		if _, err := f.solicitarUseCase.Ejecutar(context.Background(), &uc_solicitar.ComandoSolicitarVerificacion{
 			UsuarioID: respuesta.UsuarioID,
 		}); err != nil {
 			fmt.Printf("[AuthFacade] Error al solicitar verificación: %v\n", err)

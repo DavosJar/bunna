@@ -66,7 +66,7 @@ func TestModificarMiPerfilExitoso(t *testing.T) {
 func TestModificarMiPerfilNoEncontrado(t *testing.T) {
 	repo := &mockUsuarioRepoMyProfile{
 		obtenerPorID: func(ctx context.Context, id string) (*usuariodomain.Usuario, error) {
-			return nil, errors.New("not found")
+			return nil, errors.New("no encontrado")
 		},
 	}
 	uc := updatemyprofile.NewModificarMiPerfilCasoDeUso(repo)
@@ -85,7 +85,7 @@ func TestModificarMiPerfilActualizarError(t *testing.T) {
 			return user, nil
 		},
 		actualizar: func(ctx context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
-			return nil, errors.New("db error")
+			return nil, errors.New("error de BD")
 		},
 	}
 	uc := updatemyprofile.NewModificarMiPerfilCasoDeUso(repo)

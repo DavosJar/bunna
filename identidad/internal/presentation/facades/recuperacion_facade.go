@@ -3,7 +3,10 @@ package facades
 import (
 	"context"
 
-	uc_forgotpassword "github.com/davosjar/bunna/services/identidad/internal/recuperacion/application/usecases/forgotpassword"
+	decorator "github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/decorator"
+	uc_confirmar "github.com/davosjar/bunna/services/identidad/internal/recuperacion/application/usecases/confirmarrecuperacion"
+	uc_solicitar "github.com/davosjar/bunna/services/identidad/internal/recuperacion/application/usecases/solicitarrecuperacion"
+	uc_validar "github.com/davosjar/bunna/services/identidad/internal/recuperacion/application/usecases/validartokenrecuperacion"
 )
 
 type ComandoSolicitarRecuperacion struct {
@@ -40,15 +43,25 @@ type RecuperacionFacade interface {
 }
 
 type recuperacionFacadeImpl struct {
-	recuperarContrasena *uc_forgotpassword.RecuperarContrasenaCasoDeUso
+	solicitarUseCase decorator.UseCase[*uc_solicitar.ComandoSolicitarRecuperacion, *uc_solicitar.RespuestaSolicitarRecuperacion]
+	validarUseCase   decorator.UseCase[*uc_validar.ComandoValidarTokenRecuperacion, *uc_validar.RespuestaValidarTokenRecuperacion]
+	confirmarUseCase decorator.UseCase[*uc_confirmar.ComandoConfirmarRecuperacion, *uc_confirmar.RespuestaConfirmarRecuperacion]
 }
 
-func NewRecuperacionFacade(recuperarContrasena *uc_forgotpassword.RecuperarContrasenaCasoDeUso) RecuperacionFacade {
-	return &recuperacionFacadeImpl{recuperarContrasena: recuperarContrasena}
+func NewRecuperacionFacade(
+	solicitarUseCase decorator.UseCase[*uc_solicitar.ComandoSolicitarRecuperacion, *uc_solicitar.RespuestaSolicitarRecuperacion],
+	validarUseCase decorator.UseCase[*uc_validar.ComandoValidarTokenRecuperacion, *uc_validar.RespuestaValidarTokenRecuperacion],
+	confirmarUseCase decorator.UseCase[*uc_confirmar.ComandoConfirmarRecuperacion, *uc_confirmar.RespuestaConfirmarRecuperacion],
+) RecuperacionFacade {
+	return &recuperacionFacadeImpl{
+		solicitarUseCase: solicitarUseCase,
+		validarUseCase:   validarUseCase,
+		confirmarUseCase: confirmarUseCase,
+	}
 }
 
 func (f *recuperacionFacadeImpl) SolicitarRecuperacion(ctx context.Context, cmd ComandoSolicitarRecuperacion) (*RespuestaSolicitarRecuperacion, error) {
-	resp, err := f.recuperarContrasena.Solicitar(ctx, uc_forgotpassword.ComandoSolicitarRecuperacion{
+	resp, err := f.solicitarUseCase.Ejecutar(ctx, &uc_solicitar.ComandoSolicitarRecuperacion{
 		Email:    cmd.Email,
 		IPOrigen: cmd.IPOrigen,
 	})
@@ -59,7 +72,7 @@ func (f *recuperacionFacadeImpl) SolicitarRecuperacion(ctx context.Context, cmd 
 }
 
 func (f *recuperacionFacadeImpl) ValidarTokenRecuperacion(ctx context.Context, cmd ComandoValidarTokenRecuperacion) (*RespuestaValidarTokenRecuperacion, error) {
-	resp, err := f.recuperarContrasena.ValidarToken(ctx, uc_forgotpassword.ComandoValidarTokenRecuperacion{
+	resp, err := f.validarUseCase.Ejecutar(ctx, &uc_validar.ComandoValidarTokenRecuperacion{
 		Token: cmd.Token,
 	})
 	if err != nil {
@@ -72,7 +85,7 @@ func (f *recuperacionFacadeImpl) ValidarTokenRecuperacion(ctx context.Context, c
 }
 
 func (f *recuperacionFacadeImpl) ConfirmarRecuperacion(ctx context.Context, cmd ComandoConfirmarRecuperacion) (*RespuestaConfirmarRecuperacion, error) {
-	resp, err := f.recuperarContrasena.Confirmar(ctx, uc_forgotpassword.ComandoConfirmarRestablecimiento{
+	resp, err := f.confirmarUseCase.Ejecutar(ctx, &uc_confirmar.ComandoConfirmarRecuperacion{
 		Token:         cmd.Token,
 		NuevaPassword: cmd.NuevaPassword,
 	})

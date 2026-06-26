@@ -105,7 +105,7 @@ func (s *JWTTokenServicio) validarToken(tokenString, tipoEsperado string) (*sesi
 	}
 
 	if claims.Tipo != tipoEsperado {
-		return nil, fmt.Errorf("tipo de token incorrecto: esperaba %s, got %s", tipoEsperado, claims.Tipo)
+		return nil, fmt.Errorf("tipo de token incorrecto: esperaba %s, se obtuvo %s", tipoEsperado, claims.Tipo)
 	}
 
 	return &sesiones_domain.TokenClaims{

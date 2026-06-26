@@ -8,7 +8,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/facades"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/middleware"
-	presentation "github.com/davosjar/bunna/services/identidad/shared/presentation"
+	presentation "github.com/davosjar/bunna/services/identidad/internal/shared/presentation"
 )
 
 type misPermisoItem struct {

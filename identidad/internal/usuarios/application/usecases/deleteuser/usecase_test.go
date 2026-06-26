@@ -116,7 +116,7 @@ func TestDarDeBajaUsuarioAutoBaja(t *testing.T) {
 func TestDarDeBajaUsuarioNoEncontrado(t *testing.T) {
 	repo := &mockUsuarioRepoDelete{
 		obtenerPorID: func(ctx context.Context, id string) (*usuariodomain.Usuario, error) {
-			return nil, errors.New("not found")
+			return nil, errors.New("no encontrado")
 		},
 	}
 	uc := deleteuser.NewDarDeBajaUsuarioCasoDeUso(repo, &mockAuthSvcDelete{ok: true})
@@ -154,7 +154,7 @@ func TestDarDeBajaUsuarioActualizarError(t *testing.T) {
 			return user, nil
 		},
 		actualizar: func(ctx context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
-			return nil, errors.New("db error")
+			return nil, errors.New("error de BD")
 		},
 	}
 	uc := deleteuser.NewDarDeBajaUsuarioCasoDeUso(repo, &mockAuthSvcDelete{ok: true})

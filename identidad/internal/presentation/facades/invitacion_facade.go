@@ -3,6 +3,7 @@ package facades
 import (
 	"context"
 
+	decorator "github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/decorator"
 	uc_aceptar "github.com/davosjar/bunna/services/identidad/internal/invitaciones/application/usecases/aceptarinvitacion"
 	uc_crear "github.com/davosjar/bunna/services/identidad/internal/invitaciones/application/usecases/crearinvitacion"
 )
@@ -34,13 +35,13 @@ type InvitacionFacade interface {
 }
 
 type invitacionFacadeImpl struct {
-	crearUseCase   *uc_crear.CrearInvitacionCasoDeUso
-	aceptarUseCase *uc_aceptar.AceptarInvitacionCasoDeUso
+	crearUseCase   decorator.UseCase[*uc_crear.ComandoCrearInvitacion, *uc_crear.RespuestaCrearInvitacion]
+	aceptarUseCase decorator.UseCase[*uc_aceptar.ComandoAceptarInvitacion, *uc_aceptar.RespuestaAceptarInvitacion]
 }
 
 func NewInvitacionFacade(
-	crearUseCase *uc_crear.CrearInvitacionCasoDeUso,
-	aceptarUseCase *uc_aceptar.AceptarInvitacionCasoDeUso,
+	crearUseCase decorator.UseCase[*uc_crear.ComandoCrearInvitacion, *uc_crear.RespuestaCrearInvitacion],
+	aceptarUseCase decorator.UseCase[*uc_aceptar.ComandoAceptarInvitacion, *uc_aceptar.RespuestaAceptarInvitacion],
 ) InvitacionFacade {
 	return &invitacionFacadeImpl{
 		crearUseCase:   crearUseCase,

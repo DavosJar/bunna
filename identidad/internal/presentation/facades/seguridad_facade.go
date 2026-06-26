@@ -3,6 +3,7 @@ package facades
 import (
 	"context"
 
+	decorator "github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/decorator"
 	uc_changemypassword "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/usecases/changemypassword"
 	uc_listblockedips "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/usecases/listblockedips"
 	uc_resetpassword "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/usecases/resetpassword"
@@ -87,21 +88,21 @@ type SeguridadFacade interface {
 }
 
 type seguridadFacadeImpl struct {
-	cambiarMiPassword     *uc_changemypassword.CambiarMiContrasenaCasoDeUso
-	resetearPassword      *uc_resetpassword.ResetearContrasenaCasoDeUso
-	desbloquearCuenta     *uc_unlockaccount.DesbloquearCuentaCasoDeUso
-	listarIPsBloqueadas   *uc_listblockedips.ListarIPsBloqueadasCasoDeUso
-	desbloquearIP         *uc_unblockip.DesbloquearIPCasoDeUso
-	consultarCredenciales *uc_viewcredentials.ConsultarCredencialesCasoDeUso
+	cambiarMiPassword     decorator.UseCase[*uc_changemypassword.ComandoCambiarMiContrasena, *uc_changemypassword.RespuestaCambiarMiContrasena]
+	resetearPassword      decorator.UseCase[*uc_resetpassword.ComandoResetearContrasena, *uc_resetpassword.RespuestaResetearContrasena]
+	desbloquearCuenta     decorator.UseCase[*uc_unlockaccount.ComandoDesbloquearCuenta, *uc_unlockaccount.RespuestaDesbloquearCuenta]
+	listarIPsBloqueadas   decorator.UseCase[*uc_listblockedips.ComandoListarIPsBloqueadas, *uc_listblockedips.RespuestaListarIPsBloqueadas]
+	desbloquearIP         decorator.UseCase[*uc_unblockip.ComandoDesbloquearIP, *uc_unblockip.RespuestaDesbloquearIP]
+	consultarCredenciales decorator.UseCase[*uc_viewcredentials.ComandoConsultarCredenciales, *uc_viewcredentials.RespuestaConsultarCredenciales]
 }
 
 func NewSeguridadFacade(
-	cambiarMiPassword *uc_changemypassword.CambiarMiContrasenaCasoDeUso,
-	resetearPassword *uc_resetpassword.ResetearContrasenaCasoDeUso,
-	desbloquearCuenta *uc_unlockaccount.DesbloquearCuentaCasoDeUso,
-	listarIPsBloqueadas *uc_listblockedips.ListarIPsBloqueadasCasoDeUso,
-	desbloquearIP *uc_unblockip.DesbloquearIPCasoDeUso,
-	consultarCredenciales *uc_viewcredentials.ConsultarCredencialesCasoDeUso,
+	cambiarMiPassword decorator.UseCase[*uc_changemypassword.ComandoCambiarMiContrasena, *uc_changemypassword.RespuestaCambiarMiContrasena],
+	resetearPassword decorator.UseCase[*uc_resetpassword.ComandoResetearContrasena, *uc_resetpassword.RespuestaResetearContrasena],
+	desbloquearCuenta decorator.UseCase[*uc_unlockaccount.ComandoDesbloquearCuenta, *uc_unlockaccount.RespuestaDesbloquearCuenta],
+	listarIPsBloqueadas decorator.UseCase[*uc_listblockedips.ComandoListarIPsBloqueadas, *uc_listblockedips.RespuestaListarIPsBloqueadas],
+	desbloquearIP decorator.UseCase[*uc_unblockip.ComandoDesbloquearIP, *uc_unblockip.RespuestaDesbloquearIP],
+	consultarCredenciales decorator.UseCase[*uc_viewcredentials.ComandoConsultarCredenciales, *uc_viewcredentials.RespuestaConsultarCredenciales],
 ) SeguridadFacade {
 	return &seguridadFacadeImpl{
 		cambiarMiPassword:     cambiarMiPassword,

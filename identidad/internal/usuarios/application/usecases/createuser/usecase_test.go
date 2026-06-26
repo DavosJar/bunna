@@ -220,7 +220,7 @@ func TestCrearUsuarioIDGenError(t *testing.T) {
 	uc := createuser.NewCrearUsuarioCasoDeUso(
 		&mockUsuarioRepoCreate{}, &mockCredencialesRepoCreate{},
 		&mockEncriptacionCreate{}, &mockAuthSvcCreate{ok: true},
-		&mockGeneradorIDCreate{err: errors.New("gen error")},
+		&mockGeneradorIDCreate{err: errors.New("error de generación")},
 	)
 	_, err := uc.Ejecutar(context.Background(), &createuser.ComandoCrearUsuario{
 		Correo: "test@gmail.com", Nombre: "Juan", Password: "Abcdef1!",
@@ -233,7 +233,7 @@ func TestCrearUsuarioIDGenError(t *testing.T) {
 func TestCrearUsuarioRepoError(t *testing.T) {
 	userRepo := &mockUsuarioRepoCreate{
 		crearFunc: func(ctx context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
-			return nil, errors.New("db error")
+			return nil, errors.New("error de BD")
 		},
 	}
 	uc := createuser.NewCrearUsuarioCasoDeUso(
@@ -272,7 +272,7 @@ func TestCrearUsuarioHashError(t *testing.T) {
 type mockEncriptacionFail struct{}
 
 func (m *mockEncriptacionFail) Hashear(password string) (string, error) {
-	return "", errors.New("hash error")
+	return "", errors.New("error de hash")
 }
 func (m *mockEncriptacionFail) Verificar(password, hash string) bool { return false }
 
@@ -284,7 +284,7 @@ func TestCrearUsuarioCredRepoError(t *testing.T) {
 	}
 	credRepo := &mockCredencialesRepoCreate{
 		crearFunc: func(ctx context.Context, c *seguridad.CredencialesUsuario) (*seguridad.CredencialesUsuario, error) {
-			return nil, errors.New("db error")
+			return nil, errors.New("error de BD")
 		},
 	}
 	uc := createuser.NewCrearUsuarioCasoDeUso(

@@ -101,7 +101,7 @@ func TestDesbloquearIPAuthError(t *testing.T) {
 func TestDesbloquearIPNoEncontrada(t *testing.T) {
 	repo := &mockIntentoRepoUnblock{
 		obtenerPorIP: func(ctx context.Context, ip string) (*seguridadDomain.IntentoPorIP, error) {
-			return nil, errors.New("not found")
+			return nil, errors.New("no encontrado")
 		},
 	}
 	uc := unblockip.NewDesbloquearIPCasoDeUso(repo, &mockAuthSvcUnblockIP{ok: true})
@@ -137,7 +137,7 @@ func TestDesbloquearIPActualizarError(t *testing.T) {
 			return intento, nil
 		},
 		actualizar: func(ctx context.Context, i *seguridadDomain.IntentoPorIP) (*seguridadDomain.IntentoPorIP, error) {
-			return nil, errors.New("db error")
+			return nil, errors.New("error de BD")
 		},
 	}
 	uc := unblockip.NewDesbloquearIPCasoDeUso(repo, &mockAuthSvcUnblockIP{ok: true})

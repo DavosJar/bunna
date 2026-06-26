@@ -7,7 +7,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/dto"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/facades"
-	presentation "github.com/davosjar/bunna/services/identidad/shared/presentation"
+	presentation "github.com/davosjar/bunna/services/identidad/internal/shared/presentation"
 )
 
 // ── Solicitar Recuperación ─────────────────────────────────────────────────────

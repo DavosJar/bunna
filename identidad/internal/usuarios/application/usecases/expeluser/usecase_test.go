@@ -124,7 +124,7 @@ func TestExpulsarUsuarioAutoExpulsion(t *testing.T) {
 func TestExpulsarUsuarioNoEncontrado(t *testing.T) {
 	repo := &mockUsuarioRepoExpel{
 		obtenerPorID: func(ctx context.Context, id string) (*usuariodomain.Usuario, error) {
-			return nil, errors.New("not found")
+			return nil, errors.New("no encontrado")
 		},
 	}
 	uc := expeluser.NewExpulsarUsuarioCasoDeUso(repo, &mockSesionRepoExpel{}, &mockAuthSvcExpel{ok: true})
@@ -143,7 +143,7 @@ func TestExpulsarUsuarioSesionRepoError(t *testing.T) {
 			return user, nil
 		},
 	}
-	sessionRepo := &mockSesionRepoExpel{errInvalidar: errors.New("db error")}
+	sessionRepo := &mockSesionRepoExpel{errInvalidar: errors.New("error de BD")}
 	uc := expeluser.NewExpulsarUsuarioCasoDeUso(repo, sessionRepo, &mockAuthSvcExpel{ok: true})
 	_, err := uc.Ejecutar(context.Background(), &expeluser.ComandoExpulsarUsuario{
 		UsuarioID: "user-1", TenantID: "tenant-1", EjecutorID: "admin-1",
@@ -160,7 +160,7 @@ func TestExpulsarUsuarioActualizarError(t *testing.T) {
 			return user, nil
 		},
 		actualizar: func(ctx context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
-			return nil, errors.New("db error")
+			return nil, errors.New("error de BD")
 		},
 	}
 	uc := expeluser.NewExpulsarUsuarioCasoDeUso(repo, &mockSesionRepoExpel{}, &mockAuthSvcExpel{ok: true})

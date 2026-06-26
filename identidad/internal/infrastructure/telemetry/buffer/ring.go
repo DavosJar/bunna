@@ -31,7 +31,7 @@ func (r *RingBuffer) Write(event []byte, priority Prioridad) error {
 	r.mu.Lock()
 	if r.closed {
 		r.mu.Unlock()
-		return errors.New("buffer closed")
+		return errors.New("buffer cerrado")
 	}
 	r.mu.Unlock()
 
@@ -50,7 +50,7 @@ func (r *RingBuffer) Write(event []byte, priority Prioridad) error {
 		case r.buffer <- event:
 			return nil
 		default:
-			return errors.New("buffer full and cannot drop")
+			return errors.New("buffer lleno y no se puede descartar")
 		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	decorator "github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/decorator"
 	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	uc_createuser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/createuser"
 	uc_deleteuser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/deleteuser"
@@ -124,23 +125,23 @@ type UsuarioFacade interface {
 }
 
 type usuarioFacadeImpl struct {
-	crearUsuario      *uc_createuser.CrearUsuarioCasoDeUso
-	listarUsuarios    *uc_listusers.ListarUsuariosCasoDeUso
-	modificarUsuario  *uc_updateuser.ModificarUsuarioCasoDeUso
-	darDeBajaUsuario  *uc_deleteuser.DarDeBajaUsuarioCasoDeUso
-	expulsarUsuario   *uc_expeluser.ExpulsarUsuarioCasoDeUso
-	verMiPerfil       *uc_viewmyprofile.VerMiPerfilCasoDeUso
-	modificarMiPerfil *uc_updatemyprofile.ModificarMiPerfilCasoDeUso
+	crearUsuario      decorator.UseCase[*uc_createuser.ComandoCrearUsuario, *uc_createuser.RespuestaCrearUsuario]
+	listarUsuarios    decorator.UseCase[*uc_listusers.ComandoListarUsuarios, *uc_listusers.RespuestaListarUsuarios]
+	modificarUsuario  decorator.UseCase[*uc_updateuser.ComandoModificarUsuario, *uc_updateuser.RespuestaModificarUsuario]
+	darDeBajaUsuario  decorator.UseCase[*uc_deleteuser.ComandoDarDeBajaUsuario, *uc_deleteuser.RespuestaDarDeBajaUsuario]
+	expulsarUsuario   decorator.UseCase[*uc_expeluser.ComandoExpulsarUsuario, *uc_expeluser.RespuestaExpulsarUsuario]
+	verMiPerfil       decorator.UseCase[*uc_viewmyprofile.ComandoVerMiPerfil, *uc_viewmyprofile.RespuestaVerMiPerfil]
+	modificarMiPerfil decorator.UseCase[*uc_updatemyprofile.ComandoModificarMiPerfil, *uc_updatemyprofile.RespuestaModificarMiPerfil]
 }
 
 func NewUsuarioFacade(
-	crearUsuario *uc_createuser.CrearUsuarioCasoDeUso,
-	listarUsuarios *uc_listusers.ListarUsuariosCasoDeUso,
-	modificarUsuario *uc_updateuser.ModificarUsuarioCasoDeUso,
-	darDeBajaUsuario *uc_deleteuser.DarDeBajaUsuarioCasoDeUso,
-	expulsarUsuario *uc_expeluser.ExpulsarUsuarioCasoDeUso,
-	verMiPerfil *uc_viewmyprofile.VerMiPerfilCasoDeUso,
-	modificarMiPerfil *uc_updatemyprofile.ModificarMiPerfilCasoDeUso,
+	crearUsuario decorator.UseCase[*uc_createuser.ComandoCrearUsuario, *uc_createuser.RespuestaCrearUsuario],
+	listarUsuarios decorator.UseCase[*uc_listusers.ComandoListarUsuarios, *uc_listusers.RespuestaListarUsuarios],
+	modificarUsuario decorator.UseCase[*uc_updateuser.ComandoModificarUsuario, *uc_updateuser.RespuestaModificarUsuario],
+	darDeBajaUsuario decorator.UseCase[*uc_deleteuser.ComandoDarDeBajaUsuario, *uc_deleteuser.RespuestaDarDeBajaUsuario],
+	expulsarUsuario decorator.UseCase[*uc_expeluser.ComandoExpulsarUsuario, *uc_expeluser.RespuestaExpulsarUsuario],
+	verMiPerfil decorator.UseCase[*uc_viewmyprofile.ComandoVerMiPerfil, *uc_viewmyprofile.RespuestaVerMiPerfil],
+	modificarMiPerfil decorator.UseCase[*uc_updatemyprofile.ComandoModificarMiPerfil, *uc_updatemyprofile.RespuestaModificarMiPerfil],
 ) UsuarioFacade {
 	return &usuarioFacadeImpl{
 		crearUsuario:      crearUsuario,

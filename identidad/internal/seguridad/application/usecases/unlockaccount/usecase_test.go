@@ -86,7 +86,7 @@ func TestDesbloquearCuentaAuthError(t *testing.T) {
 func TestDesbloquearCuentaNoEncontrada(t *testing.T) {
 	repo := &mockCredRepoUnlock{
 		obtenerPorUsuarioID: func(ctx context.Context, uid string) (*seguridadDomain.CredencialesUsuario, error) {
-			return nil, errors.New("not found")
+			return nil, errors.New("no encontrado")
 		},
 	}
 	uc := unlockaccount.NewDesbloquearCuentaCasoDeUso(repo, &mockAuthSvcUnlock{ok: true})

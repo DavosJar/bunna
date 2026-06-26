@@ -23,7 +23,9 @@ import (
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/updaterole"
 	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	rbac_postgres "github.com/davosjar/bunna/services/identidad/internal/rbac/infrastructure/persistence/postgres"
-	uc_forgotpassword "github.com/davosjar/bunna/services/identidad/internal/recuperacion/application/usecases/forgotpassword"
+	uc_confirmar_recuperacion "github.com/davosjar/bunna/services/identidad/internal/recuperacion/application/usecases/confirmarrecuperacion"
+	uc_solicitar_recuperacion "github.com/davosjar/bunna/services/identidad/internal/recuperacion/application/usecases/solicitarrecuperacion"
+	uc_validar_recuperacion "github.com/davosjar/bunna/services/identidad/internal/recuperacion/application/usecases/validartokenrecuperacion"
 	recuperacion_postgres "github.com/davosjar/bunna/services/identidad/internal/recuperacion/infrastructure/persistence/postgres"
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/bloqueo_ip"
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/application/services/rate_limiter"
@@ -36,9 +38,6 @@ import (
 	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
 	seguridad_postgres "github.com/davosjar/bunna/services/identidad/internal/seguridad/infrastructure/persistence/postgres"
 	"github.com/davosjar/bunna/services/identidad/internal/seguridad/infrastructure/security/bcrypt"
-	"github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/login"
-	"github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/logout"
-	"github.com/davosjar/bunna/services/identidad/internal/sesiones/application/services/refresh"
 	uc_listsessions "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/listsessions"
 	uc_sesiones_login "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/login"
 	uc_sesiones_logout "github.com/davosjar/bunna/services/identidad/internal/sesiones/application/usecases/logout"
@@ -49,10 +48,11 @@ import (
 	sesiones_postgres "github.com/davosjar/bunna/services/identidad/internal/sesiones/infrastructure/persistence/postgres"
 	sesiones_jwt "github.com/davosjar/bunna/services/identidad/internal/sesiones/infrastructure/security/jwt"
 	shared_idgenerator "github.com/davosjar/bunna/services/identidad/internal/shared/infrastructure/idgenerator"
-	uc_updatetenant "github.com/davosjar/bunna/services/identidad/internal/tenants/application/usecases/updatetenant"
+	uc_listarmistenants "github.com/davosjar/bunna/services/identidad/internal/tenants/application/usecases/uc_listarmistenants"
+	uc_obtenertenantporid "github.com/davosjar/bunna/services/identidad/internal/tenants/application/usecases/uc_obtenertenantporid"
+	uc_obtenertenantporslug "github.com/davosjar/bunna/services/identidad/internal/tenants/application/usecases/uc_obtenertenantporslug"
 	tenant_domain "github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
 	tenant_postgres "github.com/davosjar/bunna/services/identidad/internal/tenants/infrastructure/persistence/postgres"
-	"github.com/davosjar/bunna/services/identidad/internal/usuarios/application/services/registro"
 	uc_register "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/register"
 	uc_createuser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/createuser"
 	uc_deleteuser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/deleteuser"
@@ -63,7 +63,9 @@ import (
 	uc_viewmyprofile "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/viewmyprofile"
 	usuario_domain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 	usuarios_postgres "github.com/davosjar/bunna/services/identidad/internal/usuarios/infrastructure/persistence/postgres"
-	uc_verifyemail "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/verifyemail"
+	uc_confirmar "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/confirmarverificacion"
+	uc_reenviar "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/reenviarverificacion"
+	uc_solicitar "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/solicitarverificacion"
 	verificacion_domain "github.com/davosjar/bunna/services/identidad/internal/verificacion/domain"
 	verificacion_postgres "github.com/davosjar/bunna/services/identidad/internal/verificacion/infrastructure/persistence/postgres"
 	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/buffer"
@@ -99,70 +101,69 @@ type Registry struct {
 	usuarioUnitOfWork usuario_domain.UnitOfWork
 	sesionUnitOfWork  sesiones_domain.UnitOfWork
 
-	// Servicios de aplicación — sesiones (antiguos)
-	ServicioLogin   *login.ServicioLogin
-	ServicioRefresh *refresh.ServicioRefresh
-	ServicioLogout  *logout.ServicioLogout
-
-	// Servicios de aplicación — registro
-	servicioRegistro             *registro.ServicioRegistro
-	RegistrarUsuarioCasoDeUso    decorator.RegistroUseCase
+	RegistrarUsuarioCasoDeUso    decorator.UseCase[*uc_register.ComandoRegistrarUsuario, *uc_register.RespuestaRegistrarUsuario]
 
 	// Servicios de aplicación — seguridad perimetral
 	ServicioBloqueoIP *bloqueo_ip.ServicioBloqueoIP
 	ServicioRateLimit *rate_limiter.ServicioRateLimit
 
 	// Casos de uso — auth
-	IniciarSesionCasoDeUso    decorator.LoginUseCase
+	IniciarSesionCasoDeUso    decorator.UseCase[uc_sesiones_login.ComandoIniciarSesion, *uc_sesiones_login.RespuestaIniciarSesion]
 	CerrarSesionCasoDeUso     decorator.LogoutUseCase
-	RenovarSesionCasoDeUso    decorator.RefreshUseCase
-	CambiarTenantCasoDeUso    *uc_sesiones_switchtenant.CambiarTenantCasoDeUso
+	RenovarSesionCasoDeUso    decorator.UseCase[uc_sesiones_refresh.ComandoRenovarSesion, *uc_sesiones_refresh.RespuestaRenovarSesion]
+	CambiarTenantCasoDeUso    decorator.UseCase[uc_sesiones_switchtenant.ComandoCambiarTenant, *uc_sesiones_switchtenant.RespuestaCambiarTenant]
 
 	// Casos de uso — usuarios admin
-	CrearUsuarioCasoDeUso     *uc_createuser.CrearUsuarioCasoDeUso
-	ListarUsuariosCasoDeUso   *uc_listusers.ListarUsuariosCasoDeUso
-	ModificarUsuarioCasoDeUso *uc_updateuser.ModificarUsuarioCasoDeUso
-	DarDeBajaUsuarioCasoDeUso *uc_deleteuser.DarDeBajaUsuarioCasoDeUso
-	ExpulsarUsuarioCasoDeUso  *uc_expeluser.ExpulsarUsuarioCasoDeUso
+	CrearUsuarioCasoDeUso     decorator.UseCase[*uc_createuser.ComandoCrearUsuario, *uc_createuser.RespuestaCrearUsuario]
+	ListarUsuariosCasoDeUso   decorator.UseCase[*uc_listusers.ComandoListarUsuarios, *uc_listusers.RespuestaListarUsuarios]
+	ModificarUsuarioCasoDeUso decorator.UseCase[*uc_updateuser.ComandoModificarUsuario, *uc_updateuser.RespuestaModificarUsuario]
+	DarDeBajaUsuarioCasoDeUso decorator.UseCase[*uc_deleteuser.ComandoDarDeBajaUsuario, *uc_deleteuser.RespuestaDarDeBajaUsuario]
+	ExpulsarUsuarioCasoDeUso  decorator.UseCase[*uc_expeluser.ComandoExpulsarUsuario, *uc_expeluser.RespuestaExpulsarUsuario]
 
 	// Casos de uso — autogestión
-	VerMiPerfilCasoDeUso         *uc_viewmyprofile.VerMiPerfilCasoDeUso
-	ModificarMiPerfilCasoDeUso   *uc_updatemyprofile.ModificarMiPerfilCasoDeUso
-	CambiarMiContrasenaCasoDeUso *uc_changemypassword.CambiarMiContrasenaCasoDeUso
+	VerMiPerfilCasoDeUso         decorator.UseCase[*uc_viewmyprofile.ComandoVerMiPerfil, *uc_viewmyprofile.RespuestaVerMiPerfil]
+	ModificarMiPerfilCasoDeUso   decorator.UseCase[*uc_updatemyprofile.ComandoModificarMiPerfil, *uc_updatemyprofile.RespuestaModificarMiPerfil]
+	CambiarMiContrasenaCasoDeUso decorator.UseCase[*uc_changemypassword.ComandoCambiarMiContrasena, *uc_changemypassword.RespuestaCambiarMiContrasena]
 
 	// Casos de uso — seguridad
-	ConsultarCredencialesCasoDeUso *uc_viewcredentials.ConsultarCredencialesCasoDeUso
-	ResetearContrasenaCasoDeUso    *uc_resetpassword.ResetearContrasenaCasoDeUso
-	DesbloquearCuentaCasoDeUso     *uc_unlockaccount.DesbloquearCuentaCasoDeUso
-	ListarIPsBloqueadasCasoDeUso   *uc_listblockedips.ListarIPsBloqueadasCasoDeUso
-	DesbloquearIPCasoDeUso         *uc_unblockip.DesbloquearIPCasoDeUso
+	ConsultarCredencialesCasoDeUso decorator.UseCase[*uc_viewcredentials.ComandoConsultarCredenciales, *uc_viewcredentials.RespuestaConsultarCredenciales]
+	ResetearContrasenaCasoDeUso    decorator.UseCase[*uc_resetpassword.ComandoResetearContrasena, *uc_resetpassword.RespuestaResetearContrasena]
+	DesbloquearCuentaCasoDeUso     decorator.UseCase[*uc_unlockaccount.ComandoDesbloquearCuenta, *uc_unlockaccount.RespuestaDesbloquearCuenta]
+	ListarIPsBloqueadasCasoDeUso   decorator.UseCase[*uc_listblockedips.ComandoListarIPsBloqueadas, *uc_listblockedips.RespuestaListarIPsBloqueadas]
+	DesbloquearIPCasoDeUso         decorator.UseCase[*uc_unblockip.ComandoDesbloquearIP, *uc_unblockip.RespuestaDesbloquearIP]
 
 	// Casos de uso — sesiones
-	ListarSesionesCasoDeUso     *uc_listsessions.ListarSesionesCasoDeUso
-	ForzarCierreSesionCasoDeUso *uc_terminatesession.ForzarCierreSesionCasoDeUso
+	ListarSesionesCasoDeUso     decorator.UseCase[*uc_listsessions.ComandoListarSesiones, *uc_listsessions.RespuestaListarSesiones]
+	ForzarCierreSesionCasoDeUso decorator.UseCase[*uc_terminatesession.ComandoForzarCierreSesion, *uc_terminatesession.RespuestaForzarCierreSesion]
 
 	// Casos de uso — roles y permisos
-	ListarRolesCasoDeUso         *listroles.ListarRolesCasoDeUso
+	ListarRolesCasoDeUso         decorator.UseCase[*listroles.ComandoListarRoles, *listroles.RespuestaListarRoles]
 	ListarPermisosCasoDeUso      *uc_listpermisos.ListarPermisosCasoDeUso
 	ListarMisPermisosCasoDeUso   *uc_listarmispermisos.ListarMisPermisosCasoDeUso
-	CrearRolCasoDeUso            *createrole.CrearRolCasoDeUso
-	ModificarRolCasoDeUso        *updaterole.ModificarRolCasoDeUso
-	EliminarRolCasoDeUso         *deleterole.EliminarRolCasoDeUso
-	AsignarRolCasoDeUso          *assignrole.AsignarRolCasoDeUso
-	RevocarRolCasoDeUso          *revokerole.RevocarRolCasoDeUso
-	AsignarPermisoARolCasoDeUso  *assignpermissiontorole.AsignarPermisoARolCasoDeUso
-	RevocarPermisoDeRolCasoDeUso *revokepermissionfromrole.RevocarPermisoDeRolCasoDeUso
-
-	// Casos de uso — tenants
-	ConfigurarTenantCasoDeUso *uc_updatetenant.ConfigurarTenantCasoDeUso
+	CrearRolCasoDeUso            decorator.UseCase[*createrole.ComandoCrearRol, *createrole.RespuestaCrearRol]
+	ModificarRolCasoDeUso        decorator.UseCase[*updaterole.ComandoModificarRol, *updaterole.RespuestaModificarRol]
+	EliminarRolCasoDeUso         decorator.UseCase[*deleterole.ComandoEliminarRol, *deleterole.RespuestaEliminarRol]
+	AsignarRolCasoDeUso          decorator.UseCase[*assignrole.ComandoAsignarRol, *assignrole.RespuestaAsignarRol]
+	RevocarRolCasoDeUso          decorator.UseCase[*revokerole.ComandoRevocarRol, *revokerole.RespuestaRevocarRol]
+	AsignarPermisoARolCasoDeUso  decorator.UseCase[*assignpermissiontorole.ComandoAsignarPermisoARol, *assignpermissiontorole.RespuestaAsignarPermisoARol]
+	RevocarPermisoDeRolCasoDeUso decorator.UseCase[*revokepermissionfromrole.ComandoRevocarPermisoDeRol, *revokepermissionfromrole.RespuestaRevocarPermisoDeRol]
 
 	// Casos de uso — verificación y recuperación
-	VerificarCorreoCasoDeUso     *uc_verifyemail.VerificarCorreoCasoDeUso
-	RecuperarContrasenaCasoDeUso *uc_forgotpassword.RecuperarContrasenaCasoDeUso
+	SolicitarVerificacionCasoDeUso    decorator.UseCase[*uc_solicitar.ComandoSolicitarVerificacion, *uc_solicitar.RespuestaSolicitarVerificacion]
+	ConfirmarVerificacionCasoDeUso    decorator.UseCase[*uc_confirmar.ComandoConfirmarVerificacion, *uc_confirmar.RespuestaConfirmarVerificacion]
+	ReenviarVerificacionCasoDeUso     decorator.UseCase[*uc_reenviar.ComandoReenviarVerificacion, *uc_reenviar.RespuestaSolicitarVerificacion]
+	SolicitarRecuperacionCasoDeUso    decorator.UseCase[*uc_solicitar_recuperacion.ComandoSolicitarRecuperacion, *uc_solicitar_recuperacion.RespuestaSolicitarRecuperacion]
+	ValidarTokenRecuperacionCasoDeUso decorator.UseCase[*uc_validar_recuperacion.ComandoValidarTokenRecuperacion, *uc_validar_recuperacion.RespuestaValidarTokenRecuperacion]
+	ConfirmarRecuperacionCasoDeUso    decorator.UseCase[*uc_confirmar_recuperacion.ComandoConfirmarRecuperacion, *uc_confirmar_recuperacion.RespuestaConfirmarRecuperacion]
 
 	// Casos de uso — invitaciones
-	CrearInvitacionCasoDeUso   *uc_crearInvitacion.CrearInvitacionCasoDeUso
-	AceptarInvitacionCasoDeUso *uc_aceptarInvitacion.AceptarInvitacionCasoDeUso
+	CrearInvitacionCasoDeUso   decorator.UseCase[*uc_crearInvitacion.ComandoCrearInvitacion, *uc_crearInvitacion.RespuestaCrearInvitacion]
+	AceptarInvitacionCasoDeUso decorator.UseCase[*uc_aceptarInvitacion.ComandoAceptarInvitacion, *uc_aceptarInvitacion.RespuestaAceptarInvitacion]
+
+	// Casos de uso — tenants
+	ListarMisTenantsCasoDeUso     decorator.UseCase[string, *uc_listarmistenants.RespuestaListarMisTenants]
+	ObtenerTenantPorIDCasoDeUso   decorator.UseCase[string, *uc_obtenertenantporid.RespuestaObtenerTenantPorID]
+	ObtenerTenantPorSlugCasoDeUso decorator.UseCase[string, *uc_obtenertenantporslug.RespuestaObtenerTenantPorSlug]
 
 	// Telemetry
 	TelemetryWriter  buffer.BufferWriter
@@ -245,14 +246,6 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		Async:    false,
 	})
 
-	// Servicios de aplicación antiguos
-	loginSvc := login.NuevoServicioLogin(sesionUoW, bloqueoIPSvc, rateLimitSvc)
-	refreshSvc := refresh.NuevoServicioRefresh(sesionUoW, refresh.ConfigRefresh{
-		MaxRefrescos:    cfg.SesionMaxRefrescos,
-		TimeoutAbsoluto: cfg.SesionTimeoutAbsoluto,
-	})
-	logoutSvc := logout.NuevoServicioLogout(sesionUoW)
-	registroSvc := registro.NuevoServicioRegistro(usuarioUoW)
 	registroUseCase := uc_register.NewRegistrarUsuarioCasoDeUso(
 		usuarioRepo,
 		credencialesRepo,
@@ -321,20 +314,121 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 
 	cerrarSesionUC := uc_sesiones_logout.NewCerrarSesionCasoDeUso(sesionUoW)
 
-	// Decoradores de Telemetría
-	var decoratedLogin decorator.LoginUseCase = iniciarSesionUC
-	var decoratedRefresh decorator.RefreshUseCase = renovarSesionUC
-	var decoratedLogout decorator.LogoutUseCase = cerrarSesionUC
-	var decoratedRegister decorator.RegistroUseCase = registroUseCase
+	// ─────────────────────────────────────────────────────────────────────────
+	// Construcción del Registry
+	// ─────────────────────────────────────────────────────────────────────────
 
-	if cfg.TelemetryEnabled {
-		decoratedLogin = decorator.NewDecoratorLogin(iniciarSesionUC, telemetryWriter)
-		decoratedRefresh = decorator.NewDecoratorRefresh(renovarSesionUC, telemetryWriter)
-		decoratedLogout = decorator.NewDecoratorLogout(cerrarSesionUC, telemetryWriter)
-		decoratedRegister = decorator.NewDecoratorRegistro(registroUseCase, telemetryWriter)
+	// Casos de uso — usuarios admin
+	crearUsuarioUC := uc_createuser.NewCrearUsuarioCasoDeUso(usuarioRepo, credencialesRepo, encriptacion, authSvc, generadorID)
+	listarUsuariosUC := uc_listusers.NewListarUsuariosCasoDeUso(usuarioRepo, authSvc)
+	modificarUsuarioUC := uc_updateuser.NewModificarUsuarioCasoDeUso(usuarioRepo, authSvc)
+	darDeBajaUsuarioUC := uc_deleteuser.NewDarDeBajaUsuarioCasoDeUso(usuarioRepo, authSvc)
+	expulsarUsuarioUC := uc_expeluser.NewExpulsarUsuarioCasoDeUso(usuarioRepo, sesionRepo, authSvc)
+
+	// Casos de uso — autogestión
+	verMiPerfilUC := uc_viewmyprofile.NewVerMiPerfilCasoDeUso(usuarioRepo)
+	modificarMiPerfilUC := uc_updatemyprofile.NewModificarMiPerfilCasoDeUso(usuarioRepo)
+	cambiarMiContrasenaUC := uc_changemypassword.NewCambiarMiContrasenaCasoDeUso(credencialesRepo, encriptacion)
+
+	// Casos de uso — seguridad
+	consultarCredencialesUC := uc_viewcredentials.NewConsultarCredencialesCasoDeUso(credencialesRepo, authSvc)
+	resetearContrasenaUC := uc_resetpassword.NewResetearContrasenaCasoDeUso(credencialesRepo, sesionRepo, encriptacion, authSvc)
+	desbloquearCuentaUC := uc_unlockaccount.NewDesbloquearCuentaCasoDeUso(credencialesRepo, authSvc)
+	listarIPsBloqueadasUC := uc_listblockedips.NewListarIPsBloqueadasCasoDeUso(intentoIPRepo, authSvc)
+	desbloquearIPUC := uc_unblockip.NewDesbloquearIPCasoDeUso(intentoIPRepo, authSvc)
+
+	// Casos de uso — sesiones
+	listarSesionesUC := uc_listsessions.NewListarSesionesCasoDeUso(sesionRepo, authSvc)
+	forzarCierreSesionUC := uc_terminatesession.NewForzarCierreSesionCasoDeUso(sesionRepo, authSvc)
+
+	// Casos de uso — switch tenant
+	cambiarTenantUC := uc_sesiones_switchtenant.NewCambiarTenantCasoDeUso(
+		membresiaRepo,
+		usuarioTenantRolRepo,
+		sesionUoW,
+	)
+
+	// Casos de uso — roles y permisos (solo los que tienen Ejecutar de 1 método)
+	listarRolesUC := listroles.NewListarRolesCasoDeUso(rolRepo, permisoRepo, authSvc)
+	crearRolUC := createrole.NewCrearRolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc)
+	modificarRolUC := updaterole.NewModificarRolCasoDeUso(rolRepo, authSvc)
+	eliminarRolUC := deleterole.NewEliminarRolCasoDeUso(rolRepo, authSvc)
+	asignarRolUC := assignrole.NewAsignarRolCasoDeUso(usuarioRolRepo, usuarioTenantRolRepo, rolRepo, authSvc)
+	revocarRolUC := revokerole.NewRevocarRolCasoDeUso(usuarioRolRepo, usuarioTenantRolRepo, authSvc)
+	asignarPermisoARolUC := assignpermissiontorole.NewAsignarPermisoARolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc)
+	revocarPermisoDeRolUC := revokepermissionfromrole.NewRevocarPermisoDeRolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc)
+
+	// Casos de uso — invitaciones
+	crearInvitacionUC := uc_crearInvitacion.NewCrearInvitacionCasoDeUso(
+		invitacionRepo,
+		tenantRepo,
+		rolRepo,
+		emailSvc,
+		generadorID,
+		cfg.FrontendURL,
+		cfg.InvitacionTokenExpiracion,
+	)
+	aceptarInvitacionUC := uc_aceptarInvitacion.NewAceptarInvitacionCasoDeUso(
+		invitacionRepo,
+		membresiaRepo,
+		usuarioTenantRolRepo,
+	)
+
+	// Casos de uso — tenants
+	listarMisTenantsUC := uc_listarmistenants.NewListarMisTenantsCasoDeUso(tenantRepo)
+	obtenerTenantPorIDUC := uc_obtenertenantporid.NewObtenerTenantPorIDCasoDeUso(tenantRepo)
+	obtenerTenantPorSlugUC := uc_obtenertenantporslug.NewObtenerTenantPorSlugCasoDeUso(tenantRepo)
+
+	// Casos de uso — recuperación de contraseña
+	recuperacionConfig := uc_solicitar_recuperacion.ConfigRecuperacion{
+		TokenExpiracion:     cfg.RecuperacionTokenExpiracion,
+		RateLimitIPMax:      cfg.RecuperacionRateLimitIPMax,
+		RateLimitUsuarioMax: cfg.RecuperacionRateLimitUsuarioMax,
+		RateLimitVentana:    cfg.RecuperacionRateLimitVentana,
+		FrontendURL:         cfg.FrontendURL,
 	}
+	solicitarRecuperacionUC := uc_solicitar_recuperacion.NewSolicitarRecuperacionCasoDeUso(
+		tokenRecuperacionRepo, usuarioRecuperacionRepo, emailSvc, generadorID, recuperacionConfig,
+	)
+	validarTokenRecuperacionUC := uc_validar_recuperacion.NewValidarTokenRecuperacionCasoDeUso(tokenRecuperacionRepo)
+	confirmarRecuperacionUC := uc_confirmar_recuperacion.NewConfirmarRecuperacionCasoDeUso(
+		tokenRecuperacionRepo, usuarioRecuperacionRepo, sesionRepo, encriptacion, validarTokenRecuperacionUC,
+	)
 
-	return &Registry{
+	// Casos de uso — verificación de correo
+	solicitarVerificacionUC := uc_solicitar.NewSolicitarVerificacionCasoDeUso(
+		verificacionRepo, emailSvc, generadorID,
+		uc_solicitar.ConfigVerificacion{
+			FrontendURL:     cfg.FrontendURL,
+			TokenExpiracion: cfg.VerificacionTokenExpiracion,
+			MaxReenvios:     cfg.VerificacionMaxReenvios,
+			VentanaReenvios: cfg.VerificacionVentanaReenvios,
+		},
+	)
+	confirmarVerificacionUC := uc_confirmar.NewConfirmarVerificacionCasoDeUso(
+		verificacionRepo,
+		uc_confirmar.ConfigVerificacion{
+			FrontendURL:     cfg.FrontendURL,
+			TokenExpiracion: cfg.VerificacionTokenExpiracion,
+			MaxReenvios:     cfg.VerificacionMaxReenvios,
+			VentanaReenvios: cfg.VerificacionVentanaReenvios,
+		},
+	)
+	reenviarVerificacionUC := uc_reenviar.NewReenviarVerificacionCasoDeUso(
+		verificacionRepo, emailSvc, generadorID, solicitarVerificacionUC,
+		uc_reenviar.ConfigVerificacion{
+			FrontendURL:     cfg.FrontendURL,
+			TokenExpiracion: cfg.VerificacionTokenExpiracion,
+			MaxReenvios:     cfg.VerificacionMaxReenvios,
+			VentanaReenvios: cfg.VerificacionVentanaReenvios,
+		},
+	)
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// Ensamblado del Registry
+	// ─────────────────────────────────────────────────────────────────────────
+
+	reg := &Registry{
 		usuarioRepository:      usuarioRepo,
 		credencialesRepository: credencialesRepo,
 		intentoIPRepository:    intentoIPRepo,
@@ -356,105 +450,146 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		usuarioUnitOfWork: usuarioUoW,
 		sesionUnitOfWork:  sesionUoW,
 
-		ServicioLogin:     loginSvc,
-		ServicioRefresh:   refreshSvc,
-		ServicioLogout:    logoutSvc,
-		servicioRegistro:             registroSvc,
-		RegistrarUsuarioCasoDeUso:    decoratedRegister,
+		RegistrarUsuarioCasoDeUso:    registroUseCase,
 		ServicioBloqueoIP: bloqueoIPSvc,
 		ServicioRateLimit: rateLimitSvc,
 
 		// Casos de uso — auth
-		IniciarSesionCasoDeUso: decoratedLogin,
-		CerrarSesionCasoDeUso:  decoratedLogout,
-		RenovarSesionCasoDeUso: decoratedRefresh,
+		IniciarSesionCasoDeUso: iniciarSesionUC,
+		CerrarSesionCasoDeUso:  cerrarSesionUC,
+		RenovarSesionCasoDeUso: renovarSesionUC,
 
 		// Casos de uso — usuarios admin
-		CrearUsuarioCasoDeUso:     uc_createuser.NewCrearUsuarioCasoDeUso(usuarioRepo, credencialesRepo, encriptacion, authSvc, generadorID),
-		ListarUsuariosCasoDeUso:   uc_listusers.NewListarUsuariosCasoDeUso(usuarioRepo, authSvc),
-		ModificarUsuarioCasoDeUso: uc_updateuser.NewModificarUsuarioCasoDeUso(usuarioRepo, authSvc),
-		DarDeBajaUsuarioCasoDeUso: uc_deleteuser.NewDarDeBajaUsuarioCasoDeUso(usuarioRepo, authSvc),
-		ExpulsarUsuarioCasoDeUso:  uc_expeluser.NewExpulsarUsuarioCasoDeUso(usuarioRepo, sesionRepo, authSvc),
+		CrearUsuarioCasoDeUso:     crearUsuarioUC,
+		ListarUsuariosCasoDeUso:   listarUsuariosUC,
+		ModificarUsuarioCasoDeUso: modificarUsuarioUC,
+		DarDeBajaUsuarioCasoDeUso: darDeBajaUsuarioUC,
+		ExpulsarUsuarioCasoDeUso:  expulsarUsuarioUC,
 
 		// Casos de uso — autogestión
-		VerMiPerfilCasoDeUso:         uc_viewmyprofile.NewVerMiPerfilCasoDeUso(usuarioRepo),
-		ModificarMiPerfilCasoDeUso:   uc_updatemyprofile.NewModificarMiPerfilCasoDeUso(usuarioRepo),
-		CambiarMiContrasenaCasoDeUso: uc_changemypassword.NewCambiarMiContrasenaCasoDeUso(credencialesRepo, encriptacion),
+		VerMiPerfilCasoDeUso:         verMiPerfilUC,
+		ModificarMiPerfilCasoDeUso:   modificarMiPerfilUC,
+		CambiarMiContrasenaCasoDeUso: cambiarMiContrasenaUC,
 
 		// Casos de uso — seguridad
-		ConsultarCredencialesCasoDeUso: uc_viewcredentials.NewConsultarCredencialesCasoDeUso(credencialesRepo, authSvc),
-		ResetearContrasenaCasoDeUso:    uc_resetpassword.NewResetearContrasenaCasoDeUso(credencialesRepo, sesionRepo, encriptacion, authSvc),
-		DesbloquearCuentaCasoDeUso:     uc_unlockaccount.NewDesbloquearCuentaCasoDeUso(credencialesRepo, authSvc),
-		ListarIPsBloqueadasCasoDeUso:   uc_listblockedips.NewListarIPsBloqueadasCasoDeUso(intentoIPRepo, authSvc),
-		DesbloquearIPCasoDeUso:         uc_unblockip.NewDesbloquearIPCasoDeUso(intentoIPRepo, authSvc),
+		ConsultarCredencialesCasoDeUso: consultarCredencialesUC,
+		ResetearContrasenaCasoDeUso:    resetearContrasenaUC,
+		DesbloquearCuentaCasoDeUso:     desbloquearCuentaUC,
+		ListarIPsBloqueadasCasoDeUso:   listarIPsBloqueadasUC,
+		DesbloquearIPCasoDeUso:         desbloquearIPUC,
 
 		// Casos de uso — sesiones
-		ListarSesionesCasoDeUso:     uc_listsessions.NewListarSesionesCasoDeUso(sesionRepo, authSvc),
-		ForzarCierreSesionCasoDeUso: uc_terminatesession.NewForzarCierreSesionCasoDeUso(sesionRepo, authSvc),
+		ListarSesionesCasoDeUso:     listarSesionesUC,
+		ForzarCierreSesionCasoDeUso: forzarCierreSesionUC,
 
 		// Casos de uso — switch tenant
-		CambiarTenantCasoDeUso: uc_sesiones_switchtenant.NewCambiarTenantCasoDeUso(
-			membresiaRepo,
-			usuarioTenantRolRepo,
-			sesionUoW,
-		),
+		CambiarTenantCasoDeUso: cambiarTenantUC,
 
-		// Casos de uso — tenants
-		ConfigurarTenantCasoDeUso: uc_updatetenant.NewConfigurarTenantCasoDeUso(tenantRepo, authSvc),
+		// Casos de uso — verificación
+		SolicitarVerificacionCasoDeUso: solicitarVerificacionUC,
+		ConfirmarVerificacionCasoDeUso: confirmarVerificacionUC,
+		ReenviarVerificacionCasoDeUso:  reenviarVerificacionUC,
 
-		// Casos de uso — verificación y recuperación
-		VerificarCorreoCasoDeUso: uc_verifyemail.NewVerificarCorreoCasoDeUso(
-			verificacionRepo, emailSvc, generadorID,
-			uc_verifyemail.ConfigVerificacion{
-					FrontendURL:     cfg.FrontendURL,
-				TokenExpiracion: cfg.VerificacionTokenExpiracion,
-				MaxReenvios:     cfg.VerificacionMaxReenvios,
-				VentanaReenvios: cfg.VerificacionVentanaReenvios,
-			},
-		),
-		RecuperarContrasenaCasoDeUso: uc_forgotpassword.NewRecuperarContrasenaCasoDeUso(
-			tokenRecuperacionRepo, usuarioRecuperacionRepo, sesionRepo, credencialesRepo, encriptacion, emailSvc, generadorID,
-			uc_forgotpassword.ConfigRecuperacion{
-				TokenExpiracion:     cfg.RecuperacionTokenExpiracion,
-				RateLimitIPMax:      cfg.RecuperacionRateLimitIPMax,
-				RateLimitUsuarioMax: cfg.RecuperacionRateLimitUsuarioMax,
-				RateLimitVentana:    cfg.RecuperacionRateLimitVentana,
-				FrontendURL:         cfg.FrontendURL,
-			},
-		),
+		// Casos de uso — recuperación
+		SolicitarRecuperacionCasoDeUso:    solicitarRecuperacionUC,
+		ValidarTokenRecuperacionCasoDeUso: validarTokenRecuperacionUC,
+		ConfirmarRecuperacionCasoDeUso:    confirmarRecuperacionUC,
 
 		// Casos de uso — roles y permisos
-		ListarRolesCasoDeUso:         listroles.NewListarRolesCasoDeUso(rolRepo, permisoRepo, authSvc),
-			ListarPermisosCasoDeUso:      uc_listpermisos.NewListarPermisosCasoDeUso(permisoRepo, authSvc),
+		ListarRolesCasoDeUso:         listarRolesUC,
+		ListarPermisosCasoDeUso:      uc_listpermisos.NewListarPermisosCasoDeUso(permisoRepo, authSvc),
 		ListarMisPermisosCasoDeUso:   listarMisPermisosCasoDeUso,
-		CrearRolCasoDeUso:            createrole.NewCrearRolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc),
-		ModificarRolCasoDeUso:        updaterole.NewModificarRolCasoDeUso(rolRepo, authSvc),
-		EliminarRolCasoDeUso:         deleterole.NewEliminarRolCasoDeUso(rolRepo, authSvc),
-		AsignarRolCasoDeUso:          assignrole.NewAsignarRolCasoDeUso(usuarioRolRepo, usuarioTenantRolRepo, rolRepo, authSvc),
-		RevocarRolCasoDeUso:          revokerole.NewRevocarRolCasoDeUso(usuarioRolRepo, usuarioTenantRolRepo, authSvc),
-		AsignarPermisoARolCasoDeUso:  assignpermissiontorole.NewAsignarPermisoARolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc),
-		RevocarPermisoDeRolCasoDeUso: revokepermissionfromrole.NewRevocarPermisoDeRolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc),
+		CrearRolCasoDeUso:            crearRolUC,
+		ModificarRolCasoDeUso:        modificarRolUC,
+		EliminarRolCasoDeUso:         eliminarRolUC,
+		AsignarRolCasoDeUso:          asignarRolUC,
+		RevocarRolCasoDeUso:          revocarRolUC,
+		AsignarPermisoARolCasoDeUso:  asignarPermisoARolUC,
+		RevocarPermisoDeRolCasoDeUso: revocarPermisoDeRolUC,
 
-		CrearInvitacionCasoDeUso: uc_crearInvitacion.NewCrearInvitacionCasoDeUso(
-			invitacionRepo,
-			tenantRepo,
-			rolRepo,
-			emailSvc,
-			generadorID,
-			cfg.FrontendURL,
-			cfg.InvitacionTokenExpiracion,
-		),
-		AceptarInvitacionCasoDeUso: uc_aceptarInvitacion.NewAceptarInvitacionCasoDeUso(
-			invitacionRepo,
-			membresiaRepo,
-			usuarioTenantRolRepo,
-		),
+		// Casos de uso — invitaciones
+		CrearInvitacionCasoDeUso:   crearInvitacionUC,
+		AceptarInvitacionCasoDeUso: aceptarInvitacionUC,
+
+		// Casos de uso — tenants
+		ListarMisTenantsCasoDeUso:     listarMisTenantsUC,
+		ObtenerTenantPorIDCasoDeUso:   obtenerTenantPorIDUC,
+		ObtenerTenantPorSlugCasoDeUso: obtenerTenantPorSlugUC,
 
 		// Telemetry fields
 		TelemetryWriter:  telemetryWriter,
 		TelemetryEnabled: cfg.TelemetryEnabled,
 		telemetryCancel:  telemetryCancel,
 	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// Decoradores de Telemetría
+	// ─────────────────────────────────────────────────────────────────────────
+
+	if cfg.TelemetryEnabled {
+		// Auth (login tiene UseCase, logout tiene custom 2-métodos)
+		reg.IniciarSesionCasoDeUso = decorator.Wrap("Login", telemetryWriter, iniciarSesionUC)
+		reg.RenovarSesionCasoDeUso = decorator.Wrap("Refresh", telemetryWriter, renovarSesionUC)
+		reg.CerrarSesionCasoDeUso = decorator.NewDecoratorLogout(cerrarSesionUC, telemetryWriter)
+		reg.RegistrarUsuarioCasoDeUso = decorator.Wrap("Registro", telemetryWriter, registroUseCase)
+
+		// Usuarios admin
+		reg.CrearUsuarioCasoDeUso = decorator.Wrap("CrearUsuario", telemetryWriter, crearUsuarioUC)
+		reg.ListarUsuariosCasoDeUso = decorator.Wrap("ListarUsuarios", telemetryWriter, listarUsuariosUC)
+		reg.ModificarUsuarioCasoDeUso = decorator.Wrap("ModificarUsuario", telemetryWriter, modificarUsuarioUC)
+		reg.DarDeBajaUsuarioCasoDeUso = decorator.Wrap("DarDeBajaUsuario", telemetryWriter, darDeBajaUsuarioUC)
+		reg.ExpulsarUsuarioCasoDeUso = decorator.Wrap("ExpulsarUsuario", telemetryWriter, expulsarUsuarioUC)
+
+		// Autogestión
+		reg.VerMiPerfilCasoDeUso = decorator.Wrap("VerMiPerfil", telemetryWriter, verMiPerfilUC)
+		reg.ModificarMiPerfilCasoDeUso = decorator.Wrap("ModificarMiPerfil", telemetryWriter, modificarMiPerfilUC)
+		reg.CambiarMiContrasenaCasoDeUso = decorator.Wrap("CambiarMiContrasena", telemetryWriter, cambiarMiContrasenaUC)
+
+		// Seguridad
+		reg.ConsultarCredencialesCasoDeUso = decorator.Wrap("ConsultarCredenciales", telemetryWriter, consultarCredencialesUC)
+		reg.ResetearContrasenaCasoDeUso = decorator.Wrap("ResetearContrasena", telemetryWriter, resetearContrasenaUC)
+		reg.DesbloquearCuentaCasoDeUso = decorator.Wrap("DesbloquearCuenta", telemetryWriter, desbloquearCuentaUC)
+		reg.ListarIPsBloqueadasCasoDeUso = decorator.Wrap("ListarIPsBloqueadas", telemetryWriter, listarIPsBloqueadasUC)
+		reg.DesbloquearIPCasoDeUso = decorator.Wrap("DesbloquearIP", telemetryWriter, desbloquearIPUC)
+
+		// Sesiones
+		reg.ListarSesionesCasoDeUso = decorator.Wrap("ListarSesiones", telemetryWriter, listarSesionesUC)
+		reg.ForzarCierreSesionCasoDeUso = decorator.Wrap("ForzarCierreSesion", telemetryWriter, forzarCierreSesionUC)
+
+		// Switch tenant
+		reg.CambiarTenantCasoDeUso = decorator.Wrap("CambiarTenant", telemetryWriter, cambiarTenantUC)
+
+		// Roles
+		reg.ListarRolesCasoDeUso = decorator.Wrap("ListarRoles", telemetryWriter, listarRolesUC)
+		reg.CrearRolCasoDeUso = decorator.Wrap("CrearRol", telemetryWriter, crearRolUC)
+		reg.ModificarRolCasoDeUso = decorator.Wrap("ModificarRol", telemetryWriter, modificarRolUC)
+		reg.EliminarRolCasoDeUso = decorator.Wrap("EliminarRol", telemetryWriter, eliminarRolUC)
+		reg.AsignarRolCasoDeUso = decorator.Wrap("AsignarRol", telemetryWriter, asignarRolUC)
+		reg.RevocarRolCasoDeUso = decorator.Wrap("RevocarRol", telemetryWriter, revocarRolUC)
+		reg.AsignarPermisoARolCasoDeUso = decorator.Wrap("AsignarPermisoARol", telemetryWriter, asignarPermisoARolUC)
+		reg.RevocarPermisoDeRolCasoDeUso = decorator.Wrap("RevocarPermisoDeRol", telemetryWriter, revocarPermisoDeRolUC)
+
+		// Verificación
+		reg.SolicitarVerificacionCasoDeUso = decorator.Wrap("SolicitarVerificacion", telemetryWriter, solicitarVerificacionUC)
+		reg.ConfirmarVerificacionCasoDeUso = decorator.Wrap("ConfirmarVerificacion", telemetryWriter, confirmarVerificacionUC)
+		reg.ReenviarVerificacionCasoDeUso = decorator.Wrap("ReenviarVerificacion", telemetryWriter, reenviarVerificacionUC)
+
+		// Recuperación
+		reg.SolicitarRecuperacionCasoDeUso = decorator.Wrap("SolicitarRecuperacion", telemetryWriter, solicitarRecuperacionUC)
+		reg.ValidarTokenRecuperacionCasoDeUso = decorator.Wrap("ValidarTokenRecuperacion", telemetryWriter, validarTokenRecuperacionUC)
+		reg.ConfirmarRecuperacionCasoDeUso = decorator.Wrap("ConfirmarRecuperacion", telemetryWriter, confirmarRecuperacionUC)
+
+		// Invitaciones
+		reg.CrearInvitacionCasoDeUso = decorator.Wrap("CrearInvitacion", telemetryWriter, crearInvitacionUC)
+		reg.AceptarInvitacionCasoDeUso = decorator.Wrap("AceptarInvitacion", telemetryWriter, aceptarInvitacionUC)
+
+		// Tenants
+		reg.ListarMisTenantsCasoDeUso = decorator.Wrap("ListarMisTenants", telemetryWriter, listarMisTenantsUC)
+		reg.ObtenerTenantPorIDCasoDeUso = decorator.Wrap("ObtenerTenantPorID", telemetryWriter, obtenerTenantPorIDUC)
+		reg.ObtenerTenantPorSlugCasoDeUso = decorator.Wrap("ObtenerTenantPorSlug", telemetryWriter, obtenerTenantPorSlugUC)
+	}
+
+	return reg
 }
 
 // Getters
@@ -467,8 +602,7 @@ func (r *Registry) EncriptacionServicio() seguridad_domain.EncriptacionServicio 
 }
 func (r *Registry) UsuarioUnitOfWork() usuario_domain.UnitOfWork    { return r.usuarioUnitOfWork }
 func (r *Registry) TokenServicio() sesiones_domain.TokenServicio    { return r.tokenServicio }
-func (r *Registry) GetServicioRegistro() *registro.ServicioRegistro { return r.servicioRegistro }
-func (r *Registry) GetRegistrarUsuarioCasoDeUso() decorator.RegistroUseCase {
+func (r *Registry) GetRegistrarUsuarioCasoDeUso() decorator.UseCase[*uc_register.ComandoRegistrarUsuario, *uc_register.RespuestaRegistrarUsuario] {
 	return r.RegistrarUsuarioCasoDeUso
 }
 func (r *Registry) TenantRepository() tenant_domain.TenantRepositorio { return r.tenantRepository }

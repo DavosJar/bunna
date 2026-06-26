@@ -3,7 +3,10 @@ package facades
 import (
 	"context"
 
-	uc_verifyemail "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/verifyemail"
+	decorator "github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/decorator"
+	uc_confirmar "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/confirmarverificacion"
+	uc_reenviar "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/reenviarverificacion"
+	uc_solicitar "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/solicitarverificacion"
 )
 
 type ComandoSolicitarVerificacion struct {
@@ -33,15 +36,25 @@ type VerificacionFacade interface {
 }
 
 type verificacionFacadeImpl struct {
-	verificarCorreo *uc_verifyemail.VerificarCorreoCasoDeUso
+	solicitarUseCase decorator.UseCase[*uc_solicitar.ComandoSolicitarVerificacion, *uc_solicitar.RespuestaSolicitarVerificacion]
+	confirmarUseCase decorator.UseCase[*uc_confirmar.ComandoConfirmarVerificacion, *uc_confirmar.RespuestaConfirmarVerificacion]
+	reenviarUseCase  decorator.UseCase[*uc_reenviar.ComandoReenviarVerificacion, *uc_reenviar.RespuestaSolicitarVerificacion]
 }
 
-func NewVerificacionFacade(verificarCorreo *uc_verifyemail.VerificarCorreoCasoDeUso) VerificacionFacade {
-	return &verificacionFacadeImpl{verificarCorreo: verificarCorreo}
+func NewVerificacionFacade(
+	solicitarUseCase decorator.UseCase[*uc_solicitar.ComandoSolicitarVerificacion, *uc_solicitar.RespuestaSolicitarVerificacion],
+	confirmarUseCase decorator.UseCase[*uc_confirmar.ComandoConfirmarVerificacion, *uc_confirmar.RespuestaConfirmarVerificacion],
+	reenviarUseCase decorator.UseCase[*uc_reenviar.ComandoReenviarVerificacion, *uc_reenviar.RespuestaSolicitarVerificacion],
+) VerificacionFacade {
+	return &verificacionFacadeImpl{
+		solicitarUseCase: solicitarUseCase,
+		confirmarUseCase: confirmarUseCase,
+		reenviarUseCase:  reenviarUseCase,
+	}
 }
 
 func (f *verificacionFacadeImpl) SolicitarVerificacion(ctx context.Context, cmd ComandoSolicitarVerificacion) (*RespuestaSolicitarVerificacion, error) {
-	resp, err := f.verificarCorreo.Solicitar(ctx, uc_verifyemail.ComandoSolicitarVerificacion{
+	resp, err := f.solicitarUseCase.Ejecutar(ctx, &uc_solicitar.ComandoSolicitarVerificacion{
 		UsuarioID: cmd.UsuarioID,
 	})
 	if err != nil {
@@ -51,7 +64,7 @@ func (f *verificacionFacadeImpl) SolicitarVerificacion(ctx context.Context, cmd 
 }
 
 func (f *verificacionFacadeImpl) ConfirmarVerificacion(ctx context.Context, cmd ComandoConfirmarVerificacion) (*RespuestaConfirmarVerificacion, error) {
-	resp, err := f.verificarCorreo.Confirmar(ctx, uc_verifyemail.ComandoConfirmarVerificacion{
+	resp, err := f.confirmarUseCase.Ejecutar(ctx, &uc_confirmar.ComandoConfirmarVerificacion{
 		Token: cmd.Token,
 	})
 	if err != nil {
@@ -61,7 +74,7 @@ func (f *verificacionFacadeImpl) ConfirmarVerificacion(ctx context.Context, cmd 
 }
 
 func (f *verificacionFacadeImpl) ReenviarVerificacion(ctx context.Context, cmd ComandoReenviarVerificacion) (*RespuestaSolicitarVerificacion, error) {
-	resp, err := f.verificarCorreo.Reenviar(ctx, uc_verifyemail.ComandoReenviarVerificacion{
+	resp, err := f.reenviarUseCase.Ejecutar(ctx, &uc_reenviar.ComandoReenviarVerificacion{
 		UsuarioID: cmd.UsuarioID,
 	})
 	if err != nil {

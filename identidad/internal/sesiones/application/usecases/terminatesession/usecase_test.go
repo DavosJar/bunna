@@ -100,7 +100,7 @@ func TestForzarCierreSesionAuthError(t *testing.T) {
 func TestForzarCierreSesionNoEncontrada(t *testing.T) {
 	repo := &mockSesionRepoTerminate{
 		obtenerPorID: func(ctx context.Context, id string) (*sesiones.Sesion, error) {
-			return nil, errors.New("not found")
+			return nil, errors.New("no encontrado")
 		},
 	}
 	uc := terminatesession.NewForzarCierreSesionCasoDeUso(repo, &mockAuthSvcTerminate{ok: true})
@@ -119,7 +119,7 @@ func TestForzarCierreSesionActualizarError(t *testing.T) {
 			return session, nil
 		},
 		actualizar: func(ctx context.Context, s *sesiones.Sesion) (*sesiones.Sesion, error) {
-			return nil, errors.New("db error")
+			return nil, errors.New("error de BD")
 		},
 	}
 	uc := terminatesession.NewForzarCierreSesionCasoDeUso(repo, &mockAuthSvcTerminate{ok: true})

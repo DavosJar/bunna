@@ -17,7 +17,7 @@ import (
 	uc_updaterole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/updaterole"
 	rbac "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	rbac_postgres "github.com/davosjar/bunna/services/identidad/internal/rbac/infrastructure/persistence/postgres"
-	uc_forgotpassword "github.com/davosjar/bunna/services/identidad/internal/recuperacion/application/usecases/forgotpassword"
+	uc_solicitar_recuperacion "github.com/davosjar/bunna/services/identidad/internal/recuperacion/application/usecases/solicitarrecuperacion"
 	"github.com/davosjar/bunna/services/identidad/internal/registry"
 	uc_changemypassword "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/usecases/changemypassword"
 	uc_listblockedips "github.com/davosjar/bunna/services/identidad/internal/seguridad/application/usecases/listblockedips"
@@ -34,7 +34,6 @@ import (
 	sesiones_postgres "github.com/davosjar/bunna/services/identidad/internal/sesiones/infrastructure/persistence/postgres"
 	shared_domain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	shared_idgenerator "github.com/davosjar/bunna/services/identidad/internal/shared/infrastructure/idgenerator"
-	uc_updatetenant "github.com/davosjar/bunna/services/identidad/internal/tenants/application/usecases/updatetenant"
 	tenant_domain "github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
 	tenant_postgres "github.com/davosjar/bunna/services/identidad/internal/tenants/infrastructure/persistence/postgres"
 	uc_createuser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/createuser"
@@ -46,7 +45,7 @@ import (
 	uc_updateuser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/updateuser"
 	uc_viewmyprofile "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/viewmyprofile"
 	usuarios_postgres "github.com/davosjar/bunna/services/identidad/internal/usuarios/infrastructure/persistence/postgres"
-	uc_verifyemail "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/verifyemail"
+	uc_solicitar "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/solicitarverificacion"
 )
 
 const (
@@ -159,9 +158,6 @@ func main() {
 	fmt.Printf("\n%s══════════════════════════════════════════════════════════════%s\n", amar, reset)
 	fmt.Printf("%s  1. REGISTRO DE USUARIOS (#25)%s\n", amar, reset)
 	fmt.Printf("%s══════════════════════════════════════════════════════════════%s\n", amar, reset)
-
-	ucRegister := reg.GetServicioRegistro()
-	_ = ucRegister
 
 	subtitulo("1.1 Registros exitosos")
 
@@ -729,17 +725,6 @@ func main() {
 	tenantRepo.Crear(ctx, tenant1)
 	tenantRepo.Crear(ctx, tenant2)
 
-	subtitulo("9.1 Configurar tenant (#19)")
-	_, err = reg.ConfigurarTenantCasoDeUso.Ejecutar(ctx, &uc_updatetenant.ComandoConfigurarTenant{
-		EjecutorID: sysAdminID, TenantID: tenantID1,
-		Nombre: "Tenant Alpha Modificado", Slug: "tenant-alpha-mod",
-	})
-	if err != nil {
-		fail("Configurar tenant: %v", err)
-	} else {
-		ok("Tenant configurado exitosamente")
-	}
-
 	// ─────────────────────────────────────────────────────────────────────────
 	// 10. VERIFICACIÓN DE CORREO (#29)
 	// ─────────────────────────────────────────────────────────────────────────
@@ -748,7 +733,7 @@ func main() {
 	fmt.Printf("%s══════════════════════════════════════════════════════════════%s\n", amar, reset)
 
 	subtitulo("10.1 Solicitar verificación")
-	_, err = reg.VerificarCorreoCasoDeUso.Solicitar(ctx, uc_verifyemail.ComandoSolicitarVerificacion{
+	_, err = reg.SolicitarVerificacionCasoDeUso.Ejecutar(ctx, &uc_solicitar.ComandoSolicitarVerificacion{
 		UsuarioID: sysAdminID,
 	})
 	if err != nil {
@@ -765,7 +750,7 @@ func main() {
 	fmt.Printf("%s══════════════════════════════════════════════════════════════%s\n", amar, reset)
 
 	subtitulo("11.1 Solicitar recuperación")
-	_, err = reg.RecuperarContrasenaCasoDeUso.Solicitar(ctx, uc_forgotpassword.ComandoSolicitarRecuperacion{
+	_, err = reg.SolicitarRecuperacionCasoDeUso.Ejecutar(ctx, &uc_solicitar_recuperacion.ComandoSolicitarRecuperacion{
 		Email: "ana.lopez@example.com",
 	})
 	if err != nil {

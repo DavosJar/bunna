@@ -1,3 +1,6 @@
+// DEPRECATO: usar cmd/init_superuser. Este script se mantiene solo por
+// compatibilidad histórica.
+//
 // Script para crear un superusuario con cuenta totalmente activa y verificada.
 // Uso: go run ./cmd/seed
 package main

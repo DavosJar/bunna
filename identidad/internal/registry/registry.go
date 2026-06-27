@@ -4,20 +4,26 @@ import (
 	"context"
 	"time"
 
+	bootstrap_uc "github.com/davosjar/bunna/services/identidad/internal/bootstrap/application/usecase"
+	bootstrap_domain "github.com/davosjar/bunna/services/identidad/internal/bootstrap/domain"
+	bootstrap_postgres "github.com/davosjar/bunna/services/identidad/internal/bootstrap/infrastructure/persistence/postgres"
 	"github.com/davosjar/bunna/services/identidad/internal/config"
+	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/buffer"
+	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/decorator"
+	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/gormplugin"
 	uc_aceptarInvitacion "github.com/davosjar/bunna/services/identidad/internal/invitaciones/application/usecases/aceptarinvitacion"
 	uc_crearInvitacion "github.com/davosjar/bunna/services/identidad/internal/invitaciones/application/usecases/crearinvitacion"
 	invitaciones_postgres "github.com/davosjar/bunna/services/identidad/internal/invitaciones/infrastructure/persistence/postgres"
 	notificaciones "github.com/davosjar/bunna/services/identidad/internal/notificaciones/domain"
 	notificaciones_email "github.com/davosjar/bunna/services/identidad/internal/notificaciones/infrastructure/email"
-	checkpermission "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/checkpermission"
-	uc_listarmispermisos "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listarmispermisos"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignpermissiontorole"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignrole"
+	checkpermission "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/checkpermission"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/createrole"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/deleterole"
-	listroles "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listroles"
+	uc_listarmispermisos "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listarmispermisos"
 	uc_listpermisos "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listpermisos"
+	listroles "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listroles"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/revokepermissionfromrole"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/revokerole"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/updaterole"
@@ -53,11 +59,11 @@ import (
 	uc_obtenertenantporslug "github.com/davosjar/bunna/services/identidad/internal/tenants/application/usecases/uc_obtenertenantporslug"
 	tenant_domain "github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
 	tenant_postgres "github.com/davosjar/bunna/services/identidad/internal/tenants/infrastructure/persistence/postgres"
-	uc_register "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/register"
 	uc_createuser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/createuser"
 	uc_deleteuser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/deleteuser"
 	uc_expeluser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/expeluser"
 	uc_listusers "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/listusers"
+	uc_register "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/register"
 	uc_updatemyprofile "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/updatemyprofile"
 	uc_updateuser "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/updateuser"
 	uc_viewmyprofile "github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/viewmyprofile"
@@ -68,9 +74,6 @@ import (
 	uc_solicitar "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/solicitarverificacion"
 	verificacion_domain "github.com/davosjar/bunna/services/identidad/internal/verificacion/domain"
 	verificacion_postgres "github.com/davosjar/bunna/services/identidad/internal/verificacion/infrastructure/persistence/postgres"
-	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/buffer"
-	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/decorator"
-	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/gormplugin"
 	"strings"
 
 	"gorm.io/gorm"
@@ -98,20 +101,24 @@ type Registry struct {
 	emailServicio        notificaciones.EmailServicio
 
 	// Unit of Work
-	usuarioUnitOfWork usuario_domain.UnitOfWork
-	sesionUnitOfWork  sesiones_domain.UnitOfWork
+	usuarioUnitOfWork   usuario_domain.UnitOfWork
+	sesionUnitOfWork    sesiones_domain.UnitOfWork
+	bootstrapUnitOfWork bootstrap_domain.UnitOfWork
 
-	RegistrarUsuarioCasoDeUso    decorator.UseCase[*uc_register.ComandoRegistrarUsuario, *uc_register.RespuestaRegistrarUsuario]
+	// Caso de uso de bootstrap del primer sys_admin (no requiere permisos).
+	bootstrapUC *bootstrap_uc.CrearPrimerSysAdminCasoDeUso
+
+	RegistrarUsuarioCasoDeUso decorator.UseCase[*uc_register.ComandoRegistrarUsuario, *uc_register.RespuestaRegistrarUsuario]
 
 	// Servicios de aplicación — seguridad perimetral
 	ServicioBloqueoIP *bloqueo_ip.ServicioBloqueoIP
 	ServicioRateLimit *rate_limiter.ServicioRateLimit
 
 	// Casos de uso — auth
-	IniciarSesionCasoDeUso    decorator.UseCase[uc_sesiones_login.ComandoIniciarSesion, *uc_sesiones_login.RespuestaIniciarSesion]
-	CerrarSesionCasoDeUso     decorator.LogoutUseCase
-	RenovarSesionCasoDeUso    decorator.UseCase[uc_sesiones_refresh.ComandoRenovarSesion, *uc_sesiones_refresh.RespuestaRenovarSesion]
-	CambiarTenantCasoDeUso    decorator.UseCase[uc_sesiones_switchtenant.ComandoCambiarTenant, *uc_sesiones_switchtenant.RespuestaCambiarTenant]
+	IniciarSesionCasoDeUso decorator.UseCase[uc_sesiones_login.ComandoIniciarSesion, *uc_sesiones_login.RespuestaIniciarSesion]
+	CerrarSesionCasoDeUso  decorator.LogoutUseCase
+	RenovarSesionCasoDeUso decorator.UseCase[uc_sesiones_refresh.ComandoRenovarSesion, *uc_sesiones_refresh.RespuestaRenovarSesion]
+	CambiarTenantCasoDeUso decorator.UseCase[uc_sesiones_switchtenant.ComandoCambiarTenant, *uc_sesiones_switchtenant.RespuestaCambiarTenant]
 
 	// Casos de uso — usuarios admin
 	CrearUsuarioCasoDeUso     decorator.UseCase[*uc_createuser.ComandoCrearUsuario, *uc_createuser.RespuestaCrearUsuario]
@@ -216,6 +223,19 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		tokenSvc,
 		generadorID,
 	)
+
+	// UoW de bootstrap: replica el patrón correcto de SesionUnitOfWorkPostgres
+	// (reconstruye los 4 repos con txDB dentro de la tx). Ver ADR-001.
+	bootstrapUoW := bootstrap_postgres.NewBootstrapUnitOfWork(
+		db,
+		usuarioRepo,
+		credencialesRepo,
+		rolRepo,
+		usuarioRolRepo,
+		encriptacion,
+		generadorID,
+	)
+	bootstrapUC := bootstrap_uc.NewCrearPrimerSysAdminCasoDeUso(bootstrapUoW)
 
 	bloqueoIPSvc := bloqueo_ip.NuevoServicioBloqueoIP(
 		intentoIPRepo,
@@ -447,12 +467,14 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		authService:          authSvc,
 		emailServicio:        emailSvc,
 
-		usuarioUnitOfWork: usuarioUoW,
-		sesionUnitOfWork:  sesionUoW,
+		usuarioUnitOfWork:   usuarioUoW,
+		sesionUnitOfWork:    sesionUoW,
+		bootstrapUnitOfWork: bootstrapUoW,
+		bootstrapUC:         bootstrapUC,
 
-		RegistrarUsuarioCasoDeUso:    registroUseCase,
-		ServicioBloqueoIP: bloqueoIPSvc,
-		ServicioRateLimit: rateLimitSvc,
+		RegistrarUsuarioCasoDeUso: registroUseCase,
+		ServicioBloqueoIP:         bloqueoIPSvc,
+		ServicioRateLimit:         rateLimitSvc,
 
 		// Casos de uso — auth
 		IniciarSesionCasoDeUso: iniciarSesionUC,
@@ -600,8 +622,8 @@ func (r *Registry) CredencialesRepository() seguridad_domain.CredencialesReposit
 func (r *Registry) EncriptacionServicio() seguridad_domain.EncriptacionServicio {
 	return r.encriptacionServicio
 }
-func (r *Registry) UsuarioUnitOfWork() usuario_domain.UnitOfWork    { return r.usuarioUnitOfWork }
-func (r *Registry) TokenServicio() sesiones_domain.TokenServicio    { return r.tokenServicio }
+func (r *Registry) UsuarioUnitOfWork() usuario_domain.UnitOfWork { return r.usuarioUnitOfWork }
+func (r *Registry) TokenServicio() sesiones_domain.TokenServicio { return r.tokenServicio }
 func (r *Registry) GetRegistrarUsuarioCasoDeUso() decorator.UseCase[*uc_register.ComandoRegistrarUsuario, *uc_register.RespuestaRegistrarUsuario] {
 	return r.RegistrarUsuarioCasoDeUso
 }
@@ -610,9 +632,17 @@ func (r *Registry) MembresiaRepository() tenant_domain.MembresiaRepositorio {
 	return r.membresiaRepository
 }
 func (r *Registry) AuthService() *checkpermission.VerificarPermisoCasoDeUso { return r.authService }
-func (r *Registry) EmailServicio() notificaciones.EmailServicio     { return r.emailServicio }
+func (r *Registry) EmailServicio() notificaciones.EmailServicio             { return r.emailServicio }
 func (r *Registry) UsuarioTenantRolRepositorio() rbac.UsuarioTenantRolRepositorio {
 	return r.usuarioTenantRolRepo
+}
+
+// BootstrapSysAdminCasoDeUso retorna el caso de uso encargado de crear
+// el primer sys_admin del sistema. Es el único caso de uso que NO requiere
+// permisos (ver ADR-001). Pensado para ser invocado por CLI y scripts de
+// arranque; usar con cuidado desde código de aplicación regular.
+func (r *Registry) BootstrapSysAdminCasoDeUso() *bootstrap_uc.CrearPrimerSysAdminCasoDeUso {
+	return r.bootstrapUC
 }
 
 // Close libera los recursos del Registry, incluyendo la telemetría.

@@ -14,18 +14,31 @@ type mockUsuarioRolRepo struct {
 }
 
 func (m *mockUsuarioRolRepo) Crear(ctx context.Context, uid, rid string) error { return nil }
-func (m *mockUsuarioRolRepo) Eliminar(ctx context.Context, uid, rid string) error { return m.errEliminar }
-func (m *mockUsuarioRolRepo) ListarRolesPorUsuario(ctx context.Context, uid string) ([]*rbac.RolDB, error) { return nil, nil }
-func (m *mockUsuarioRolRepo) TieneRol(ctx context.Context, uid, rol string) (bool, error) { return false, nil }
+func (m *mockUsuarioRolRepo) Eliminar(ctx context.Context, uid, rid string) error {
+	return m.errEliminar
+}
+func (m *mockUsuarioRolRepo) ListarRolesPorUsuario(ctx context.Context, uid string) ([]*rbac.RolDB, error) {
+	return nil, nil
+}
+func (m *mockUsuarioRolRepo) TieneRol(ctx context.Context, uid, rol string) (bool, error) {
+	return false, nil
+}
+func (m *mockUsuarioRolRepo) ObtenerUsuarioConRol(ctx context.Context, rolNombre string) (string, bool, error) {
+	return "", false, nil
+}
 
 type mockUTRR struct {
 	errEliminar error
 }
 
-func (m *mockUTRR) Crear(ctx context.Context, uid, tid, rid string) error { return nil }
+func (m *mockUTRR) Crear(ctx context.Context, uid, tid, rid string) error    { return nil }
 func (m *mockUTRR) Eliminar(ctx context.Context, uid, tid, rid string) error { return m.errEliminar }
-func (m *mockUTRR) ListarRolesPorUsuarioEnTenant(ctx context.Context, uid, tid string) ([]*rbac.RolDB, error) { return nil, nil }
-func (m *mockUTRR) TieneRolEnTenant(ctx context.Context, uid, tid, rol string) (bool, error) { return false, nil }
+func (m *mockUTRR) ListarRolesPorUsuarioEnTenant(ctx context.Context, uid, tid string) ([]*rbac.RolDB, error) {
+	return nil, nil
+}
+func (m *mockUTRR) TieneRolEnTenant(ctx context.Context, uid, tid, rol string) (bool, error) {
+	return false, nil
+}
 
 type mockAuthSvc struct {
 	permiso bool
@@ -43,8 +56,12 @@ func TestRevocarRolExitosoEnTenant(t *testing.T) {
 	resp, err := uc.Ejecutar(context.Background(), &revokerole.ComandoRevocarRol{
 		UsuarioID: "user-1", RolID: "r-1", TenantID: "t-1", EjecutorID: "admin-1",
 	})
-	if err != nil { t.Fatalf("error inesperado: %v", err) }
-	if resp.RevocadoEn == "" { t.Error("RevocadoEn vacío") }
+	if err != nil {
+		t.Fatalf("error inesperado: %v", err)
+	}
+	if resp.RevocadoEn == "" {
+		t.Error("RevocadoEn vacío")
+	}
 }
 
 func TestRevocarRolGlobalExitoso(t *testing.T) {
@@ -54,8 +71,12 @@ func TestRevocarRolGlobalExitoso(t *testing.T) {
 	resp, err := uc.Ejecutar(context.Background(), &revokerole.ComandoRevocarRol{
 		UsuarioID: "user-1", RolID: "r-1", TenantID: "", EjecutorID: "admin-1",
 	})
-	if err != nil { t.Fatalf("error inesperado: %v", err) }
-	if resp.RevocadoEn == "" { t.Error("RevocadoEn vacío") }
+	if err != nil {
+		t.Fatalf("error inesperado: %v", err)
+	}
+	if resp.RevocadoEn == "" {
+		t.Error("RevocadoEn vacío")
+	}
 }
 
 func TestRevocarRolSinPermiso(t *testing.T) {
@@ -74,7 +95,9 @@ func TestRevocarRolFalloGlobal(t *testing.T) {
 	_, err := uc.Ejecutar(context.Background(), &revokerole.ComandoRevocarRol{
 		UsuarioID: "u-1", RolID: "r-1", TenantID: "", EjecutorID: "e-1",
 	})
-	if err == nil { t.Fatal("esperaba error al revocar rol global") }
+	if err == nil {
+		t.Fatal("esperaba error al revocar rol global")
+	}
 }
 
 func TestRevocarRolFalloEnTenant(t *testing.T) {
@@ -86,5 +109,7 @@ func TestRevocarRolFalloEnTenant(t *testing.T) {
 	_, err := uc.Ejecutar(context.Background(), &revokerole.ComandoRevocarRol{
 		UsuarioID: "u-1", RolID: "r-1", TenantID: "t-1", EjecutorID: "e-1",
 	})
-	if err == nil { t.Fatal("esperaba error al revocar rol en tenant") }
+	if err == nil {
+		t.Fatal("esperaba error al revocar rol en tenant")
+	}
 }

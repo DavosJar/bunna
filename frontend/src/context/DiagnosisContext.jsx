@@ -5,6 +5,7 @@ import {
   saveDiagnosticoHistorial,
   updateHistorialEntry,
 } from '../services/localStore';
+import { generateUUID } from '../utils/uuid';
 
 const DiagnosisContext = createContext(null);
 
@@ -46,7 +47,7 @@ export function DiagnosisProvider({ children }) {
     if (!userId || !data?.feedback) return;
 
     const entry = {
-      id: meta.historialId || crypto.randomUUID(),
+      id: meta.historialId || generateUUID(),
       feedback: data.feedback,
       num_detections: data.num_detections,
       avg_confidence: data.avg_confidence,

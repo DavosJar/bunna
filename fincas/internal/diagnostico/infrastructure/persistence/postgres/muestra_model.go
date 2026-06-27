@@ -10,6 +10,7 @@ import (
 // El VO Ubicacion se persiste como columnas planas (latitud, longitud).
 type MuestraModel struct {
 	ID        string    `gorm:"type:varchar(36);primaryKey;column:id"`
+	FincaID   string    `gorm:"column:finca_id;type:varchar(36);index"`
 	LoteID    string    `gorm:"column:lote_id;type:varchar(36);index"`
 	TenantID  string    `gorm:"column:tenant_id;type:varchar(36);index"`
 	Latitud   float64   `gorm:"column:latitud;type:double precision"`
@@ -29,6 +30,7 @@ func (m *MuestraModel) ToDomain() (*domain.Muestra, error) {
 
 	return domain.NewMusetraFromStorage(
 		m.ID,
+		m.FincaID,
 		m.LoteID,
 		m.TenantID,
 		*ubicacion,
@@ -43,6 +45,7 @@ func FromDomainMuestra(mu *domain.Muestra) *MuestraModel {
 	u := mu.Ubicacion()
 	return &MuestraModel{
 		ID:       mu.ID(),
+		FincaID:  mu.FincaID(),
 		LoteID:   mu.LoteID(),
 		TenantID: mu.TenantID(),
 		Latitud:  u.Latitud(),

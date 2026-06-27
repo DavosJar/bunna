@@ -10,6 +10,7 @@ import {
   listarMuestras, generarReporteLote,
   aceptarDiagnostico, rechazarDiagnostico,
   fincasApiDisponible, isServicioFincasNoDisponible, parseErrorFincas,
+  registrarNodo, listarNodos, desactivarNodo,
 } from '../../services/fincasApi';
 import {
   loadFincasLocal, saveFincaLocal, updateFincaLocal,
@@ -17,9 +18,11 @@ import {
   loadMuestrasLocal, saveMuestraLocal,
   loadDiagnosticosLocal, saveDiagnosticoLocal, updateDiagnosticoLocal,
   getDiagnosticoPorMuestra, saveWorkflowState, loadWorkflowState,
+  loadNodosLocal, saveNodoLocal, updateNodoLocal,
 } from '../../services/localStore';
 import { buildReporteLocal, tieneClorosisFromYolo } from '../../utils/yoloDiagnostico';
 import { generateReportePDF } from '../../utils/generateReportePDF';
+import { generateUUID } from '../../utils/uuid';
 import { getGlobalFarmStats, getReportChartData, getMuestrasMapPoints } from '../../utils/farmAnalytics';
 import StatCard from '../../components/ui/StatCard';
 import ServiceStatusBar from '../../components/ui/ServiceStatusBar';
@@ -36,6 +39,7 @@ import '../admin/Admin.css';
 const TABS = [
   { id: 'fincas', label: 'Fincas' },
   { id: 'lotes', label: 'Lotes' },
+  { id: 'nodos', label: 'Cámaras (IoT)' },
   { id: 'muestras', label: 'Muestras' },
   { id: 'diagnosticos', label: 'Diagnósticos' },
   { id: 'reporte', label: 'Reporte' },
@@ -64,11 +68,13 @@ export default function FincasPage() {
 
   const [fincas, setFincas] = useState([]);
   const [lotes, setLotes] = useState([]);
+  const [nodos, setNodos] = useState([]);
   const [muestras, setMuestras] = useState([]);
   const [diagnosticos, setDiagnosticos] = useState([]);
   const [reporte, setReporte] = useState(null);
   const [fincaSel, setFincaSel] = useState('');
   const [loteSel, setLoteSel] = useState('');
+  const [nodoSel, setNodoSel] = useState('');
   const [muestraSel, setMuestraSel] = useState('');
   const [msg, setMsg] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -79,6 +85,7 @@ export default function FincasPage() {
 
   const [formFinca, setFormFinca] = useState({ nombre: '', ubicacion: '', descripcion: '' });
   const [formLote, setFormLote] = useState({ nombre: '', area: '', descripcion: '' });
+  const [formNodo, setFormNodo] = useState({ nombre: '', node_key: '', lote_id: '' });
 
   const fincaActiva = fincas.find((f) => f.id === fincaSel);
   const loteActivo = lotes.find((l) => l.id === loteSel);
@@ -90,7 +97,7 @@ export default function FincasPage() {
 
   const tabHabilitado = (tabId) => {
     if (tabId === 'fincas') return true;
-    if (tabId === 'lotes') return !!fincaSel;
+    if (tabId === 'lotes' || tabId === 'nodos' || tabId === 'muestras') return !!fincaSel;
     return !!fincaSel && !!loteSel;
   };
 
@@ -106,10 +113,9 @@ export default function FincasPage() {
     setFincas(f);
     if (fincaSel) {
       setLotes(loadLotesLocal(user.id, fincaSel).filter((l) => l.estado !== 'ELIMINADO'));
-      if (loteSel) {
-        setMuestras(loadMuestrasLocal(user.id, fincaSel, loteSel));
-        setDiagnosticos(loadDiagnosticosLocal(user.id, fincaSel, loteSel));
-      }
+      setNodos(loadNodosLocal(user.id, fincaSel).filter((n) => n.estado !== 'INACTIVO'));
+      setMuestras(loadMuestrasLocal(user.id, fincaSel, loteSel || ''));
+      setDiagnosticos(loadDiagnosticosLocal(user.id, fincaSel, loteSel || ''));
     }
   }, [user?.id, fincaSel, loteSel]);
 
@@ -127,6 +133,7 @@ export default function FincasPage() {
     if (saved.fincaSel && fincasLocal.some((f) => f.id === saved.fincaSel)) {
       setFincaSel(saved.fincaSel);
       setLotes(loadLotesLocal(user.id, saved.fincaSel).filter((l) => l.estado !== 'ELIMINADO'));
+      setNodos(loadNodosLocal(user.id, saved.fincaSel).filter((n) => n.estado !== 'INACTIVO'));
       if (saved.loteSel) {
         const lotesLocal = loadLotesLocal(user.id, saved.fincaSel).filter((l) => l.estado !== 'ELIMINADO');
         if (lotesLocal.some((l) => l.id === saved.loteSel)) {
@@ -161,6 +168,7 @@ export default function FincasPage() {
     if (st.fincaId) {
       setFincaSel(st.fincaId);
       setLotes(loadLotesLocal(user.id, st.fincaId).filter((l) => l.estado !== 'ELIMINADO'));
+      setNodos(loadNodosLocal(user.id, st.fincaId).filter((n) => n.estado !== 'INACTIVO'));
       setActiveTab(st.loteId ? 'muestras' : 'lotes');
     }
     if (st.loteId) setLoteSel(st.loteId);
@@ -181,15 +189,57 @@ export default function FincasPage() {
       setMuestras(localM);
       return;
     }
-    listarMuestras(fincaSel, loteSel)
-      .then((apiM) => {
+    
+    const fetchBackend = async () => {
+      try {
+        const [apiM, reporte] = await Promise.all([
+          listarMuestras(fincaSel, loteSel),
+          generarReporteLote(fincaSel, loteSel).catch(() => null)
+        ]);
+        
         const merged = [...apiM];
         localM.forEach((lm) => {
           if (!merged.find((m) => m.id === lm.id)) merged.push(lm);
         });
         setMuestras(merged);
-      })
-      .catch(() => setMuestras(localM));
+
+        if (reporte && reporte.muestras) {
+          const syncD = [...localD];
+          reporte.muestras.forEach((rm) => {
+            if (rm.diagnosticoID) {
+              const idx = syncD.findIndex(d => d.muestraID === rm.id);
+              const API_BASE = import.meta.env.VITE_YOLO_API_URL || (import.meta.env.PROD ? 'https://i2u6hsbhf1.execute-api.us-east-2.amazonaws.com' : '/yolo');
+              const newD = {
+                id: rm.diagnosticoID,
+                muestraID: rm.id,
+                estado: rm.estadoDiagnostico,
+                origen: 'iot', // Debe ser 'iot' para que la UI muestre 📷 Cámara IoT
+                tieneClorosis: rm.tieneClorosis,
+                yolo: {
+                  image: rm.imageURL ? `${API_BASE}/${rm.imageURL}` : null
+                }
+              };
+              if (idx >= 0) {
+                syncD[idx] = { ...syncD[idx], ...newD };
+              } else {
+                syncD.push(newD);
+              }
+              // Hacer persistente el diagnóstico sincronizado para que 'Ver Diagnóstico' funcione
+              saveDiagnosticoLocal(user.id, fincaSel, loteSel, newD);
+            }
+          });
+          setDiagnosticos(syncD);
+        }
+      } catch (err) {
+        setMuestras(localM);
+      }
+    };
+    
+    fetchBackend();
+    
+    // Auto-polling para ver nuevas muestras (webhook de YOLO)
+    const interval = setInterval(fetchBackend, 5000);
+    return () => clearInterval(interval);
   }, [user?.id, fincaSel, loteSel, apiOnline]);
 
   const showMsg = (texto, tipo = 'exito') => {
@@ -200,9 +250,11 @@ export default function FincasPage() {
   const seleccionarFinca = (id) => {
     setFincaSel(id);
     setLoteSel('');
+    setNodoSel('');
     setMuestraSel('');
     setReporte(null);
     setLotes(loadLotesLocal(user.id, id).filter((l) => l.estado !== 'ELIMINADO'));
+    setNodos(loadNodosLocal(user.id, id).filter((n) => n.estado !== 'INACTIVO'));
   };
 
   const seleccionarLote = (id) => {
@@ -251,7 +303,7 @@ export default function FincasPage() {
       if (isServicioFincasNoDisponible(err)) {
         setApiOnline(false);
         const local = {
-          id: crypto.randomUUID(),
+          id: generateUUID(),
           ...formFinca,
           estado: 'ACTIVA',
           createdAt: new Date().toISOString(),
@@ -304,7 +356,7 @@ export default function FincasPage() {
       const finca = fincas.find((f) => f.id === fincaSel);
       const crearLocal = () => {
         const local = {
-          id: crypto.randomUUID(),
+          id: generateUUID(),
           fincaID: fincaSel,
           nombre: formLote.nombre,
           area: parseFloat(formLote.area),
@@ -335,7 +387,7 @@ export default function FincasPage() {
       if (isServicioFincasNoDisponible(err)) {
         setApiOnline(false);
         const local = {
-          id: crypto.randomUUID(),
+          id: generateUUID(),
           fincaID: fincaSel,
           nombre: formLote.nombre,
           area: parseFloat(formLote.area),
@@ -375,6 +427,89 @@ export default function FincasPage() {
       showMsg(parseErrorFincas(err), 'error');
     } finally { setLoading(false); }
   };
+
+  const handleCrearNodo = async (e) => {
+    e.preventDefault();
+    if (!fincaSel) return;
+    setLoading(true);
+    try {
+      const finca = fincas.find((f) => f.id === fincaSel);
+      const crearLocal = () => {
+        const local = {
+          id: generateUUID(),
+          fincaID: fincaSel,
+          loteID: formNodo.lote_id || null,
+          nombre: formNodo.nombre,
+          nodeKey: formNodo.node_key,
+          estado: 'ACTIVO',
+          createdAt: new Date().toISOString(),
+          _offline: true,
+        };
+        saveNodoLocal(user.id, fincaSel, local);
+        setNodos(loadNodosLocal(user.id, fincaSel).filter((n) => n.estado !== 'INACTIVO'));
+        setFormNodo({ nombre: '', node_key: '', lote_id: '' });
+        return local;
+      };
+
+      if (finca?._offline || apiOnline === false) {
+        crearLocal();
+        showMsg('Cámara IoT guardada (modo offline).', 'warn');
+        return;
+      }
+      const data = await registrarNodo(fincaSel, {
+        nombre: formNodo.nombre,
+        node_key: formNodo.node_key,
+        lote_id: formNodo.lote_id || undefined,
+      });
+      saveNodoLocal(user.id, fincaSel, data);
+      setNodos(loadNodosLocal(user.id, fincaSel).filter((n) => n.estado !== 'INACTIVO'));
+      setFormNodo({ nombre: '', node_key: '', lote_id: '' });
+      showMsg('Cámara IoT agregada exitosamente.');
+    } catch (err) {
+      if (isServicioFincasNoDisponible(err)) {
+        setApiOnline(false);
+        const local = {
+          id: generateUUID(),
+          fincaID: fincaSel,
+          loteID: formNodo.lote_id || null,
+          nombre: formNodo.nombre,
+          nodeKey: formNodo.node_key,
+          estado: 'ACTIVO',
+          createdAt: new Date().toISOString(),
+          _offline: true,
+        };
+        saveNodoLocal(user.id, fincaSel, local);
+        setNodos(loadNodosLocal(user.id, fincaSel).filter((n) => n.estado !== 'INACTIVO'));
+        setFormNodo({ nombre: '', node_key: '', lote_id: '' });
+        showMsg('Cámara IoT guardada localmente.', 'warn');
+      } else {
+        showMsg(parseErrorFincas(err), 'error');
+      }
+    } finally { setLoading(false); }
+  };
+
+  const handleDesactivarNodo = async (id) => {
+    if (!confirm('¿Desactivar esta cámara?')) return;
+    setLoading(true);
+    try {
+      const nodo = nodos.find((n) => n.id === id);
+      if (nodo?._offline || apiOnline === false) {
+        updateNodoLocal(user.id, fincaSel, id, { estado: 'INACTIVO' });
+        setNodos(loadNodosLocal(user.id, fincaSel).filter((n) => n.estado !== 'INACTIVO'));
+        if (nodoSel === id) setNodoSel('');
+        showMsg('Cámara desactivada (local)');
+        return;
+      }
+      await desactivarNodo(id);
+      updateNodoLocal(user.id, fincaSel, id, { estado: 'INACTIVO' });
+      setNodos(loadNodosLocal(user.id, fincaSel).filter((n) => n.estado !== 'INACTIVO'));
+      if (nodoSel === id) setNodoSel('');
+      showMsg('Cámara desactivada exitosamente');
+    } catch (err) {
+      showMsg(parseErrorFincas(err), 'error');
+    } finally { setLoading(false); }
+  };
+
 
   const handleReporte = async () => {
     if (!fincaSel || !loteSel || !loteActivo) return;
@@ -461,7 +596,7 @@ export default function FincasPage() {
   const handleVincularYoloAMuestra = async () => {
     if (!muestraSel || !yoloPendiente?.feedback || yoloPendiente.feedback.label === 'Error') return;
     const diag = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       muestraID: muestraSel,
       estado: 'PENDIENTE',
       origen: 'yolo',
@@ -515,6 +650,11 @@ export default function FincasPage() {
   const getDiagEstado = (muestraId) => {
     const d = diagnosticos.find((x) => x.muestraID === muestraId);
     return d?.estado || 'SIN_DIAGNOSTICO';
+  };
+
+  const getDiagOrigen = (muestraId) => {
+    const d = diagnosticos.find((x) => x.muestraID === muestraId);
+    return d?.origen || 'manual';
   };
 
   return (
@@ -580,9 +720,9 @@ export default function FincasPage() {
         </div>
       )}
 
-      {fincaSel && loteSel && activeTab === 'muestras' && (
+      {fincaSel && activeTab === 'muestras' && (
         <div className="fincas-guide">
-          <strong>Lote «{loteActivo?.nombre}» listo.</strong> Sube una o varias fotos de hoja, usa GPS y presiona <strong>Analizar</strong>. Puedes agregar más imágenes después de cada análisis.
+          <strong>{loteActivo ? `Lote «${loteActivo.nombre}» listo.` : `Finca «${fincas.find(f => f.id === fincaSel)?.nombre}» lista.`}</strong> Sube una o varias fotos de hoja, usa GPS y presiona <strong>Analizar</strong>. Puedes agregar más imágenes después de cada análisis.
         </div>
       )}
 
@@ -705,10 +845,57 @@ export default function FincasPage() {
         </div>
       )}
 
-      {/* ── Tab: Muestras ── */}
-      {activeTab === 'muestras' && fincaSel && loteSel && (
+      {/* ── Tab: Nodos (Cámaras) ── */}
+      {activeTab === 'nodos' && fincaSel && (
         <div className="admin-card" style={{ marginBottom: '1.5rem' }}>
-          <h2 className="admin-card__title">Muestras — {loteActivo?.nombre}</h2>
+          <h2 className="admin-card__title">Cámaras IoT — {fincaActiva?.nombre}</h2>
+          <form onSubmit={handleCrearNodo} style={{ display: 'grid', gap: '0.75rem', maxWidth: 480, marginBottom: '1rem' }}>
+            <input className="form-input" placeholder="Nombre de la cámara" value={formNodo.nombre} onChange={(e) => setFormNodo((f) => ({ ...f, nombre: e.target.value }))} required />
+            <input className="form-input" placeholder="Node Key (ej: cam-001)" value={formNodo.node_key} onChange={(e) => setFormNodo((f) => ({ ...f, node_key: e.target.value }))} required />
+            <select className="form-input" value={formNodo.lote_id} onChange={(e) => setFormNodo((f) => ({ ...f, lote_id: e.target.value }))}>
+              <option value="">-- Sin lote asignado --</option>
+              {lotes.filter((l) => l.estado === 'ACTIVO').map((l) => (
+                <option key={l.id} value={l.id}>{l.nombre}</option>
+              ))}
+            </select>
+            <button type="submit" className="btn-add" disabled={loading}>+ Agregar cámara</button>
+          </form>
+          {nodos.length === 0 ? (
+            <p className="admin-empty">Aún no has agregado ninguna cámara IoT.</p>
+          ) : (
+            <table className="admin-table">
+              <thead><tr><th>Nombre</th><th>Node Key</th><th>Lote</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody>
+                {nodos.map((n) => (
+                  <tr key={n.id} style={nodoSel === n.id ? { background: '#f0fdf4' } : undefined}>
+                    <td><strong>{n.nombre}</strong></td>
+                    <td>{n.nodeKey || n.node_key}</td>
+                    <td>{lotes.find((l) => l.id === (n.loteID || n.lote_id))?.nombre || 'Ninguno'}</td>
+                    <td>{n.estado}</td>
+                    <td style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        className={`btn-admin btn-with-icon ${nodoSel === n.id ? 'btn-admin--primary' : ''}`}
+                        onClick={() => { setNodoSel(n.id); }}
+                      >
+                        {nodoSel === n.id ? <><IconCheck size={14} /> Seleccionada</> : 'Seleccionar'}
+                      </button>
+                      {n.estado === 'ACTIVO' && (
+                        <button type="button" className="btn-admin btn-admin--danger" onClick={() => handleDesactivarNodo(n.id)}>Desactivar</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* ── Tab: Muestras ── */}
+      {activeTab === 'muestras' && fincaSel && (
+        <div className="admin-card" style={{ marginBottom: '1.5rem' }}>
+          <h2 className="admin-card__title">Muestras — {loteActivo ? loteActivo.nombre : 'General de la Finca'}</h2>
 
           <AnalizarMuestraEnFinca
             userId={user.id}
@@ -729,21 +916,32 @@ export default function FincasPage() {
             onError={(texto) => showMsg(texto, 'error')}
           />
 
-          <h3 style={{ fontSize: '0.95rem', margin: '1.5rem 0 0.75rem' }}>Muestras registradas ({muestras.length})</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '1.5rem 0 0.75rem' }}>
+            <h3 style={{ fontSize: '0.95rem', margin: 0 }}>Muestras registradas ({muestras.length})</h3>
+            <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>Actualizando en vivo...</span>
+          </div>
           {muestras.length === 0 ? (
-            <p className="admin-empty">Aún no hay muestras. Usa el formulario de arriba para subir una imagen.</p>
+            <p className="admin-empty">Aún no hay muestras. Usa el formulario de arriba para subir una imagen o espera que la cámara IoT envíe una inferencia.</p>
           ) : (
             <table className="admin-table">
               <thead>
-                <tr><th>Coordenadas</th><th>Fecha</th><th>Diagnóstico</th><th>Acciones</th></tr>
+                <tr><th>Coordenadas</th><th>Fecha</th><th>Origen</th><th>Diagnóstico</th><th>Acciones</th></tr>
               </thead>
               <tbody>
                 {muestras.map((m) => {
                   const estado = getDiagEstado(m.id);
+                  const origen = getDiagOrigen(m.id);
                   return (
                     <tr key={m.id} className={muestraSel === m.id ? 'muestra-row--con-diag' : ''}>
                       <td>{m.latitud?.toFixed?.(4) ?? m.latitud}, {m.longitud?.toFixed?.(4) ?? m.longitud}</td>
                       <td>{new Date(m.createdAt).toLocaleString()}</td>
+                      <td>
+                        {origen === 'iot' ? (
+                          <span style={{ background: '#dbeafe', color: '#1e40af', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600 }}>📷 Cámara IoT</span>
+                        ) : (
+                          <span style={{ background: '#f3f4f6', color: '#374151', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600 }}>👤 Manual</span>
+                        )}
+                      </td>
                       <td><DiagBadge estado={estado} /></td>
                       <td>
                         <button
@@ -836,7 +1034,22 @@ export default function FincasPage() {
               </div>
 
               {diagActivo.yolo?.image && (
-                <img src={diagActivo.yolo.image} alt="Diagnóstico YOLO" style={{ maxWidth: 400, borderRadius: '0.5rem' }} />
+                <img 
+                  src={diagActivo.yolo.image} 
+                  alt="Diagnóstico YOLO" 
+                  style={{ maxWidth: 400, borderRadius: '0.5rem' }} 
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    if (!e.target.nextElementSibling) {
+                      const msg = document.createElement('p');
+                      msg.style.fontSize = '0.85rem';
+                      msg.style.color = '#6b7280';
+                      msg.style.margin = '0.5rem 0';
+                      msg.innerHTML = '📸 <i>La imagen fue procesada en el servidor perimetral YOLO y no está disponible para previsualización web.</i>';
+                      e.target.parentNode.insertBefore(msg, e.target.nextSibling);
+                    }
+                  }}
+                />
               )}
 
               {diagActivo.yolo?.feedback?.recommendation && (

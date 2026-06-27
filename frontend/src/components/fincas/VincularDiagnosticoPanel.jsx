@@ -10,6 +10,7 @@ import {
   isServicioFincasNoDisponible,
 } from '../../services/fincasApi';
 import { tieneClorosisFromYolo } from '../../utils/yoloDiagnostico';
+import { generateUUID } from '../../utils/uuid';
 import { IconMapPin } from '../icons/Icons';
 import './VincularDiagnosticoPanel.css';
 
@@ -26,8 +27,8 @@ export default function VincularDiagnosticoPanel({ yoloResults, historialId, onV
   const [lotes, setLotes] = useState([]);
   const [fincaId, setFincaId] = useState('');
   const [loteId, setLoteId] = useState('');
-  const [latitud, setLatitud] = useState('');
-  const [longitud, setLongitud] = useState('');
+  const [latitud, setLatitud] = useState('-0.123456');
+  const [longitud, setLongitud] = useState('-78.123456');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
   const [apiOnline, setApiOnline] = useState(null);
@@ -69,7 +70,7 @@ export default function VincularDiagnosticoPanel({ yoloResults, historialId, onV
     const coords = { latitud: parseFloat(latitud), longitud: parseFloat(longitud) };
 
     let muestra = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       loteID: loteId,
       ...coords,
       createdAt: new Date().toISOString(),
@@ -77,7 +78,7 @@ export default function VincularDiagnosticoPanel({ yoloResults, historialId, onV
     };
 
     let diagnostico = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       muestraID: muestra.id,
       estado: 'PENDIENTE',
       origen: 'yolo',

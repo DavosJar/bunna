@@ -61,23 +61,30 @@ func (uc *UseCase) Ejecutar(ctx context.Context, auth *application.AuthContext, 
 		return nil, err
 	}
 
-	// 3. Cargar lote
-	lote, err := uc.loteRepo.ObtenerPorID(ctx, cmd.LoteID)
-	if err != nil {
-		if errors.Is(err, fincasdomain.ErrLoteNoEncontrado) {
+	// 3. Cargar lote (opcional)
+	var tenantID = auth.TenantID
+	if cmd.LoteID != "" {
+		lote, err := uc.loteRepo.ObtenerPorID(ctx, cmd.LoteID)
+		if err != nil {
+			if errors.Is(err, fincasdomain.ErrLoteNoEncontrado) {
+				return nil, application.ErrNotFound
+			}
+			return nil, err
+		}
+		
+		// 4. Validar tenencia: si el TenantID no coincide → ErrNotFound (sec 3.2)
+		if tenantID != "" && lote.TenantID() != tenantID {
 			return nil, application.ErrNotFound
 		}
-		return nil, err
-	}
 
-	// 4. Validar tenencia: si el TenantID no coincide → ErrNotFound (sec 3.2)
-	if auth.TenantID != "" && lote.TenantID() != auth.TenantID {
-		return nil, application.ErrNotFound
-	}
+		// 5. Verificar que el lote esté ACTIVO
+		if lote.Estado() == fincasdomain.LoteEliminado {
+			return nil, application.ErrConflictoEstado("No se pueden tomar muestras en un lote eliminado")
+		}
 
-	// 5. Verificar que el lote esté ACTIVO
-	if lote.Estado() == fincasdomain.LoteEliminado {
-		return nil, application.ErrConflictoEstado("No se pueden tomar muestras en un lote eliminado")
+		if tenantID == "" {
+			tenantID = lote.TenantID()
+		}
 	}
 
 	// 6. Construir Ubicacion VO
@@ -92,14 +99,13 @@ func (uc *UseCase) Ejecutar(ctx context.Context, auth *application.AuthContext, 
 		return nil, err
 	}
 
-	// 8. Determinar tenantID: usar auth.TenantID si no está vacío, si no heredar del lote
-	tenantID := auth.TenantID
+	// 8. Determinar tenantID si no se asignó aún
 	if tenantID == "" {
-		tenantID = lote.TenantID()
+		tenantID = auth.TenantID
 	}
 
 	// 9. Construir entidad Muestra
-	muestra, err := diagnosticodomain.NewMuestra(id, cmd.LoteID, *ubicacion, tenantID)
+	muestra, err := diagnosticodomain.NewMuestra(id, cmd.FincaID, cmd.LoteID, *ubicacion, tenantID)
 	if err != nil {
 		return nil, application.ErrValidacion(err.Error())
 	}
@@ -124,6 +130,7 @@ func (uc *UseCase) Ejecutar(ctx context.Context, auth *application.AuthContext, 
 
 	return &Salida{
 		ID:        id,
+		FincaID:   cmd.FincaID,
 		LoteID:    cmd.LoteID,
 		Latitud:   cmd.Latitud,
 		Longitud:  cmd.Longitud,

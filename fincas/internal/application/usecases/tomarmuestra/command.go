@@ -4,6 +4,7 @@ import "fmt"
 
 // Command contiene los datos de entrada para tomar una muestra en un lote.
 type Command struct {
+	FincaID  string
 	LoteID   string
 	Latitud  float64
 	Longitud float64
@@ -11,8 +12,8 @@ type Command struct {
 
 // Validar verifica que todos los campos cumplen las restricciones de formato.
 func (c *Command) Validar() error {
-	if c.LoteID == "" {
-		return fmt.Errorf("validación: el loteID es requerido")
+	if c.FincaID == "" {
+		return fmt.Errorf("validación: el fincaID es requerido")
 	}
 	if c.Latitud < -90 || c.Latitud > 90 {
 		return fmt.Errorf("validación: la latitud debe estar entre -90 y 90")

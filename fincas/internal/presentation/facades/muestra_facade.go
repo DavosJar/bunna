@@ -20,8 +20,8 @@ type (
 )
 
 type MuestrasFacade interface {
-	Tomar(ctx context.Context, auth *application.AuthContext, loteID string, req dto.TomarMuestraRequest) (*dto.MuestraResponse, error)
-	ListarPorLote(ctx context.Context, auth *application.AuthContext, loteID string) ([]dto.MuestraItemResponse, error)
+	Tomar(ctx context.Context, auth *application.AuthContext, fincaID, loteID string, req dto.TomarMuestraRequest) (*dto.MuestraResponse, error)
+	ListarPorLote(ctx context.Context, auth *application.AuthContext, fincaID, loteID string) ([]dto.MuestraItemResponse, error)
 }
 
 type muestrasFacade struct {
@@ -38,8 +38,9 @@ func NewMuestrasFacade(tomarUC TomarMuestraUseCase, listarUC ListarMuestrasPorLo
 	}
 }
 
-func (f *muestrasFacade) Tomar(ctx context.Context, auth *application.AuthContext, loteID string, req dto.TomarMuestraRequest) (*dto.MuestraResponse, error) {
+func (f *muestrasFacade) Tomar(ctx context.Context, auth *application.AuthContext, fincaID, loteID string, req dto.TomarMuestraRequest) (*dto.MuestraResponse, error) {
 	cmd := tomarmuestra.Command{
+		FincaID:  fincaID,
 		LoteID:   loteID,
 		Latitud:  req.Latitud,
 		Longitud: req.Longitud,
@@ -52,8 +53,8 @@ func (f *muestrasFacade) Tomar(ctx context.Context, auth *application.AuthContex
 	return &resp, nil
 }
 
-func (f *muestrasFacade) ListarPorLote(ctx context.Context, auth *application.AuthContext, loteID string) ([]dto.MuestraItemResponse, error) {
-	cmd := listarmuestrasporlote.Command{LoteID: loteID}
+func (f *muestrasFacade) ListarPorLote(ctx context.Context, auth *application.AuthContext, fincaID, loteID string) ([]dto.MuestraItemResponse, error) {
+	cmd := listarmuestrasporlote.Command{FincaID: fincaID, LoteID: loteID}
 	items, err := f.listarUC.Ejecutar(ctx, auth, cmd)
 	if err != nil {
 		return nil, err

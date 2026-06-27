@@ -20,9 +20,11 @@ func NewMuestraHandler(facade facades.MuestrasFacade) *MuestraHandler {
 }
 
 func (h *MuestraHandler) Tomar(c *gin.Context) {
+	fincaID := c.Param("id")
 	loteID := c.Param("loteID")
-	if loteID == "" {
+	if c.FullPath() == "/api/v1/lotes/:id/muestras" {
 		loteID = c.Param("id")
+		fincaID = ""
 	}
 
 	var req dto.TomarMuestraRequest
@@ -36,7 +38,7 @@ func (h *MuestraHandler) Tomar(c *gin.Context) {
 		auth = &application.AuthContext{}
 	}
 
-	resp, err := h.facade.Tomar(c.Request.Context(), auth, loteID, req)
+	resp, err := h.facade.Tomar(c.Request.Context(), auth, fincaID, loteID, req)
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 		return
@@ -50,9 +52,11 @@ func (h *MuestraHandler) Tomar(c *gin.Context) {
 }
 
 func (h *MuestraHandler) ListarPorLote(c *gin.Context) {
+	fincaID := c.Param("id")
 	loteID := c.Param("loteID")
-	if loteID == "" {
+	if c.FullPath() == "/api/v1/lotes/:id/muestras" {
 		loteID = c.Param("id")
+		fincaID = ""
 	}
 
 	auth := middleware.GetAuthContext(c)
@@ -60,7 +64,7 @@ func (h *MuestraHandler) ListarPorLote(c *gin.Context) {
 		auth = &application.AuthContext{}
 	}
 
-	items, err := h.facade.ListarPorLote(c.Request.Context(), auth, loteID)
+	items, err := h.facade.ListarPorLote(c.Request.Context(), auth, fincaID, loteID)
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 		return

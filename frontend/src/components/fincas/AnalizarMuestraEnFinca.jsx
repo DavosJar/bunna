@@ -3,6 +3,7 @@ import { diagnosticar } from '../../services/yoloApi';
 import { tomarMuestra, isServicioFincasNoDisponible } from '../../services/fincasApi';
 import { saveMuestraLocal, saveDiagnosticoLocal } from '../../services/localStore';
 import { tieneClorosisFromYolo } from '../../utils/yoloDiagnostico';
+import { generateUUID } from '../../utils/uuid';
 import { IconCamera, IconMapPin, IconX } from '../../components/icons/Icons';
 import './AnalizarMuestraEnFinca.css';
 
@@ -21,8 +22,8 @@ export default function AnalizarMuestraEnFinca({
 }) {
   const fileRef = useRef(null);
   const [cola, setCola] = useState([]);
-  const [latitud, setLatitud] = useState('');
-  const [longitud, setLongitud] = useState('');
+  const [latitud, setLatitud] = useState('-0.123456');
+  const [longitud, setLongitud] = useState('-78.123456');
   const [analyzing, setAnalyzing] = useState(false);
   const [progreso, setProgreso] = useState(null);
   const [dragActive, setDragActive] = useState(false);
@@ -46,7 +47,7 @@ export default function AnalizarMuestraEnFinca({
     const nuevos = Array.from(fileList || [])
       .filter((f) => f.type?.startsWith('image/'))
       .map((file) => {
-        const id = crypto.randomUUID();
+        const id = generateUUID();
         const preview = URL.createObjectURL(file);
         return { id, file, preview, nombre: file.name };
       });
@@ -70,7 +71,7 @@ export default function AnalizarMuestraEnFinca({
 
   const procesarUnaImagen = async (item, coords) => {
     let muestra = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       loteID: loteId,
       ...coords,
       nombreArchivo: item.file.name,
@@ -94,7 +95,7 @@ export default function AnalizarMuestraEnFinca({
     }
 
     const diagnostico = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       muestraID: muestra.id,
       estado: 'PENDIENTE',
       origen: 'yolo',

@@ -1,3 +1,5 @@
+import { generateUUID } from '../utils/uuid';
+
 const PREFIX = 'bunna_local_';
 
 function key(userId, suffix) {
@@ -63,7 +65,7 @@ export function loadDiagnosticoHistorial(userId) {
 
 export function saveDiagnosticoHistorial(userId, entry) {
   const list = loadDiagnosticoHistorial(userId);
-  list.unshift({ ...entry, id: entry.id || crypto.randomUUID(), fecha: entry.fecha || new Date().toISOString() });
+  list.unshift({ ...entry, id: entry.id || generateUUID(), fecha: entry.fecha || new Date().toISOString() });
   const trimmed = list.slice(0, 20);
   localStorage.setItem(key(userId, 'diagnostico_historial'), JSON.stringify(trimmed));
   return trimmed;
@@ -146,4 +148,29 @@ export function loadWorkflowState(userId) {
 export function clearLocalDataForUser(userId) {
   const keys = Object.keys(localStorage).filter((k) => k.startsWith(`${PREFIX}${userId}_`));
   keys.forEach((k) => localStorage.removeItem(k));
+}
+
+// ── Nodos (Cámaras) ──────────────────────────────────────────
+export function loadNodosLocal(userId, fincaId) {
+  try {
+    const raw = localStorage.getItem(key(userId, `nodos_${fincaId}`));
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveNodoLocal(userId, fincaId, nodo) {
+  const list = loadNodosLocal(userId, fincaId);
+  const idx = list.findIndex((n) => n.id === nodo.id);
+  if (idx >= 0) list[idx] = { ...list[idx], ...nodo };
+  else list.push(nodo);
+  localStorage.setItem(key(userId, `nodos_${fincaId}`), JSON.stringify(list));
+  return list;
+}
+
+export function updateNodoLocal(userId, fincaId, nodoId, patch) {
+  const list = loadNodosLocal(userId, fincaId).map((n) => (n.id === nodoId ? { ...n, ...patch } : n));
+  localStorage.setItem(key(userId, `nodos_${fincaId}`), JSON.stringify(list));
+  return list;
 }

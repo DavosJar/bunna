@@ -12,6 +12,8 @@ import (
 	fincaspostgres "github.com/davosjar/bunna/services/fincas/internal/fincas/infrastructure/persistence/postgres"
 	diagnosticodomain "github.com/davosjar/bunna/services/fincas/internal/diagnostico/domain"
 	diagnosticopostgres "github.com/davosjar/bunna/services/fincas/internal/diagnostico/infrastructure/persistence/postgres"
+	nodosdomain "github.com/davosjar/bunna/services/fincas/internal/nodos/domain"
+	nodospostgres "github.com/davosjar/bunna/services/fincas/internal/nodos/infrastructure/persistence/postgres"
 	"github.com/davosjar/bunna/services/fincas/internal/application"
 	shared "github.com/davosjar/bunna/services/fincas/internal/shared/domain"
 	"github.com/davosjar/bunna/services/fincas/internal/shared/infrastructure/idgenerator"
@@ -33,6 +35,13 @@ import (
 	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/aceptardiagnostico"
 	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/rechazardiagnostico"
 	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/generarreporteporlote"
+	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/registrarnodo"
+	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/listarnodos"
+	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/obtenernodo"
+	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/editarnodo"
+	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/desactivarnodo"
+	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/validarnodo"
+	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/registrarinferenciadesdenodo"
 	"github.com/davosjar/bunna/services/fincas/internal/presentation/facades"
 	"github.com/davosjar/bunna/services/fincas/internal/presentation/handler"
 	"github.com/davosjar/bunna/services/fincas/internal/presentation/router"
@@ -58,6 +67,7 @@ type Registry struct {
 	muestraRepo     diagnosticodomain.MuestraRepositorio
 	diagnosticoRepo diagnosticodomain.DiagnosticoRepositorio
 	candidatoRepo   diagnosticodomain.CandidatoReentrenamientoRepositorio
+	nodoRepo        nodosdomain.NodoRepositorio
 
 	// Unit of Work (privados)
 	fincaUoW       *fincaspostgres.UnitOfWorkPostgres
@@ -104,6 +114,7 @@ type Registry struct {
 	muestraHandler     *handler.MuestraHandler
 	diagnosticoHandler *handler.DiagnosticoHandler
 	reporteHandler     *handler.ReporteHandler
+	nodoHandler        *handler.NodoHandler
 
 	// Router (privado)
 	router *gin.Engine
@@ -193,6 +204,7 @@ func NewRegistry() *Registry {
 	muestraRepo := diagnosticopostgres.NewMuestraRepositorio(db)
 	diagnosticoRepo := diagnosticopostgres.NewDiagnosticoRepositorio(db)
 	candidatoRepo := diagnosticopostgres.NewCandidatoReentrenamientoRepositorio(db)
+	nodoRepo := nodospostgres.NewNodoRepositorio(db)
 
 	// Unit of Work
 	fincaUoW := fincaspostgres.NewUnitOfWorkPostgres(db, generador)
@@ -214,6 +226,15 @@ func NewRegistry() *Registry {
 	rechazarDiagnosticoInner := rechazardiagnostico.NewUseCase(diagnosticoRepo, candidatoRepo, diagnosticoUoW, generador, publisher)
 	generarReporteInner := generarreporteporlote.NewUseCase(loteRepo, muestraRepo, diagnosticoRepo)
 
+	// Casos de uso — nodos
+	registrarNodoInner := registrarnodo.NewUseCase(nodoRepo, fincaRepo, generador)
+	listarNodosInner := listarnodos.NewUseCase(nodoRepo)
+	obtenerNodoInner := obtenernodo.NewUseCase(nodoRepo)
+	editarNodoInner := editarnodo.NewUseCase(nodoRepo)
+	desactivarNodoInner := desactivarnodo.NewUseCase(nodoRepo)
+	validarNodoInner := validarnodo.NewUseCase(nodoRepo)
+	registrarInferenciaDesdeNodoInner := registrarinferenciadesdenodo.NewUseCase(nodoRepo, loteRepo, diagnosticoUoW, generador, publisher)
+
 	var registrarFincaUC facades.RegistrarFincaUseCase = registrarFincaInner
 	var desactivarFincaUC facades.DesactivarFincaUseCase = desactivarFincaInner
 	var agregarLoteUC facades.AgregarLoteUseCase = agregarLoteInner
@@ -225,6 +246,15 @@ func NewRegistry() *Registry {
 	var aceptarDiagnosticoUC facades.AceptarDiagnosticoUseCase = aceptarDiagnosticoInner
 	var rechazarDiagnosticoUC facades.RechazarDiagnosticoUseCase = rechazarDiagnosticoInner
 	var generarReporteUC facades.GenerarReportePorLoteUseCase = generarReporteInner
+
+	// Casos de uso — nodos (variables)
+	var registrarNodoUC facades.RegistrarNodoUseCase = registrarNodoInner
+	var listarNodosUC facades.ListarNodosUseCase = listarNodosInner
+	var obtenerNodoUC facades.ObtenerNodoUseCase = obtenerNodoInner
+	var editarNodoUC facades.EditarNodoUseCase = editarNodoInner
+	var desactivarNodoUC facades.DesactivarNodoUseCase = desactivarNodoInner
+	var validarNodoUC facades.ValidarNodoUseCase = validarNodoInner
+	var inferenciaNodoUC facades.RegistrarInferenciaDesdeNodoUseCase = registrarInferenciaDesdeNodoInner
 
 	// Decoradores de telemetría — capa NEGOCIO (APO)
 	if cfg.telemetryEnabled {
@@ -239,6 +269,12 @@ func NewRegistry() *Registry {
 		aceptarDiagnosticoUC = decorator.WrapAuth("AceptarDiagnostico", telemetryWriter, serviceInfo, aceptarDiagnosticoInner)
 		rechazarDiagnosticoUC = decorator.WrapAuth("RechazarDiagnostico", telemetryWriter, serviceInfo, rechazarDiagnosticoInner)
 		generarReporteUC = decorator.WrapAuth("GenerarReportePorLote", telemetryWriter, serviceInfo, generarReporteInner)
+		registrarNodoUC = decorator.WrapAuth("RegistrarNodo", telemetryWriter, serviceInfo, registrarNodoInner)
+		obtenerNodoUC = decorator.WrapAuth("ObtenerNodo", telemetryWriter, serviceInfo, obtenerNodoInner)
+		editarNodoUC = decorator.WrapAuth("EditarNodo", telemetryWriter, serviceInfo, editarNodoInner)
+		desactivarNodoUC = decorator.WrapAuth("DesactivarNodo", telemetryWriter, serviceInfo, desactivarNodoInner)
+		validarNodoUC = decorator.Wrap("ValidarNodo", telemetryWriter, serviceInfo, validarNodoInner)
+		inferenciaNodoUC = decorator.Wrap("RegistrarInferenciaDesdeNodo", telemetryWriter, serviceInfo, registrarInferenciaDesdeNodoInner)
 	}
 
 	// Facades (reciben los mismos UC decorados)
@@ -247,6 +283,7 @@ func NewRegistry() *Registry {
 	muestrasFacade := facades.NewMuestrasFacade(tomarMuestraUC, listarMuestrasUC)
 	diagnosticosFacade := facades.NewDiagnosticosFacade(solicitarDiagnosticoUC, aceptarDiagnosticoUC, rechazarDiagnosticoUC)
 	reportesFacade := facades.NewReportesFacade(generarReporteUC)
+	nodosFacade := facades.NewNodosFacade(registrarNodoUC, listarNodosUC, obtenerNodoUC, editarNodoUC, desactivarNodoUC, validarNodoUC, inferenciaNodoUC)
 
 	// Token validator
 	tokenValidator := jwtvalidator.NewTokenValidator(jwtvalidator.Config{
@@ -261,6 +298,7 @@ func NewRegistry() *Registry {
 	muestraHandler := handler.NewMuestraHandler(muestrasFacade)
 	diagnosticoHandler := handler.NewDiagnosticoHandler(diagnosticosFacade)
 	reporteHandler := handler.NewReporteHandler(reportesFacade)
+	nodoHandler := handler.NewNodoHandler(nodosFacade)
 
 	ginEngine := router.New(router.Config{
 		TelemetryEnabled: cfg.telemetryEnabled,
@@ -276,6 +314,7 @@ func NewRegistry() *Registry {
 		MuestraHandler:     muestraHandler,
 		DiagnosticoHandler: diagnosticoHandler,
 		ReporteHandler:     reporteHandler,
+		NodoHandler:        nodoHandler,
 	})
 
 	// Publicar catálogo de permisos al iniciar
@@ -291,6 +330,7 @@ func NewRegistry() *Registry {
 		muestraRepo:    muestraRepo,
 		diagnosticoRepo: diagnosticoRepo,
 		candidatoRepo:  candidatoRepo,
+		nodoRepo:       nodoRepo,
 		fincaUoW:       fincaUoW,
 		diagnosticoUoW: diagnosticoUoW,
 		fincaService:   fincaService,
@@ -321,8 +361,9 @@ func NewRegistry() *Registry {
 		muestraHandler:     muestraHandler,
 		diagnosticoHandler: diagnosticoHandler,
 		reporteHandler:     reporteHandler,
+		nodoHandler:        nodoHandler,
 
-		router:           ginEngine,
+		router:             ginEngine,
 		TelemetryWriter:  telemetryWriter,
 		TelemetryEnabled: cfg.telemetryEnabled,
 		telemetryCancel:  telemetryCancel,
@@ -401,6 +442,8 @@ func (r *Registry) LoteHandler() *handler.LoteHandler               { return r.l
 func (r *Registry) MuestraHandler() *handler.MuestraHandler         { return r.muestraHandler }
 func (r *Registry) DiagnosticoHandler() *handler.DiagnosticoHandler { return r.diagnosticoHandler }
 func (r *Registry) ReporteHandler() *handler.ReporteHandler         { return r.reporteHandler }
+func (r *Registry) NodoHandler() *handler.NodoHandler               { return r.nodoHandler }
+func (r *Registry) NodoRepository() nodosdomain.NodoRepositorio     { return r.nodoRepo }
 func (r *Registry) Router() *gin.Engine                             { return r.router }
 
 type config struct {

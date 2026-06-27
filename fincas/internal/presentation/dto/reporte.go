@@ -9,6 +9,7 @@ type MuestraReporteItem struct {
 	Longitud          float64  `json:"longitud"`
 	DiagnosticoID     string   `json:"diagnosticoID,omitempty"`
 	EstadoDiagnostico string   `json:"estadoDiagnostico,omitempty"`
+	ImageURL          string   `json:"imageURL,omitempty"`
 	TieneClorosis     *bool    `json:"tieneClorosis,omitempty"`
 	Confianza         *float64 `json:"confianza,omitempty"`
 }

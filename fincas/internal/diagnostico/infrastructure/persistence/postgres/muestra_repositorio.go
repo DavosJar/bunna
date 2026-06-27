@@ -74,6 +74,7 @@ func (r *muestraRepositorio) Buscar(
 	query := r.db.WithContext(ctx).Model(&MuestraModel{})
 
 	mapeoColumnas := map[string]string{
+		"fincaID":  "finca_id",
 		"loteID":   "lote_id",
 		"tenantID": "tenant_id",
 	}

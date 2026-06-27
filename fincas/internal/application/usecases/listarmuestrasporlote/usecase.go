@@ -43,23 +43,29 @@ func (uc *UseCase) Ejecutar(ctx context.Context, auth *application.AuthContext, 
 		return nil, err
 	}
 
-	// 3. Cargar lote
-	lote, err := uc.loteRepo.ObtenerPorID(ctx, cmd.LoteID)
-	if err != nil {
-		if errors.Is(err, fincasdomain.ErrLoteNoEncontrado) {
+	// 3. Cargar lote (opcional)
+	if cmd.LoteID != "" {
+		lote, err := uc.loteRepo.ObtenerPorID(ctx, cmd.LoteID)
+		if err != nil {
+			if errors.Is(err, fincasdomain.ErrLoteNoEncontrado) {
+				return nil, application.ErrNotFound
+			}
+			return nil, err
+		}
+
+		// 4. Validar tenencia
+		if auth.TenantID != "" && lote.TenantID() != auth.TenantID {
 			return nil, application.ErrNotFound
 		}
-		return nil, err
-	}
-
-	// 4. Validar tenencia: si el TenantID no coincide → ErrNotFound (sec 4.6.2)
-	if auth.TenantID != "" && lote.TenantID() != auth.TenantID {
-		return nil, application.ErrNotFound
 	}
 
 	// 5. Construir especificación de búsqueda con filtros
 	filtros := []shared.CriterioFiltro{
-		{Campo: "loteID", Operador: "=", Valor: cmd.LoteID},
+		{Campo: "fincaID", Operador: "=", Valor: cmd.FincaID},
+	}
+	
+	if cmd.LoteID != "" {
+		filtros = append(filtros, shared.CriterioFiltro{Campo: "loteID", Operador: "=", Valor: cmd.LoteID})
 	}
 
 	if auth.TenantID != "" {
@@ -88,6 +94,7 @@ func (uc *UseCase) Ejecutar(ctx context.Context, auth *application.AuthContext, 
 		ubicacion := m.Ubicacion()
 		resultado[i] = MuestraItem{
 			ID:        m.ID(),
+			FincaID:   m.FincaID(),
 			LoteID:    m.LoteID(),
 			Latitud:   ubicacion.Latitud(),
 			Longitud:  ubicacion.Longitud(),

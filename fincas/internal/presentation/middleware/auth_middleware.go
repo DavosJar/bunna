@@ -41,7 +41,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		usuarioID, sesionID, issuer, err := m.validator.ValidarAccessToken(tokenString)
+		usuarioID, sesionID, tenantID, rol, issuer, err := m.validator.ValidarAccessToken(tokenString)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error":   "Unauthorized",
@@ -50,16 +50,13 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		// Construir AuthContext
-		// TenantID y Permisos se dejan vacíos porque el JWT actual
-		// de identidad no los incluye. Cuando identidad los agregue
-		// como claims, se extraerán aquí.
 		_ = sesionID  // disponible para logging/auditoría
 		_ = issuer    // disponible para validación futura
+		_ = rol       // disponible para autorización futura
 
 		auth := &application.AuthContext{
 			UsuarioID: usuarioID,
-			TenantID:  "",
+			TenantID:  tenantID,
 			Permisos:  nil,
 		}
 

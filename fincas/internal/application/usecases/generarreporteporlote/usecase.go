@@ -152,6 +152,7 @@ func (uc *UseCase) Ejecutar(ctx context.Context, auth *application.AuthContext, 
 			mr.DiagnosticoID = diagParaReporte.ID()
 			mr.EstadoDiagnostico = string(diagParaReporte.Estado())
 			if res := diagParaReporte.ResultadoInferencia(); res != nil {
+				mr.ImageURL = res.ImageUrl()
 				tc := res.TieneClorosis()
 				mr.TieneClorosis = &tc
 				cf := res.Confianza()

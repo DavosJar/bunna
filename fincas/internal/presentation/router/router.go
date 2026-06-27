@@ -22,6 +22,7 @@ type Config struct {
 	MuestraHandler      *handler.MuestraHandler
 	DiagnosticoHandler  *handler.DiagnosticoHandler
 	ReporteHandler      *handler.ReporteHandler
+	NodoHandler         *handler.NodoHandler
 }
 
 // New crea un nuevo engine Gin con todas las rutas registradas.
@@ -61,6 +62,8 @@ func New(cfg Config) *gin.Engine {
 	fincas.GET("/:id/lotes/:loteID/muestras", auth, cfg.MuestraHandler.ListarPorLote)
 	fincas.POST("/:id/lotes/:loteID/muestras", auth, cfg.MuestraHandler.Tomar)
 	fincas.GET("/:id/lotes/:loteID/reporte", auth, cfg.ReporteHandler.GenerarPorLote)
+	fincas.GET("/:id/muestras", auth, cfg.MuestraHandler.ListarPorLote)
+	fincas.POST("/:id/muestras", auth, cfg.MuestraHandler.Tomar)
 
 	// Rutas protegidas — diagnósticos
 	diagnosticos := r.Group("/diagnosticos")
@@ -77,6 +80,21 @@ func New(cfg Config) *gin.Engine {
 	lotes.GET("/:id/muestras", auth, cfg.MuestraHandler.ListarPorLote)
 	lotes.POST("/:id/muestras", auth, cfg.MuestraHandler.Tomar)
 	lotes.GET("/:id/reporte", auth, cfg.ReporteHandler.GenerarPorLote)
+
+	// Rutas internas — nodos (SIN JWT, para YOLO API)
+	r.GET("/api/v1/nodos/validar", cfg.NodoHandler.Validar)
+	r.POST("/api/v1/diagnosticos/inferencia", cfg.NodoHandler.RegistrarInferencia)
+
+	// Rutas protegidas — nodos
+	nodos := r.Group("/nodos")
+	nodos.Use(auth)
+	{
+		nodos.POST("", cfg.NodoHandler.Registrar)
+		nodos.GET("", cfg.NodoHandler.Listar)
+		nodos.GET("/:id", cfg.NodoHandler.Obtener)
+		nodos.PUT("/:id", cfg.NodoHandler.Editar)
+		nodos.POST("/:id/desactivar", cfg.NodoHandler.Desactivar)
+	}
 
 	return r
 }

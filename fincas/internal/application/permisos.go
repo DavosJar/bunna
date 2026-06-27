@@ -15,6 +15,10 @@ const (
 	PermisoAceptarDiagnostico   = "fincas:diagnostico:aceptar"
 	PermisoRechazarDiagnostico  = "fincas:diagnostico:rechazar"
 	PermisoGenerarReporte       = "fincas:reporte:generar"
+	PermisoCrearNodo            = "fincas:nodo:crear"
+	PermisoConsultarNodos       = "fincas:nodo:consultar"
+	PermisoEditarNodo           = "fincas:nodo:editar"
+	PermisoDesactivarNodo       = "fincas:nodo:desactivar"
 )
 
 // PermisoInfo contiene el metadata completo de un permiso
@@ -37,4 +41,8 @@ var CatalogoFincas = []PermisoInfo{
 	{Codigo: PermisoAceptarDiagnostico, Nombre: "Aceptar Diagnóstico", Descripcion: "Aceptar un diagnóstico pendiente", Modulo: ModuloFincas},
 	{Codigo: PermisoRechazarDiagnostico, Nombre: "Rechazar Diagnóstico", Descripcion: "Rechazar un diagnóstico pendiente", Modulo: ModuloFincas},
 	{Codigo: PermisoGenerarReporte, Nombre: "Generar Reporte", Descripcion: "Generar reporte de clorosis por lote", Modulo: ModuloFincas},
+	{Codigo: PermisoCrearNodo, Nombre: "Crear Nodo IoT", Descripcion: "Registrar un nuevo nodo IoT en una finca", Modulo: ModuloFincas},
+	{Codigo: PermisoConsultarNodos, Nombre: "Consultar Nodos IoT", Descripcion: "Listar y obtener detalles de nodos IoT", Modulo: ModuloFincas},
+	{Codigo: PermisoEditarNodo, Nombre: "Editar Nodo IoT", Descripcion: "Actualizar la configuracion de un nodo IoT", Modulo: ModuloFincas},
+	{Codigo: PermisoDesactivarNodo, Nombre: "Desactivar Nodo IoT", Descripcion: "Cambiar el estado de un nodo IoT a INACTIVO o MANTENIMIENTO", Modulo: ModuloFincas},
 }

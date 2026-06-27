@@ -11,6 +11,7 @@ type TomarMuestraRequest struct {
 // MuestraResponse es la respuesta al tomar una muestra.
 type MuestraResponse struct {
 	ID        string    `json:"id"`
+	FincaID   string    `json:"fincaID"`
 	LoteID    string    `json:"loteID"`
 	Latitud   float64   `json:"latitud"`
 	Longitud  float64   `json:"longitud"`
@@ -20,6 +21,7 @@ type MuestraResponse struct {
 // MuestraItemResponse es un item en el listado de muestras por lote.
 type MuestraItemResponse struct {
 	ID        string    `json:"id"`
+	FincaID   string    `json:"fincaID"`
 	LoteID    string    `json:"loteID"`
 	Latitud   float64   `json:"latitud"`
 	Longitud  float64   `json:"longitud"`

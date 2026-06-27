@@ -68,12 +68,14 @@ export async function eliminarLote(loteID) {
 
 // ── Muestras ───────────────────────────────────────────────
 export async function tomarMuestra(fincaID, loteID, { latitud, longitud }) {
-  const res = await client.post(`/fincas/${fincaID}/lotes/${loteID}/muestras`, { latitud, longitud });
+  const url = loteID ? `/fincas/${fincaID}/lotes/${loteID}/muestras` : `/fincas/${fincaID}/muestras`;
+  const res = await client.post(url, { latitud, longitud });
   return res.data.data;
 }
 
 export async function listarMuestras(fincaID, loteID) {
-  const res = await client.get(`/fincas/${fincaID}/lotes/${loteID}/muestras`);
+  const url = loteID ? `/fincas/${fincaID}/lotes/${loteID}/muestras` : `/fincas/${fincaID}/muestras`;
+  const res = await client.get(url);
   return res.data.data || [];
 }
 
@@ -96,5 +98,27 @@ export async function rechazarDiagnostico(diagnosticoID, { motivo = '' } = {}) {
 // ── Reportes ───────────────────────────────────────────────
 export async function generarReporteLote(fincaID, loteID) {
   const res = await client.get(`/fincas/${fincaID}/lotes/${loteID}/reporte`);
+  return res.data.data;
+}
+
+// ── Nodos (Cámaras) ────────────────────────────────────────
+export async function registrarNodo(fincaID, { node_key, nombre, lote_id }) {
+  const payload = { finca_id: fincaID, node_key, nombre };
+  if (lote_id) payload.lote_id = lote_id;
+  const res = await client.post('/nodos', payload);
+  return res.data.data;
+}
+
+export async function listarNodos(fincaID) {
+  // En el backend, podríamos pasar el finca_id como query param o manejarlo internamente.
+  // Pero el endpoint actual `GET /nodos` lista los nodos del tenant.
+  const res = await client.get(`/nodos`);
+  // Filtramos localmente si es necesario (el tenant ID ya los aísla, pero filtramos por finca)
+  const data = res.data.data || [];
+  return data.filter((n) => n.finca_id === fincaID);
+}
+
+export async function desactivarNodo(nodoID) {
+  const res = await client.post(`/nodos/${nodoID}/desactivar`, { estado: 'INACTIVO' });
   return res.data.data;
 }

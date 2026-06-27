@@ -21,16 +21,16 @@ type MockMuestrasFacade struct {
 	mock.Mock
 }
 
-func (m *MockMuestrasFacade) Tomar(ctx context.Context, auth *application.AuthContext, loteID string, req dto.TomarMuestraRequest) (*dto.MuestraResponse, error) {
-	args := m.Called(ctx, auth, loteID, req)
+func (m *MockMuestrasFacade) Tomar(ctx context.Context, auth *application.AuthContext, fincaID, loteID string, req dto.TomarMuestraRequest) (*dto.MuestraResponse, error) {
+	args := m.Called(ctx, auth, fincaID, loteID, req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*dto.MuestraResponse), args.Error(1)
 }
 
-func (m *MockMuestrasFacade) ListarPorLote(ctx context.Context, auth *application.AuthContext, loteID string) ([]dto.MuestraItemResponse, error) {
-	args := m.Called(ctx, auth, loteID)
+func (m *MockMuestrasFacade) ListarPorLote(ctx context.Context, auth *application.AuthContext, fincaID, loteID string) ([]dto.MuestraItemResponse, error) {
+	args := m.Called(ctx, auth, fincaID, loteID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -54,7 +54,7 @@ func TestMuestraHandler_Tomar(t *testing.T) {
 				Longitud: -74.0,
 			},
 			mockSetup: func(m *MockMuestrasFacade) {
-				m.On("Tomar", mock.Anything, mock.Anything, "lote-1", mock.AnythingOfType("dto.TomarMuestraRequest")).
+				m.On("Tomar", mock.Anything, mock.Anything, "", "lote-1", mock.AnythingOfType("dto.TomarMuestraRequest")).
 					Return(&dto.MuestraResponse{ID: "muestra-1"}, nil)
 			},
 			expectedStatus: http.StatusCreated,
@@ -76,7 +76,7 @@ func TestMuestraHandler_Tomar(t *testing.T) {
 				Longitud: -74.0,
 			},
 			mockSetup: func(m *MockMuestrasFacade) {
-				m.On("Tomar", mock.Anything, mock.Anything, "lote-1", mock.AnythingOfType("dto.TomarMuestraRequest")).
+				m.On("Tomar", mock.Anything, mock.Anything, "", "lote-1", mock.AnythingOfType("dto.TomarMuestraRequest")).
 					Return(nil, errors.New("error del facade"))
 			},
 			expectedStatus: http.StatusUnprocessableEntity,
@@ -125,7 +125,7 @@ func TestMuestraHandler_ListarPorLote(t *testing.T) {
 			name:   "Exito",
 			loteID: "lote-1",
 			mockSetup: func(m *MockMuestrasFacade) {
-				m.On("ListarPorLote", mock.Anything, mock.Anything, "lote-1").
+				m.On("ListarPorLote", mock.Anything, mock.Anything, "", "lote-1").
 					Return([]dto.MuestraItemResponse{{ID: "muestra-1"}}, nil)
 			},
 			expectedStatus: http.StatusOK,
@@ -135,7 +135,7 @@ func TestMuestraHandler_ListarPorLote(t *testing.T) {
 			name:   "ErrorFacade",
 			loteID: "lote-1",
 			mockSetup: func(m *MockMuestrasFacade) {
-				m.On("ListarPorLote", mock.Anything, mock.Anything, "lote-1").
+				m.On("ListarPorLote", mock.Anything, mock.Anything, "", "lote-1").
 					Return(nil, errors.New("error al listar"))
 			},
 			expectedStatus: http.StatusUnprocessableEntity,
@@ -145,7 +145,7 @@ func TestMuestraHandler_ListarPorLote(t *testing.T) {
 			name:   "Vacio",
 			loteID: "lote-1",
 			mockSetup: func(m *MockMuestrasFacade) {
-				m.On("ListarPorLote", mock.Anything, mock.Anything, "lote-1").
+				m.On("ListarPorLote", mock.Anything, mock.Anything, "", "lote-1").
 					Return([]dto.MuestraItemResponse{}, nil)
 			},
 			expectedStatus: http.StatusOK,

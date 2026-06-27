@@ -3,6 +3,7 @@ package registry
 import (
 	diagnosticopostgres "github.com/davosjar/bunna/services/fincas/internal/diagnostico/infrastructure/persistence/postgres"
 	fincaspostgres "github.com/davosjar/bunna/services/fincas/internal/fincas/infrastructure/persistence/postgres"
+	nodospostgres "github.com/davosjar/bunna/services/fincas/internal/nodos/infrastructure/persistence/postgres"
 	"gorm.io/gorm"
 )
 
@@ -14,5 +15,6 @@ func runAutoMigrate(db *gorm.DB) error {
 		&diagnosticopostgres.MuestraModel{},
 		&diagnosticopostgres.DiagnosticoModel{},
 		&diagnosticopostgres.CandidatoModel{},
+		&nodospostgres.NodoModel{},
 	)
 }

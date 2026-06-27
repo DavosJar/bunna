@@ -20,5 +20,6 @@ type EspecificacionMuestra struct {
 var ColumnasPermitidasMuestra = map[string]bool{
 	"nombre":   true,
 	"loteID":   true,
+	"fincaID":  true,
 	"tenantID": true,
 }

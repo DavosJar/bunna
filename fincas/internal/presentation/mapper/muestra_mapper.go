@@ -12,6 +12,7 @@ type MuestraMapper struct{}
 func (MuestraMapper) TomarSalidaToResponse(s *tomarmuestra.Salida) dto.MuestraResponse {
 	return dto.MuestraResponse{
 		ID:        s.ID,
+		FincaID:   s.FincaID,
 		LoteID:    s.LoteID,
 		Latitud:   s.Latitud,
 		Longitud:  s.Longitud,
@@ -22,6 +23,7 @@ func (MuestraMapper) TomarSalidaToResponse(s *tomarmuestra.Salida) dto.MuestraRe
 func (MuestraMapper) MuestraItemToResponse(item listarmuestrasporlote.MuestraItem) dto.MuestraItemResponse {
 	return dto.MuestraItemResponse{
 		ID:        item.ID,
+		FincaID:   item.FincaID,
 		LoteID:    item.LoteID,
 		Latitud:   item.Latitud,
 		Longitud:  item.Longitud,

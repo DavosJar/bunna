@@ -17,6 +17,7 @@ func (ReporteMapper) SalidaToResponse(s *generarreporteporlote.Salida) dto.Repor
 			Longitud:          m.Longitud,
 			DiagnosticoID:     m.DiagnosticoID,
 			EstadoDiagnostico: m.EstadoDiagnostico,
+			ImageURL:          m.ImageURL,
 			TieneClorosis:     m.TieneClorosis,
 			Confianza:         m.Confianza,
 		}

@@ -9,7 +9,7 @@ import (
 	shared "github.com/davosjar/bunna/services/fincas/internal/shared/domain"
 )
 
-const permisoRequerido = "CREAR_FINCA"
+const permisoRequerido = application.PermisoCrearFinca
 
 // FincaCreada es el evento publicado en RabbitMQ tras el registro exitoso.
 type FincaCreada struct {

@@ -10,7 +10,7 @@ import (
 	shared "github.com/davosjar/bunna/services/fincas/internal/shared/domain"
 )
 
-const permisoRequerido = "ELIMINAR_LOTE"
+const permisoRequerido = application.PermisoEliminarLote
 
 const routingKey = "fincas.v1.lote.eliminado"
 

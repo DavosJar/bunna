@@ -1,5 +1,6 @@
 .PHONY: build-agent build-ingestor build-identidad build-all push-agent push-ingestor push-identidad push-all \
-        deploy-test deploy-prod remove-test remove-prod ps-test ps-prod logs-test logs-prod
+        deploy-test deploy-prod remove-test remove-prod ps-test ps-prod logs-test logs-prod \
+        dev-up dev-down dev-logs
 
 REGISTRY = 172.31.36.189:5000
 
@@ -55,3 +56,13 @@ ps-prod:
 
 logs-prod:
 	docker service logs --tail 50 -f bunna-prod_kafka bunna-prod_clickhouse bunna-prod_grafana
+
+# ─── Desarrollo Local (Unificado) ───
+dev-up:
+	docker compose -f docker-compose.dev.yml up -d --build
+
+dev-down:
+	docker compose -f docker-compose.dev.yml down
+
+dev-logs:
+	docker compose -f docker-compose.dev.yml logs -f

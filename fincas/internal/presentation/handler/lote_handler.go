@@ -20,7 +20,7 @@ func NewLoteHandler(facade facades.LotesFacade) *LoteHandler {
 }
 
 func (h *LoteHandler) Agregar(c *gin.Context) {
-	fincaID := c.Param("fincaID")
+	fincaID := c.Param("id")
 
 	var req dto.AgregarLoteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

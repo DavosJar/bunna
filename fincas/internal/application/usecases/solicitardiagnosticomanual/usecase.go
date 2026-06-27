@@ -10,7 +10,7 @@ import (
 	shared "github.com/davosjar/bunna/services/fincas/internal/shared/domain"
 )
 
-const permisoRequerido = "SOLICITAR_DIAGNOSTICO"
+const permisoRequerido = application.PermisoSolicitarDiagnostico
 const routingKey = "diagnosticos.v1.solicitud.diagnostico.manual"
 
 // SolicitudDiagnosticoManual es el evento publicado tras solicitar un diagnóstico manual.

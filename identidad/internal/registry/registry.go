@@ -68,6 +68,7 @@ import (
 	uc_solicitar "github.com/davosjar/bunna/services/identidad/internal/verificacion/application/usecases/solicitarverificacion"
 	verificacion_domain "github.com/davosjar/bunna/services/identidad/internal/verificacion/domain"
 	verificacion_postgres "github.com/davosjar/bunna/services/identidad/internal/verificacion/infrastructure/persistence/postgres"
+	"github.com/davosjar/bunna/services/identidad/internal/rbac/infrastructure/consumers"
 	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/buffer"
 	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/decorator"
 	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/gormplugin"
@@ -169,6 +170,8 @@ type Registry struct {
 	TelemetryWriter  buffer.BufferWriter
 	TelemetryEnabled bool
 	telemetryCancel  context.CancelFunc
+
+	permisosConsumer *consumers.PermisosConsumer
 }
 
 func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
@@ -589,6 +592,15 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		reg.ObtenerTenantPorSlugCasoDeUso = decorator.Wrap("ObtenerTenantPorSlug", telemetryWriter, obtenerTenantPorSlugUC)
 	}
 
+	// ─────────────────────────────────────────────────────────────────────────
+	// Consumidores Kafka
+	// ─────────────────────────────────────────────────────────────────────────
+	topicPermisos := cfg.KafkaTopicPermisos
+	brokers := strings.Split(cfg.KafkaBrokers, ",")
+	permisosConsumer := consumers.NewPermisosConsumer(brokers, topicPermisos, permisoRepo, generadorID)
+	reg.permisosConsumer = permisosConsumer
+	go permisosConsumer.Start(context.Background())
+
 	return reg
 }
 
@@ -619,5 +631,8 @@ func (r *Registry) UsuarioTenantRolRepositorio() rbac.UsuarioTenantRolRepositori
 func (r *Registry) Close() {
 	if r.telemetryCancel != nil {
 		r.telemetryCancel()
+	}
+	if r.permisosConsumer != nil {
+		r.permisosConsumer.Close()
 	}
 }

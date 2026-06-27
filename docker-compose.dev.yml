@@ -1,0 +1,133 @@
+services:
+  # --- INFRAESTRUCTURA COMPARTIDA ---
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: bunna-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:29093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    command: |
+      bash -c '
+        /etc/confluent/docker/run &
+        until kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1; do sleep 2; done;
+        kafka-topics --create --if-not-exists --topic dev.permisos --partitions 1 --replication-factor 1 --bootstrap-server localhost:9092;
+        wait
+      '
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks:
+      - bunna-dev
+
+  # --- SERVICIO: IDENTIDAD ---
+  identidad-db:
+    image: postgres:18-alpine
+    container_name: identidad-postgres
+    environment:
+      POSTGRES_USER: identidad_user
+      POSTGRES_PASSWORD: identidad_pass_dev
+      POSTGRES_DB: identidad_db
+    volumes:
+      - identidad_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U identidad_user -d identidad_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bunna-dev
+
+  identidad-app:
+    build:
+      context: ./identidad
+      dockerfile: Dockerfile
+    container_name: identidad-app
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=identidad-db
+      - DB_PORT=5432
+      - DB_USER=identidad_user
+      - DB_PASSWORD=identidad_pass_dev
+      - DB_NAME=identidad_db
+      - DB_SSLMODE=disable
+      - PORT=8080
+      - JWT_SECRET=super-secret-key-for-dev-1234567890
+      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_TOPIC_PERMISOS=dev.permisos
+      - ENVIRONMENT=dev
+    depends_on:
+      identidad-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - bunna-dev
+
+  # --- SERVICIO: FINCAS ---
+  fincas-db:
+    image: postgres:18-alpine
+    container_name: fincas-postgres
+    environment:
+      POSTGRES_USER: fincas_user
+      POSTGRES_PASSWORD: fincas_pass_dev
+      POSTGRES_DB: fincas_db
+    volumes:
+      - fincas_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fincas_user -d fincas_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bunna-dev
+
+  fincas-app:
+    build:
+      context: ./fincas
+      dockerfile: Dockerfile
+    container_name: fincas-app
+    ports:
+      - "8082:8082"
+    environment:
+      - DB_HOST=fincas-db
+      - DB_PORT=5432
+      - DB_USER=fincas_user
+      - DB_PASSWORD=fincas_pass_dev
+      - DB_NAME=fincas_db
+      - DB_SSLMODE=disable
+      - SERVER_PORT=8082
+      - KAFKA_BROKERS=kafka:9092
+      - ENVIRONMENT=dev
+      - KAFKA_TOPIC_PERMISOS=dev.permisos
+    depends_on:
+      fincas-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - bunna-dev
+
+networks:
+  bunna-dev:
+    name: bunna-dev
+    driver: bridge
+
+volumes:
+  identidad_data:
+  fincas_data:

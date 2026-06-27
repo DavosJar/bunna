@@ -50,4 +50,7 @@ services:
       - EMAIL_ASYNC=${EMAIL_ASYNC:-true}
       - RATE_LIMIT_IP_MAX_REQUESTS=${RATE_LIMIT_IP_MAX_REQUESTS:-10}
       - RATE_LIMIT_IP_VENTANA=${RATE_LIMIT_IP_VENTANA:-1s}
+      - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:9092}
+      - KAFKA_TOPIC_PERMISOS=${KAFKA_TOPIC_PERMISOS:-dev.permisos}
+      - ENVIRONMENT=${ENVIRONMENT:-dev}
     restart: unless-stopped

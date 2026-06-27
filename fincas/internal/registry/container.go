@@ -169,7 +169,23 @@ func NewRegistry() *Registry {
 	log.Println("AutoMigrate completado")
 
 	generador := idgenerator.NewGeneradorUUIDV7()
-	publisher := eventpublisher.NewConsolePublisher()
+
+	// publisher: si hay brokers Kafka configurados, usa Kafka; si no, consola
+	var publisher application.EventPublisher
+	kafkaBrokers := os.Getenv("KAFKA_BROKERS")
+	kafkaTopic := os.Getenv("KAFKA_TOPIC_PERMISOS")
+	if kafkaTopic == "" {
+		kafkaTopic = cfg.environment + ".permisos"
+	}
+	if kafkaBrokers != "" {
+		brokers := strings.Split(kafkaBrokers, ",")
+		kp := eventpublisher.NewKafkaPublisher(brokers, kafkaTopic)
+		publisher = kp
+		log.Printf("EventPublisher: Kafka (%s → topic '%s')", kafkaBrokers, kafkaTopic)
+	} else {
+		publisher = eventpublisher.NewConsolePublisher()
+		log.Println("EventPublisher: consola (sin Kafka)")
+	}
 
 	// Repositorios
 	fincaRepo := fincaspostgres.NewFincaRepositorio(db)
@@ -261,6 +277,9 @@ func NewRegistry() *Registry {
 		DiagnosticoHandler: diagnosticoHandler,
 		ReporteHandler:     reporteHandler,
 	})
+
+	// Publicar catálogo de permisos al iniciar
+	go publicarCatalogoPermisos(context.Background(), publisher, generador)
 
 	return &Registry{
 		db:             db,

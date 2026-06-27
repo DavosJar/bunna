@@ -10,7 +10,7 @@ import (
 	shared "github.com/davosjar/bunna/services/fincas/internal/shared/domain"
 )
 
-const permisoRequerido = "RECHAZAR_DIAGNOSTICO"
+const permisoRequerido = application.PermisoRechazarDiagnostico
 const routingKey = "diagnosticos.v1.diagnostico.rechazado"
 
 // DiagnosticoRechazado es el evento publicado tras rechazar un diagnóstico exitosamente.

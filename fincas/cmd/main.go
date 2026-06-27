@@ -1,13 +1,22 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/davosjar/bunna/services/fincas/internal/registry"
 )
 
 func main() {
+	envFlag := flag.String("env", "", "entorno (dev, prod, test)")
+	flag.Parse()
+
+	if *envFlag != "" {
+		os.Setenv("ENVIRONMENT", *envFlag)
+	}
+
 	log.Println("Iniciando aplicación de fincas...")
 
 	r := registry.NewRegistry()

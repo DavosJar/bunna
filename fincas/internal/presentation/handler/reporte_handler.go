@@ -20,6 +20,9 @@ func NewReporteHandler(facade facades.ReportesFacade) *ReporteHandler {
 
 func (h *ReporteHandler) GenerarPorLote(c *gin.Context) {
 	loteID := c.Param("loteID")
+	if loteID == "" {
+		loteID = c.Param("id")
+	}
 
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {

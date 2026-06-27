@@ -11,11 +11,80 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    networks:
+      - fincas-network
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: fincas-kafka
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+      - ./topics.txt:/etc/kafka/topics.txt:ro
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    command: |
+      bash -c '
+        /etc/confluent/docker/run &
+        until kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1; do sleep 2; done;
+        while IFS= read -r topic; do
+          [ -z "$$topic" ] && continue;
+          kafka-topics --create --if-not-exists --topic "$$topic" --partitions 1 --replication-factor 1 --bootstrap-server localhost:9092;
+        done < /etc/kafka/topics.txt;
+        wait
+      '
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks:
+      - fincas-network
+
+  fincas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fincas-app
+    ports:
+      - "${SERVER_PORT:-8082}:8082"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_SSLMODE: disable
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER}
+      SERVER_PORT: ${SERVER_PORT:-8082}
+      GIN_MODE: ${GIN_MODE:-debug}
+      KAFKA_BROKERS: kafka:9092
+      ENVIRONMENT: ${ENVIRONMENT:-dev}
+      KAFKA_TOPIC_PERMISOS: ${ENVIRONMENT:-dev}.permisos
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - fincas-network
 
@@ -25,4 +94,6 @@ networks:
 
 volumes:
   postgres_data:
+    driver: local
+  kafka_data:
     driver: local

@@ -1,31 +1,42 @@
-.PHONY: docker-up docker-down docker-logs docker-shell docker-clean build test run run-test
-
 include .env
 export
 
-docker-up:
-	docker compose up -d
+PG  := $(shell docker compose config --services 2>/dev/null | grep -i postgres || echo postgres)
+KF  := $(shell docker compose config --services 2>/dev/null | grep -i kafka || echo kafka)
+.PHONY: up down clean logs ps logs-kafka logs-postgres build run consume topics infra
 
-docker-down:
+up: build
+	docker compose up --build
+
+down:
 	docker compose down
 
-docker-logs:
-	docker compose logs -f postgres
-
-docker-shell:
-	docker compose exec postgres psql -U ${POSTGRES_USER} -d ${POSTGRES_DB}
-
-docker-clean:
+clean:
 	docker compose down -v
 
+logs:
+	docker compose logs -f
+
+logs-kafka:
+	docker compose logs -f $(KF)
+
+logs-postgres:
+	docker compose logs -f $(PG)
+
+ps:
+	docker compose ps
+
 build:
-	go build -o bin/fincas ./cmd
+	go build -o bin/fincas ./cmd/main.go
 
-test:
-	go test ./...
+infra:
+	docker compose up -d --no-build $(PG) $(KF)
 
-run:
-	go run ./cmd
+run: infra
+	go run ./cmd --env $(or $(ENV),dev)
 
-run-test:
-	go run ./cmd/test
+consume:
+	docker compose exec $(KF) kafka-console-consumer --bootstrap-server localhost:9092 --topic $(or $(TOPIC),dev.permisos) --from-beginning
+
+topics:
+	docker compose exec $(KF) kafka-topics --bootstrap-server localhost:9092 --list

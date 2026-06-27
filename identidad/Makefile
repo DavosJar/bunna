@@ -1,4 +1,4 @@
-.PHONY: docker-up docker-down docker-logs docker-shell docker-clean build-test test seed run
+.PHONY: docker-up docker-down docker-logs docker-shell docker-clean seed run
 
 include .env
 export
@@ -18,11 +18,6 @@ docker-shell:
 docker-clean:
 	docker compose down -v
 
-build-test:
-	go build -o bin/test ./cmd/test/main.go
-
-test: build-test
-	./bin/test
 
 seed:
 	go run ./cmd/seed

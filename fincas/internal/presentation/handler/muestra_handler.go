@@ -21,6 +21,9 @@ func NewMuestraHandler(facade facades.MuestrasFacade) *MuestraHandler {
 
 func (h *MuestraHandler) Tomar(c *gin.Context) {
 	loteID := c.Param("loteID")
+	if loteID == "" {
+		loteID = c.Param("id")
+	}
 
 	var req dto.TomarMuestraRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -48,6 +51,9 @@ func (h *MuestraHandler) Tomar(c *gin.Context) {
 
 func (h *MuestraHandler) ListarPorLote(c *gin.Context) {
 	loteID := c.Param("loteID")
+	if loteID == "" {
+		loteID = c.Param("id")
+	}
 
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {

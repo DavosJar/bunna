@@ -11,7 +11,7 @@ import (
 	shared "github.com/davosjar/bunna/services/fincas/internal/shared/domain"
 )
 
-const permisoRequerido = "ACEPTAR_DIAGNOSTICO"
+const permisoRequerido = application.PermisoAceptarDiagnostico
 const routingKey = "diagnosticos.v1.diagnostico.aceptado"
 
 // DiagnosticoAceptado es el evento publicado tras aceptar un diagnóstico exitosamente.

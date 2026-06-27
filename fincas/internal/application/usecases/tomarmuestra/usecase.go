@@ -11,7 +11,7 @@ import (
 	shared "github.com/davosjar/bunna/services/fincas/internal/shared/domain"
 )
 
-const permisoRequerido = "CREAR_MUESTRA"
+const permisoRequerido = application.PermisoCrearMuestra
 const routingKey = "diagnosticos.v1.muestra.tomada"
 
 // MuestraTomada es el evento publicado tras tomar una muestra exitosamente.

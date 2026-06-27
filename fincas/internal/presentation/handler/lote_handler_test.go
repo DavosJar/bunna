@@ -94,7 +94,7 @@ func TestLoteHandler_Agregar(t *testing.T) {
 			h := handler.NewLoteHandler(mockFacade)
 			router := setupTestRouter() // Reuses setupTestRouter from finca_handler_test.go
 			router.Use(authMiddlewareMock()) // Reuses authMiddlewareMock from finca_handler_test.go
-			router.POST("/fincas/:fincaID/lotes", h.Agregar)
+			router.POST("/fincas/:id/lotes", h.Agregar)
 
 			var bodyBytes []byte
 			if b, ok := tt.requestBody.(string); ok {

@@ -10,7 +10,7 @@ import (
 	shared "github.com/davosjar/bunna/services/fincas/internal/shared/domain"
 )
 
-const permisoRequerido = "CREAR_LOTE"
+const permisoRequerido = application.PermisoCrearLote
 const routingKey = "fincas.v1.lote.creado"
 
 // LoteCreado es el evento publicado tras agregar un lote exitosamente.

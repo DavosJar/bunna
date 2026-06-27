@@ -12,7 +12,7 @@ import (
 	shared "github.com/davosjar/bunna/services/fincas/internal/shared/domain"
 )
 
-const permisoRequerido = "GENERAR_REPORTE"
+const permisoRequerido = application.PermisoGenerarReporte
 
 // UseCase orquesta la generación del reporte de clorosis para un lote.
 // Es un caso de uso de solo lectura: no publica eventos ni usa Unit of Work.

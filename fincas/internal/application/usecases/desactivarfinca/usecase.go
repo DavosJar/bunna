@@ -10,7 +10,7 @@ import (
 	shared "github.com/davosjar/bunna/services/fincas/internal/shared/domain"
 )
 
-const permisoRequerido = "DESACTIVAR_FINCA"
+const permisoRequerido = application.PermisoDesactivarFinca
 
 // FincaDesactivada es el evento publicado tras desactivar una finca.
 type FincaDesactivada struct {

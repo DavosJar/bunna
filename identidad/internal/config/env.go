@@ -67,6 +67,7 @@ type Config struct {
 	TelemetryEnabled bool
 	KafkaBrokers     string
 	KafkaTopic       string
+	KafkaTopicPermisos string
 }
 
 // LoadConfig carga y valida todas las variables de entorno.
@@ -237,6 +238,7 @@ func LoadConfig() (*Config, error) {
 		TelemetryEnabled: telemetryEnabled,
 		KafkaBrokers:     getEnv("KAFKA_BROKERS", "localhost:9092"),
 		KafkaTopic:       getEnv("KAFKA_TOPIC", "telemetry"),
+		KafkaTopicPermisos: getEnv("KAFKA_TOPIC_PERMISOS", getEnv("ENVIRONMENT", "dev")+".permisos"),
 	}
 
 	if cfg.DBPassword == "" {

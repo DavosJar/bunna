@@ -57,10 +57,10 @@ func New(cfg Config) *gin.Engine {
 	}
 
 	// Lotes anidados en finca (requieren auth)
-	fincas.POST("/:fincaID/lotes", auth, cfg.LoteHandler.Agregar)
-	fincas.GET("/:fincaID/lotes/:loteID/muestras", auth, cfg.MuestraHandler.ListarPorLote)
-	fincas.POST("/:fincaID/lotes/:loteID/muestras", auth, cfg.MuestraHandler.Tomar)
-	fincas.GET("/:fincaID/lotes/:loteID/reporte", auth, cfg.ReporteHandler.GenerarPorLote)
+	fincas.POST("/:id/lotes", auth, cfg.LoteHandler.Agregar)
+	fincas.GET("/:id/lotes/:loteID/muestras", auth, cfg.MuestraHandler.ListarPorLote)
+	fincas.POST("/:id/lotes/:loteID/muestras", auth, cfg.MuestraHandler.Tomar)
+	fincas.GET("/:id/lotes/:loteID/reporte", auth, cfg.ReporteHandler.GenerarPorLote)
 
 	// Rutas protegidas — diagnósticos
 	diagnosticos := r.Group("/diagnosticos")
@@ -74,9 +74,9 @@ func New(cfg Config) *gin.Engine {
 	r.POST("/muestras/:muestraID/diagnosticos/manual", auth, cfg.DiagnosticoHandler.SolicitarManual)
 
 	// Rutas legacy de lotes (por ID directo)
-	lotes.GET("/:loteID/muestras", auth, cfg.MuestraHandler.ListarPorLote)
-	lotes.POST("/:loteID/muestras", auth, cfg.MuestraHandler.Tomar)
-	lotes.GET("/:loteID/reporte", auth, cfg.ReporteHandler.GenerarPorLote)
+	lotes.GET("/:id/muestras", auth, cfg.MuestraHandler.ListarPorLote)
+	lotes.POST("/:id/muestras", auth, cfg.MuestraHandler.Tomar)
+	lotes.GET("/:id/reporte", auth, cfg.ReporteHandler.GenerarPorLote)
 
 	return r
 }

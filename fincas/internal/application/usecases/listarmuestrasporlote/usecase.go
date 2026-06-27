@@ -10,7 +10,7 @@ import (
 	shared "github.com/davosjar/bunna/services/fincas/internal/shared/domain"
 )
 
-const permisoRequerido = "VER_MUESTRAS"
+const permisoRequerido = application.PermisoVerMuestras
 
 // UseCase orquesta la consulta de muestras asociadas a un lote.
 type UseCase struct {

@@ -1,21 +1,26 @@
 services:
+  zookeeper:
+    image: ${ZK_IMAGE:-confluentinc/cp-zookeeper:7.4.0}
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - ${PLACEMENT_CONSTRAINT:-node.role == worker}
+
   kafka:
     image: ${KAFKA_IMAGE:-confluentinc/cp-kafka:7.4.0}
+    depends_on:
+      - zookeeper
     ports:
       - target: 9092
         published: ${KAFKA_PORT:-9092}
-      - target: 19092
-        published: 19092
     environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: 'broker,controller'
-      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@localhost:29093'
-      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:29093,EXTERNAL://0.0.0.0:19092'
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092,EXTERNAL://172.31.36.189:19092'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
-      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT'
-      CLUSTER_ID: ${CLUSTER_ID:-MkU3OEVBNTcwNTJENDM2Qk}
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092'
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -46,42 +51,6 @@ services:
         constraints:
           - ${PLACEMENT_CONSTRAINT:-node.role == worker}
 
-  hardware-monitor-agent:
-    image: ${REGISTRY:-172.31.36.189:5000}/hardware-monitor-agent:release
-    depends_on:
-      - kafka
-    environment:
-      - KAFKA_BROKERS=kafka:9092
-      - SAMPLE_INTERVAL_MS=5000
-      - CLOUD_PROVIDER=local
-      - NODE_ID={{.Node.Hostname}}
-    volumes:
-      - /etc/hostname:/etc/host_hostname:ro
-    deploy:
-      mode: global
-
-  servicio-monitoreo:
-    image: ${REGISTRY:-172.31.36.189:5000}/servicio-monitoreo:release
-    depends_on:
-      - kafka
-      - clickhouse
-    environment:
-      - KAFKA_BROKERS=kafka:9092
-      - KAFKA_TOPIC_TELEMETRIA=telemetry
-      - KAFKA_TOPIC_HARDWARE_METRICAS=hardware.metrics
-      - KAFKA_TOPIC_HARDWARE_ALERTAS=hardware.alerts
-      - GRUPO_CONSUMIDOR=monitor-ingestor
-      - CLICKHOUSE_URL=http://clickhouse:8123
-      - CLICKHOUSE_USUARIO=monitoreo
-      - CLICKHOUSE_CONTRASENA=monitoreo_dev
-      - CLICKHOUSE_BD=bunna_monitoreo
-      - RUST_LOG=info
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - ${PLACEMENT_CONSTRAINT:-node.role == worker}
-
   clickhouse:
     image: ${CH_IMAGE:-clickhouse/clickhouse-server:latest}
     ports:
@@ -95,9 +64,6 @@ services:
       - CLICKHOUSE_DB=${CH_DB:-bunna_monitoreo}
     volumes:
       - clickhouse_data_infra:/var/lib/clickhouse
-    configs:
-      - source: clickhouse_init_sql
-        target: /docker-entrypoint-initdb.d/001_tablas.sql
     deploy:
       replicas: 1
       placement:
@@ -149,20 +115,18 @@ configs:
   topics_txt:
     file: ../prod/topics.txt
   clickhouse_datasource:
-    file: ../../servicio-monitoreo/grafana/datasources/clickhouse.yaml
+    file: ../../../servicio-monitoreo/grafana/datasources/clickhouse.yaml
   dashboards_provider:
-    file: ../../servicio-monitoreo/grafana/dashboards/proveedor.yaml
+    file: ../../../servicio-monitoreo/grafana/dashboards/proveedor.yaml
   hardware_metrics_dashboard:
-    file: ../../servicio-monitoreo/grafana/dashboards/hardware-metrics.json
+    file: ../../../servicio-monitoreo/grafana/dashboards/hardware-metrics.json
   api_telemetry_dashboard:
-    file: ../../servicio-monitoreo/grafana/dashboards/api-telemetry.json
+    file: ../../../servicio-monitoreo/grafana/dashboards/api-telemetry.json
   business_ops_dashboard:
-    file: ../../servicio-monitoreo/grafana/dashboards/business-ops.json
+    file: ../../../servicio-monitoreo/grafana/dashboards/business-ops.json
   data_queries_dashboard:
-    file: ../../servicio-monitoreo/grafana/dashboards/data-queries.json
+    file: ../../../servicio-monitoreo/grafana/dashboards/data-queries.json
   api_endpoint_deep_dive_dashboard:
-    file: ../../servicio-monitoreo/grafana/dashboards/api-endpoint-deep-dive.json
+    file: ../../../servicio-monitoreo/grafana/dashboards/api-endpoint-deep-dive.json
   api_full_telemetry_dashboard:
-    file: ../../servicio-monitoreo/grafana/dashboards/api-full-telemetry.json
-  clickhouse_init_sql:
-    file: ../../servicio-monitoreo/config/clickhouse/init/001_tablas.sql
+    file: ../../../servicio-monitoreo/grafana/dashboards/api-full-telemetry.json

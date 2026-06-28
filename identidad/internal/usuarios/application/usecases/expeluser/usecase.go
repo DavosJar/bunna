@@ -3,27 +3,27 @@ package expeluser
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
-	sesiones "github.com/davosjar/bunna/services/identidad/internal/sesiones/domain"
-	usuario "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
+	tenant "github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
 )
 
 type ExpulsarUsuarioCasoDeUso struct {
-	userRepo    usuario.UsuarioRepositorio
-	sessionRepo sesiones.SesionRepositorio
-	authSvc     rbac.AuthorizationService
+	membresiaRepo      tenant.MembresiaRepositorio
+	usuarioTenantRolRepo rbac.UsuarioTenantRolRepositorio
+	authSvc              rbac.AuthorizationService
 }
 
 func NewExpulsarUsuarioCasoDeUso(
-	userRepo usuario.UsuarioRepositorio,
-	sessionRepo sesiones.SesionRepositorio,
+	membresiaRepo tenant.MembresiaRepositorio,
+	usuarioTenantRolRepo rbac.UsuarioTenantRolRepositorio,
 	authSvc rbac.AuthorizationService,
 ) *ExpulsarUsuarioCasoDeUso {
 	return &ExpulsarUsuarioCasoDeUso{
-		userRepo:    userRepo,
-		sessionRepo: sessionRepo,
-		authSvc:     authSvc,
+		membresiaRepo:        membresiaRepo,
+		usuarioTenantRolRepo: usuarioTenantRolRepo,
+		authSvc:              authSvc,
 	}
 }
 
@@ -40,28 +40,26 @@ func (uc *ExpulsarUsuarioCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoEx
 		return nil, fmt.Errorf("no puedes expulsarte a ti mismo")
 	}
 
-	u, err := uc.userRepo.ObtenerPorID(ctx, cmd.UsuarioID)
+	// 1. Quitar todos los roles del usuario en el tenant
+	roles, err := uc.usuarioTenantRolRepo.ListarRolesPorUsuarioEnTenant(ctx, cmd.UsuarioID, cmd.TenantID)
 	if err != nil {
-		return nil, fmt.Errorf("usuario no encontrado: %w", err)
+		return nil, fmt.Errorf("error al obtener roles del usuario en el tenant: %w", err)
+	}
+	for _, rol := range roles {
+		if err := uc.usuarioTenantRolRepo.Eliminar(ctx, cmd.UsuarioID, cmd.TenantID, rol.ID); err != nil {
+			return nil, fmt.Errorf("error al revocar rol %s: %w", rol.ID, err)
+		}
 	}
 
-	if err := u.Bloquear(); err != nil {
-		_ = u.Inactivar()
-	}
-
-	uActualizado, err := uc.userRepo.Actualizar(ctx, u)
-	if err != nil {
-		return nil, fmt.Errorf("error al persistir cambio de estado: %w", err)
-	}
-
-	if err := uc.sessionRepo.InvalidarTodasPorUsuarioID(ctx, cmd.UsuarioID); err != nil {
-		return nil, fmt.Errorf("error al invalidar sesiones: %w", err)
+	// 2. Quitar membresía del tenant
+	if err := uc.membresiaRepo.Eliminar(ctx, cmd.UsuarioID, cmd.TenantID); err != nil {
+		return nil, fmt.Errorf("error al eliminar membresía: %w", err)
 	}
 
 	return &RespuestaExpulsarUsuario{
-		UsuarioID:         uActualizado.ID(),
-		Estado:            string(uActualizado.Estado()),
-		SesionesRevocadas: -1,
-		ExpulsadoEn:       uActualizado.FechaActualizacion().Format("2006-01-02T15:04:05Z"),
+		UsuarioID:         cmd.UsuarioID,
+		Estado:            "EXPULSADO",
+		SesionesRevocadas: 0,
+		ExpulsadoEn:       time.Now().Format("2006-01-02T15:04:05Z"),
 	}, nil
 }

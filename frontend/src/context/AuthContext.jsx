@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { loginUsuario, registrarUsuario, parseJWT, isTokenExpired, switchTenantAPI, logoutUsuario, logoutAllSesiones } from '../services/authApi';
 import { getMisTenants, getMisPermisos, getMiPerfil } from '../services/identidadApi';
-import { loadRolPreview, saveRolPreview } from '../utils/roleAccess';
 
 const AuthContext = createContext(null);
 
@@ -68,7 +67,6 @@ export function AuthProvider({ children }) {
   const [availableTenants, setAvailableTenants] = useState([]);
   const [ownTenantId, setOwnTenantId] = useState(null);
   const [permisos, setPermisos] = useState([]);
-  const [rolPreview, setRolPreviewState] = useState(loadRolPreview);
 
   const currentTenant = useMemo(
     () => availableTenants?.find(t => t.id === user?.tenantID) || null,
@@ -192,18 +190,11 @@ export function AuthProvider({ children }) {
       else await logoutUsuario();
     } catch { /* limpiar local aunque falle el servidor */ }
     clearStorage();
-    saveRolPreview(null);
-    setRolPreviewState(null);
     setUser(null);
     setError(null);
     setAvailableTenants([]);
     setPermisos([]);
   }, [user]);
-
-  const setRolPreview = useCallback((rol) => {
-    saveRolPreview(rol);
-    setRolPreviewState(rol);
-  }, []);
 
   const getAccessToken = useCallback(() => {
     const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
@@ -217,7 +208,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      user, permisos, rolPreview, setRolPreview, loading, error, login, register, logout, getAccessToken,
+      user, permisos, loading, error, login, register, logout, getAccessToken,
       setError, availableTenants, ownTenantId, currentTenant, switchTenant,
       fetchMisTenants, fetchMisPermisos,
     }}>

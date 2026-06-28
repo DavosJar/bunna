@@ -303,8 +303,11 @@ func (h *ExpulsarUsuarioHandler) handle(ctx context.Context, input *ExpulsarUsua
 		return nil, huma.Error401Unauthorized("token requerido")
 	}
 
+	tenantID := middleware.GetTenantIDFromCtx(ctx)
+
 	resp, err := h.facade.ExpulsarUsuario(ctx, facades.ComandoExpulsarUsuario{
 		UsuarioID:  input.UsuarioID,
+		TenantID:   tenantID,
 		EjecutorID: ejecutorID,
 	})
 	if err != nil {

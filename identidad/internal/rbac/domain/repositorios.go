@@ -13,6 +13,7 @@ type RolRepositorio interface {
 	Listar(ctx context.Context, especificacion EspecificacionRol, paginacion shareddomain.Paginacion) ([]*RolDB, error)
 	Crear(ctx context.Context, rol *RolDB) error
 	ActualizarDescripcion(ctx context.Context, id, descripcion string) error
+	Eliminar(ctx context.Context, id string) error
 }
 
 // PermisoRepositorio define las operaciones de persistencia para permisos

@@ -26,6 +26,7 @@ var RolesDeSistema = []RolInfo{
 		Descripcion: "Super administrador global con todos los permisos",
 		EsSistema:   true,
 		Permisos: []string{
+			PermisoUsuarioInvitar,
 			PermisoUsuarioCrear,
 			PermisoUsuarioModificar,
 			PermisoUsuarioEliminar,
@@ -54,6 +55,7 @@ var RolesDeSistema = []RolInfo{
 		Descripcion: "Administrador del tenant: gestiona miembros, roles personalizados y permisos del propio tenant",
 		EsSistema:   true,
 		Permisos: []string{
+			PermisoUsuarioInvitar,
 			PermisoUsuarioConsultar,
 			PermisoUsuarioExpulsar,
 			PermisoRolCrear,
@@ -68,13 +70,10 @@ var RolesDeSistema = []RolInfo{
 	},
 	{
 		Nombre:      RolAgronomo,
-		Descripcion: "Permisos intermedios: crear y modificar usuarios, consultar",
+		Descripcion: "Solo consulta de usuarios",
 		EsSistema:   true,
 		Permisos: []string{
-			PermisoUsuarioCrear,
-			PermisoUsuarioModificar,
 			PermisoUsuarioConsultar,
-			PermisoPermisoConsultar,
 		},
 	},
 	{

@@ -75,6 +75,7 @@ type RespuestaDarDeBajaUsuario struct {
 
 type ComandoExpulsarUsuario struct {
 	UsuarioID  string
+	TenantID   string
 	EjecutorID string
 }
 
@@ -235,7 +236,7 @@ func (f *usuarioFacadeImpl) DarDeBajaUsuario(ctx context.Context, cmd ComandoDar
 func (f *usuarioFacadeImpl) ExpulsarUsuario(ctx context.Context, cmd ComandoExpulsarUsuario) (*RespuestaExpulsarUsuario, error) {
 	resp, err := f.expulsarUsuario.Ejecutar(ctx, &uc_expeluser.ComandoExpulsarUsuario{
 		UsuarioID:  cmd.UsuarioID,
-		TenantID:   "",
+		TenantID:   cmd.TenantID,
 		EjecutorID: cmd.EjecutorID,
 	})
 	if err != nil {

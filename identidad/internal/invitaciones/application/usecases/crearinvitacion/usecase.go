@@ -14,6 +14,7 @@ import (
 )
 
 type CrearInvitacionCasoDeUso struct {
+	authSvc          rbac.AuthorizationService
 	invitacionRepo   invitaciones.InvitacionRepositorio
 	tenantRepo       tenant.TenantRepositorio
 	rolRepo          rbac.RolRepositorio
@@ -24,6 +25,7 @@ type CrearInvitacionCasoDeUso struct {
 }
 
 func NewCrearInvitacionCasoDeUso(
+	authSvc rbac.AuthorizationService,
 	invitacionRepo invitaciones.InvitacionRepositorio,
 	tenantRepo tenant.TenantRepositorio,
 	rolRepo rbac.RolRepositorio,
@@ -33,6 +35,7 @@ func NewCrearInvitacionCasoDeUso(
 	tokenExpiracion time.Duration,
 ) *CrearInvitacionCasoDeUso {
 	return &CrearInvitacionCasoDeUso{
+		authSvc:         authSvc,
 		invitacionRepo:  invitacionRepo,
 		tenantRepo:      tenantRepo,
 		rolRepo:         rolRepo,
@@ -44,6 +47,14 @@ func NewCrearInvitacionCasoDeUso(
 }
 
 func (uc *CrearInvitacionCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoCrearInvitacion) (*RespuestaCrearInvitacion, error) {
+	ok, err := uc.authSvc.TienePermiso(ctx, cmd.CreadoPor, cmd.TenantID, rbac.PermisoUsuarioInvitar)
+	if err != nil {
+		return nil, fmt.Errorf("error al verificar permiso: %w", err)
+	}
+	if !ok {
+		return nil, rbac.ErrPermisoDenegado
+	}
+
 	if cmd.Correo == "" {
 		return nil, invitaciones.ErrEmailRequerido
 	}

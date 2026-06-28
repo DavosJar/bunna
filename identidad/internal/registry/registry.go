@@ -7,6 +7,10 @@ import (
 	"github.com/davosjar/bunna/services/identidad/internal/config"
 	uc_aceptarInvitacion "github.com/davosjar/bunna/services/identidad/internal/invitaciones/application/usecases/aceptarinvitacion"
 	uc_crearInvitacion "github.com/davosjar/bunna/services/identidad/internal/invitaciones/application/usecases/crearinvitacion"
+	uc_eliminarInvitacion "github.com/davosjar/bunna/services/identidad/internal/invitaciones/application/usecases/eliminarinvitacion"
+	uc_listarInvitaciones "github.com/davosjar/bunna/services/identidad/internal/invitaciones/application/usecases/listarinvitaciones"
+	uc_obtenerInvitacion "github.com/davosjar/bunna/services/identidad/internal/invitaciones/application/usecases/obtenerinvitacion"
+	uc_reenviarInvitacion "github.com/davosjar/bunna/services/identidad/internal/invitaciones/application/usecases/reenviarinvitacion"
 	invitaciones_postgres "github.com/davosjar/bunna/services/identidad/internal/invitaciones/infrastructure/persistence/postgres"
 	notificaciones "github.com/davosjar/bunna/services/identidad/internal/notificaciones/domain"
 	notificaciones_email "github.com/davosjar/bunna/services/identidad/internal/notificaciones/infrastructure/email"
@@ -159,8 +163,12 @@ type Registry struct {
 	ConfirmarRecuperacionCasoDeUso    decorator.UseCase[*uc_confirmar_recuperacion.ComandoConfirmarRecuperacion, *uc_confirmar_recuperacion.RespuestaConfirmarRecuperacion]
 
 	// Casos de uso — invitaciones
-	CrearInvitacionCasoDeUso   decorator.UseCase[*uc_crearInvitacion.ComandoCrearInvitacion, *uc_crearInvitacion.RespuestaCrearInvitacion]
-	AceptarInvitacionCasoDeUso decorator.UseCase[*uc_aceptarInvitacion.ComandoAceptarInvitacion, *uc_aceptarInvitacion.RespuestaAceptarInvitacion]
+	CrearInvitacionCasoDeUso     decorator.UseCase[*uc_crearInvitacion.ComandoCrearInvitacion, *uc_crearInvitacion.RespuestaCrearInvitacion]
+	AceptarInvitacionCasoDeUso   decorator.UseCase[*uc_aceptarInvitacion.ComandoAceptarInvitacion, *uc_aceptarInvitacion.RespuestaAceptarInvitacion]
+	ObtenerInvitacionCasoDeUso   decorator.UseCase[*uc_obtenerInvitacion.ComandoObtenerInvitacion, *uc_obtenerInvitacion.RespuestaObtenerInvitacion]
+	ListarInvitacionesCasoDeUso  decorator.UseCase[*uc_listarInvitaciones.ComandoListarInvitaciones, *uc_listarInvitaciones.RespuestaListarInvitaciones]
+	ReenviarInvitacionCasoDeUso  decorator.UseCase[*uc_reenviarInvitacion.ComandoReenviarInvitacion, *uc_reenviarInvitacion.RespuestaReenviarInvitacion]
+	EliminarInvitacionCasoDeUso  decorator.UseCase[*uc_eliminarInvitacion.ComandoEliminarInvitacion, *uc_eliminarInvitacion.RespuestaEliminarInvitacion]
 
 	// Casos de uso — tenants
 	ListarMisTenantsCasoDeUso     decorator.UseCase[string, *uc_listarmistenants.RespuestaListarMisTenants]
@@ -255,16 +263,11 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		Async:    false,
 	})
 
+	registroUoW := usuarios_postgres.NewRegistroUnitOfWork(db)
 	registroUseCase := uc_register.NewRegistrarUsuarioCasoDeUso(
-		usuarioRepo,
-		credencialesRepo,
+		registroUoW,
 		encriptacion,
 		generadorID,
-		tenantRepo,
-		membresiaRepo,
-		rolRepo,
-		usuarioTenantRolRepo,
-		rolPermisoRepo,
 		rolesPublisher,
 	)
 
@@ -334,7 +337,7 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 	listarUsuariosUC := uc_listusers.NewListarUsuariosCasoDeUso(usuarioRepo, authSvc)
 	modificarUsuarioUC := uc_updateuser.NewModificarUsuarioCasoDeUso(usuarioRepo, authSvc)
 	darDeBajaUsuarioUC := uc_deleteuser.NewDarDeBajaUsuarioCasoDeUso(usuarioRepo, authSvc)
-	expulsarUsuarioUC := uc_expeluser.NewExpulsarUsuarioCasoDeUso(usuarioRepo, sesionRepo, authSvc)
+	expulsarUsuarioUC := uc_expeluser.NewExpulsarUsuarioCasoDeUso(membresiaRepo, usuarioTenantRolRepo, authSvc)
 
 	// Casos de uso — autogestión
 	verMiPerfilUC := uc_viewmyprofile.NewVerMiPerfilCasoDeUso(usuarioRepo)
@@ -371,6 +374,7 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 
 	// Casos de uso — invitaciones
 	crearInvitacionUC := uc_crearInvitacion.NewCrearInvitacionCasoDeUso(
+		authSvc,
 		invitacionRepo,
 		tenantRepo,
 		rolRepo,
@@ -383,6 +387,31 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		invitacionRepo,
 		membresiaRepo,
 		usuarioTenantRolRepo,
+		usuarioRepo,
+	)
+	obtenerInvitacionUC := uc_obtenerInvitacion.NewObtenerInvitacionCasoDeUso(
+		invitacionRepo,
+		tenantRepo,
+		rolRepo,
+	)
+
+	listarInvitacionesUC := uc_listarInvitaciones.NewListarInvitacionesCasoDeUso(
+		invitacionRepo,
+		rolRepo,
+	)
+
+	reenviarInvitacionUC := uc_reenviarInvitacion.NewReenviarInvitacionCasoDeUso(
+		invitacionRepo,
+		tenantRepo,
+		emailSvc,
+		generadorID,
+		cfg.FrontendURL,
+		cfg.InvitacionTokenExpiracion,
+	)
+
+	eliminarInvitacionUC := uc_eliminarInvitacion.NewEliminarInvitacionCasoDeUso(
+		invitacionRepo,
+		authSvc,
 	)
 
 	// Casos de uso — tenants
@@ -519,8 +548,12 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		RevocarPermisoDeRolCasoDeUso: revocarPermisoDeRolUC,
 
 		// Casos de uso — invitaciones
-		CrearInvitacionCasoDeUso:   crearInvitacionUC,
-		AceptarInvitacionCasoDeUso: aceptarInvitacionUC,
+		CrearInvitacionCasoDeUso:     crearInvitacionUC,
+		AceptarInvitacionCasoDeUso:   aceptarInvitacionUC,
+		ObtenerInvitacionCasoDeUso:   obtenerInvitacionUC,
+		ListarInvitacionesCasoDeUso:  listarInvitacionesUC,
+		ReenviarInvitacionCasoDeUso:  reenviarInvitacionUC,
+		EliminarInvitacionCasoDeUso:  eliminarInvitacionUC,
 
 		// Casos de uso — tenants
 		ListarMisTenantsCasoDeUso:     listarMisTenantsUC,
@@ -595,6 +628,10 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		// Invitaciones
 		reg.CrearInvitacionCasoDeUso = decorator.Wrap("CrearInvitacion", telemetryWriter, crearInvitacionUC)
 		reg.AceptarInvitacionCasoDeUso = decorator.Wrap("AceptarInvitacion", telemetryWriter, aceptarInvitacionUC)
+		reg.ObtenerInvitacionCasoDeUso = decorator.Wrap("ObtenerInvitacion", telemetryWriter, obtenerInvitacionUC)
+		reg.ListarInvitacionesCasoDeUso = decorator.Wrap("ListarInvitaciones", telemetryWriter, listarInvitacionesUC)
+		reg.ReenviarInvitacionCasoDeUso = decorator.Wrap("ReenviarInvitacion", telemetryWriter, reenviarInvitacionUC)
+		reg.EliminarInvitacionCasoDeUso = decorator.Wrap("EliminarInvitacion", telemetryWriter, eliminarInvitacionUC)
 
 		// Tenants
 		reg.ListarMisTenantsCasoDeUso = decorator.Wrap("ListarMisTenants", telemetryWriter, listarMisTenantsUC)

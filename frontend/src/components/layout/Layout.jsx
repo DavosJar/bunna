@@ -8,7 +8,7 @@ import './Layout.css';
 
 export default function Layout({ children, title, subtitle }) {
   const { user, logout } = useAuth();
-  const { rolLabel, rolProfile, puedeAccederAdmin, enVistaPrevia, rolRealLabel, effectiveUser } = usePermisos();
+  const { rolLabel, rolProfile, puedeAccederAdmin } = usePermisos();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -35,7 +35,7 @@ export default function Layout({ children, title, subtitle }) {
     : '??';
 
   return (
-    <div className={`layout layout--rol-${rolProfile.accent}`} data-rol={effectiveUser?.rol || ''}>
+    <div className={`layout layout--rol-${rolProfile.accent}`} data-rol={user?.rol || ''}>
       <Sidebar
         collapsed={collapsed}
         onToggle={() => setCollapsed(c => !c)}
@@ -47,11 +47,6 @@ export default function Layout({ children, title, subtitle }) {
 
       <div className="layout__content">
         <header className="layout__topbar">
-          {enVistaPrevia && (
-            <div className="layout__preview-strip">
-              Vista simulada: <strong>{rolLabel}</strong> — rol real: {rolRealLabel}
-            </div>
-          )}
           <div className="layout__topbar-row">
           <div className="layout__topbar-left">
             <button className="layout__mobile-toggle" onClick={() => setMobileOpen(o => !o)} aria-label="Abrir menú">
@@ -68,7 +63,7 @@ export default function Layout({ children, title, subtitle }) {
             <TenantSwitcher />
             {puedeAccederAdmin() && (
               <span className={`layout__context-badge layout__context-badge--${rolProfile.accent}`}>
-                {effectiveUser?.rol === 'sys_admin' ? 'SYS' : effectiveUser?.rol === 'agronomo' ? 'AGR' : 'Admin'}
+                {user?.rol === 'sys_admin' ? 'SYS' : user?.rol === 'agronomo' ? 'AGR' : 'Admin'}
               </span>
             )}
             <div className="layout__topbar-profile" ref={dropdownRef}>

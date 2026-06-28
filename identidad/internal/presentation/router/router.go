@@ -2,6 +2,7 @@
 package router
 
 import (
+	"net/http"
 	"strings"
 	"time"
 
@@ -43,13 +44,35 @@ func jwtIfRequired(tokenSvc sesiones_domain.TokenServicio) gin.HandlerFunc {
 		"/api/v1/verificacion/confirmar",
 	}
 
+	// rutas de invitación cuyo path empieza con /api/v1/invitaciones/{token}… (públicas)
+	// NOTA: GET /api/v1/invitaciones exacto NO es público (lista admin),
+	// pero GET /api/v1/invitaciones/{token} y POST /api/v1/invitaciones/{token}/aceptar sí lo son.
+	publicPrefixInvitaciones := "/api/v1/invitaciones/"
+
 	return func(c *gin.Context) {
+		path := c.Request.URL.Path
+
+		// Primero verificar rutas públicas exactas
 		for _, p := range publicPaths {
-			if strings.HasPrefix(c.Request.URL.Path, p) {
+			if strings.HasPrefix(path, p) {
 				c.Next()
 				return
 			}
 		}
+
+		// Rutas públicas de invitaciones: solo GET (ver invitación) y POST …/aceptar
+		// (aceptar invitación) son públicas. Reenviar, eliminar, etc. requieren JWT.
+		if strings.HasPrefix(path, publicPrefixInvitaciones) {
+			if c.Request.Method == http.MethodGet ||
+				(c.Request.Method == http.MethodPost && strings.HasSuffix(path, "/aceptar")) {
+				c.Next()
+				return
+			}
+			// Reenviar, delete, etc. require JWT
+			jwtMid(c)
+			return
+		}
+
 		jwtMid(c)
 	}
 }
@@ -157,6 +180,10 @@ func New(all *facades.AllFacades, cfg Config) *gin.Engine {
 	// Registrar handlers — Invitaciones
 	handlers.NewCrearInvitacionHandler(all.Invitacion).Register(api)
 	handlers.NewAceptarInvitacionHandler(all.Invitacion).Register(api)
+	handlers.NewObtenerInvitacionHandler(all.Invitacion).Register(api)
+	handlers.NewListarInvitacionesHandler(all.Invitacion).Register(api)
+	handlers.NewReenviarInvitacionHandler(all.Invitacion).Register(api)
+	handlers.NewEliminarInvitacionHandler(all.Invitacion).Register(api)
 
 	return router
 }

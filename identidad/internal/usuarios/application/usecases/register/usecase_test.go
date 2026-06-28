@@ -13,7 +13,51 @@ import (
 	usuariodomain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
 )
 
-// ── Mocks ─────────────────────────────────────────────────────────────────────
+// ── Mock UnitOfWork ────────────────────────────────────────────────────────────
+
+type mockUnitOfWork struct {
+	usuarioRepo          usuariodomain.UsuarioRepositorio
+	credencialesRepo     domain.CredencialesRepositorio
+	tenantRepo           tenant.TenantRepositorio
+	membresiaRepo        tenant.MembresiaRepositorio
+	rolRepo              rbac.RolRepositorio
+	usuarioTenantRolRepo rbac.UsuarioTenantRolRepositorio
+	rolPermisoRepo       rbac.RolPermisoRepositorio
+}
+
+func (m *mockUnitOfWork) Transaccional(ctx context.Context, fn func(tx register.UnitOfWork) error) error {
+	return fn(m)
+}
+
+func (m *mockUnitOfWork) UsuarioRepository() usuariodomain.UsuarioRepositorio {
+	return m.usuarioRepo
+}
+
+func (m *mockUnitOfWork) CredencialesRepository() domain.CredencialesRepositorio {
+	return m.credencialesRepo
+}
+
+func (m *mockUnitOfWork) TenantRepository() tenant.TenantRepositorio {
+	return m.tenantRepo
+}
+
+func (m *mockUnitOfWork) MembresiaRepository() tenant.MembresiaRepositorio {
+	return m.membresiaRepo
+}
+
+func (m *mockUnitOfWork) RolRepository() rbac.RolRepositorio {
+	return m.rolRepo
+}
+
+func (m *mockUnitOfWork) UsuarioTenantRolRepository() rbac.UsuarioTenantRolRepositorio {
+	return m.usuarioTenantRolRepo
+}
+
+func (m *mockUnitOfWork) RolPermisoRepository() rbac.RolPermisoRepositorio {
+	return m.rolPermisoRepo
+}
+
+// ── Other Mocks ────────────────────────────────────────────────────────────────
 
 type mockUsuarioRepo struct {
 	crearFunc func(ctx context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error)
@@ -27,6 +71,9 @@ func (m *mockUsuarioRepo) Actualizar(ctx context.Context, u *usuariodomain.Usuar
 }
 func (m *mockUsuarioRepo) Eliminar(ctx context.Context, id string) error { return nil }
 func (m *mockUsuarioRepo) ObtenerPorID(ctx context.Context, id string) (*usuariodomain.Usuario, error) {
+	return nil, nil
+}
+func (m *mockUsuarioRepo) ObtenerPorCorreo(ctx context.Context, correo string) (*usuariodomain.Usuario, error) {
 	return nil, nil
 }
 func (m *mockUsuarioRepo) Listar(ctx context.Context, _ usuariodomain.EspecificacionUsuario, _ shareddomain.Paginacion) ([]*usuariodomain.Usuario, error) {
@@ -74,7 +121,8 @@ func (m *mockGeneradorID) NextID(ctx context.Context) (string, error) {
 }
 
 type mockTenantRepo struct {
-	crearFunc func(ctx context.Context, t *tenant.Tenant) (*tenant.Tenant, error)
+	crearFunc      func(ctx context.Context, t *tenant.Tenant) (*tenant.Tenant, error)
+	obtenerSlugErr error
 }
 
 func (m *mockTenantRepo) Crear(ctx context.Context, t *tenant.Tenant) (*tenant.Tenant, error) {
@@ -84,6 +132,9 @@ func (m *mockTenantRepo) ObtenerPorID(ctx context.Context, id string) (*tenant.T
 	return nil, nil
 }
 func (m *mockTenantRepo) ObtenerPorSlug(ctx context.Context, slug string) (*tenant.Tenant, error) {
+	if m.obtenerSlugErr != nil {
+		return nil, m.obtenerSlugErr
+	}
 	return nil, tenant.ErrTenantNoEncontrado
 }
 func (m *mockTenantRepo) Actualizar(ctx context.Context, t *tenant.Tenant) (*tenant.Tenant, error) {
@@ -145,42 +196,102 @@ func (m *mockUsuarioTenantRolRepo) TieneRolEnTenant(ctx context.Context, _, _, _
 	return false, nil
 }
 
+type mockRolPermisoRepo struct {
+	listarPorRolYTenantFunc func(ctx context.Context, rolID, tenantID string) ([]*rbac.PermisoDB, error)
+}
+
+func (m *mockRolPermisoRepo) AsignarPermiso(ctx context.Context, rolID, permisoID, tenantID, asignadoPor string) error {
+	return nil
+}
+func (m *mockRolPermisoRepo) EliminarPermiso(ctx context.Context, rolID, permisoID, tenantID string) error {
+	return nil
+}
+func (m *mockRolPermisoRepo) ListarPorRolYTenant(ctx context.Context, rolID, tenantID string) ([]*rbac.PermisoDB, error) {
+	if m.listarPorRolYTenantFunc != nil {
+		return m.listarPorRolYTenantFunc(ctx, rolID, tenantID)
+	}
+	return nil, nil
+}
+
+type mockRolPublisher struct {
+	publicarRolActualizadoFunc func(ctx context.Context, rolID, tenantID string, permisos []string) error
+}
+
+func (m *mockRolPublisher) PublicarRolActualizado(ctx context.Context, rolID, tenantID string, permisos []string) error {
+	if m.publicarRolActualizadoFunc != nil {
+		return m.publicarRolActualizadoFunc(ctx, rolID, tenantID, permisos)
+	}
+	return nil
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 func newUCSuccess() *register.RegistrarUsuarioCasoDeUso {
 	return register.NewRegistrarUsuarioCasoDeUso(
-		&mockUsuarioRepo{
-			crearFunc: func(_ context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
-				return u, nil
+		&mockUnitOfWork{
+			usuarioRepo: &mockUsuarioRepo{
+				crearFunc: func(_ context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
+					return u, nil
+				},
 			},
-		},
-		&mockCredencialesRepo{
-			crearFunc: func(_ context.Context, c *domain.CredencialesUsuario) (*domain.CredencialesUsuario, error) {
-				return c, nil
+			credencialesRepo: &mockCredencialesRepo{
+				crearFunc: func(_ context.Context, c *domain.CredencialesUsuario) (*domain.CredencialesUsuario, error) {
+					return c, nil
+				},
 			},
+			tenantRepo: &mockTenantRepo{
+				crearFunc: func(_ context.Context, t *tenant.Tenant) (*tenant.Tenant, error) {
+					return t, nil
+				},
+			},
+			membresiaRepo: &mockMembresiaRepo{
+				crearFunc: func(_ context.Context, _ *tenant.Membresia) error {
+					return nil
+				},
+			},
+			rolRepo: &mockRolRepo{
+				obtenerPorNombreFunc: func(_ context.Context, nombre string) (*rbac.RolDB, error) {
+					return &rbac.RolDB{ID: "rol-admin-id", Nombre: nombre}, nil
+				},
+			},
+			usuarioTenantRolRepo: &mockUsuarioTenantRolRepo{
+				crearFunc: func(_ context.Context, _, _, _ string) error {
+					return nil
+				},
+			},
+			rolPermisoRepo: &mockRolPermisoRepo{},
 		},
 		&mockEncriptacion{hash: "$2a$10$hashedpassword"},
 		&mockGeneradorID{ids: []string{"user-id-1", "tenant-id-1"}},
-		&mockTenantRepo{
-			crearFunc: func(_ context.Context, t *tenant.Tenant) (*tenant.Tenant, error) {
-				return t, nil
-			},
+		&mockRolPublisher{},
+	)
+}
+
+func newUCWithRepos(
+	usuarioRepo *mockUsuarioRepo,
+	credencialesRepo *mockCredencialesRepo,
+	encriptacion *mockEncriptacion,
+	generadorID *mockGeneradorID,
+	tenantRepo *mockTenantRepo,
+	membresiaRepo *mockMembresiaRepo,
+	rolRepo *mockRolRepo,
+	usuarioTenantRolRepo *mockUsuarioTenantRolRepo,
+	rolPermisoRepo *mockRolPermisoRepo,
+	rolPublisher *mockRolPublisher,
+) *register.RegistrarUsuarioCasoDeUso {
+	return register.NewRegistrarUsuarioCasoDeUso(
+		&mockUnitOfWork{
+			usuarioRepo:          usuarioRepo,
+			credencialesRepo:     credencialesRepo,
+			tenantRepo:           tenantRepo,
+			membresiaRepo:        membresiaRepo,
+			rolRepo:              rolRepo,
+			usuarioTenantRolRepo: usuarioTenantRolRepo,
+			rolPermisoRepo:       rolPermisoRepo,
 		},
-		&mockMembresiaRepo{
-			crearFunc: func(_ context.Context, _ *tenant.Membresia) error {
-				return nil
-			},
-		},
-		&mockRolRepo{
-			obtenerPorNombreFunc: func(_ context.Context, nombre string) (*rbac.RolDB, error) {
-				return &rbac.RolDB{ID: "rol-admin-id", Nombre: nombre}, nil
-			},
-		},
-		&mockUsuarioTenantRolRepo{
-			crearFunc: func(_ context.Context, _, _, _ string) error {
-				return nil
-			},
-		},
+		encriptacion,
+		generadorID,
+		rolPublisher,
 	)
 }
 
@@ -222,7 +333,7 @@ func TestRegistrarUsuarioExitoso(t *testing.T) {
 func TestRegistrarUsuario_CreaTenantConNombreYSlug(t *testing.T) {
 	var tenantCreado *tenant.Tenant
 
-	uc := register.NewRegistrarUsuarioCasoDeUso(
+	uc := newUCWithRepos(
 		&mockUsuarioRepo{
 			crearFunc: func(_ context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
 				return u, nil
@@ -256,10 +367,12 @@ func TestRegistrarUsuario_CreaTenantConNombreYSlug(t *testing.T) {
 				return nil
 			},
 		},
+		&mockRolPermisoRepo{},
+		&mockRolPublisher{},
 	)
 
 	cmd := &register.ComandoRegistrarUsuario{
-		Correo: "ana@example.com", 		Password: "Secreto1!",
+		Correo: "ana@example.com", Password: "Secreto1!",
 		Nombre: "Ana", Apellido: "López",
 	}
 
@@ -285,7 +398,7 @@ func TestRegistrarUsuario_CreaTenantConNombreYSlug(t *testing.T) {
 func TestRegistrarUsuario_CreaMembresia(t *testing.T) {
 	var membresiaCreada *tenant.Membresia
 
-	uc := register.NewRegistrarUsuarioCasoDeUso(
+	uc := newUCWithRepos(
 		&mockUsuarioRepo{
 			crearFunc: func(_ context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
 				return u, nil
@@ -319,10 +432,12 @@ func TestRegistrarUsuario_CreaMembresia(t *testing.T) {
 				return nil
 			},
 		},
+		&mockRolPermisoRepo{},
+		&mockRolPublisher{},
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@example.com", 		Password: "Secreto1!",
+		Correo: "test@example.com", Password: "Secreto1!",
 		Nombre: "Test", Apellido: "User",
 	})
 	if err != nil {
@@ -385,7 +500,7 @@ func TestRegistrarUsuarioEmailInvalido(t *testing.T) {
 
 func TestRegistrarUsuarioCorreoDuplicado(t *testing.T) {
 	errDuplicado := errors.New("el correo ya está registrado")
-	uc := register.NewRegistrarUsuarioCasoDeUso(
+	uc := newUCWithRepos(
 		&mockUsuarioRepo{
 			crearFunc: func(_ context.Context, _ *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
 				return nil, errDuplicado
@@ -418,6 +533,8 @@ func TestRegistrarUsuarioCorreoDuplicado(t *testing.T) {
 				return nil
 			},
 		},
+		&mockRolPermisoRepo{},
+		&mockRolPublisher{},
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
@@ -434,7 +551,7 @@ func TestRegistrarUsuarioCorreoDuplicado(t *testing.T) {
 
 func TestRegistrarUsuarioErrorPersistiendoCredenciales(t *testing.T) {
 	errCred := errors.New("error en BD de credenciales")
-	uc := register.NewRegistrarUsuarioCasoDeUso(
+	uc := newUCWithRepos(
 		&mockUsuarioRepo{
 			crearFunc: func(_ context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
 				return u, nil
@@ -467,10 +584,12 @@ func TestRegistrarUsuarioErrorPersistiendoCredenciales(t *testing.T) {
 				return nil
 			},
 		},
+		&mockRolPermisoRepo{},
+		&mockRolPublisher{},
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@example.com", 		Password: "Secreto1!",
+		Correo: "test@example.com", Password: "Secreto1!",
 		Nombre: "Test", Apellido: "User",
 	})
 	if err == nil {
@@ -480,7 +599,7 @@ func TestRegistrarUsuarioErrorPersistiendoCredenciales(t *testing.T) {
 
 func TestRegistrarUsuarioErrorPersistiendoTenant(t *testing.T) {
 	errTenant := errors.New("slug duplicado")
-	uc := register.NewRegistrarUsuarioCasoDeUso(
+	uc := newUCWithRepos(
 		&mockUsuarioRepo{
 			crearFunc: func(_ context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
 				return u, nil
@@ -513,10 +632,12 @@ func TestRegistrarUsuarioErrorPersistiendoTenant(t *testing.T) {
 				return nil
 			},
 		},
+		&mockRolPermisoRepo{},
+		&mockRolPublisher{},
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@example.com", 		Password: "Secreto1!",
+		Correo: "test@example.com", Password: "Secreto1!",
 		Nombre: "Test", Apellido: "User",
 	})
 	if err == nil {
@@ -526,7 +647,7 @@ func TestRegistrarUsuarioErrorPersistiendoTenant(t *testing.T) {
 
 func TestRegistrarUsuarioErrorPersistiendoMembresia(t *testing.T) {
 	errMemb := errors.New("error en membresía")
-	uc := register.NewRegistrarUsuarioCasoDeUso(
+	uc := newUCWithRepos(
 		&mockUsuarioRepo{
 			crearFunc: func(_ context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
 				return u, nil
@@ -559,10 +680,12 @@ func TestRegistrarUsuarioErrorPersistiendoMembresia(t *testing.T) {
 				return nil
 			},
 		},
+		&mockRolPermisoRepo{},
+		&mockRolPublisher{},
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@example.com", 		Password: "Secreto1!",
+		Correo: "test@example.com", Password: "Secreto1!",
 		Nombre: "Test", Apellido: "User",
 	})
 	if err == nil {
@@ -571,7 +694,7 @@ func TestRegistrarUsuarioErrorPersistiendoMembresia(t *testing.T) {
 }
 
 func TestRegistrarUsuarioIDsInyectados(t *testing.T) {
-	uc := register.NewRegistrarUsuarioCasoDeUso(
+	uc := newUCWithRepos(
 		&mockUsuarioRepo{
 			crearFunc: func(_ context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
 				return u, nil
@@ -604,10 +727,12 @@ func TestRegistrarUsuarioIDsInyectados(t *testing.T) {
 				return nil
 			},
 		},
+		&mockRolPermisoRepo{},
+		&mockRolPublisher{},
 	)
 
 	resp, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@example.com", 		Password: "Secreto1!",
+		Correo: "test@example.com", Password: "Secreto1!",
 		Nombre: "Test", Apellido: "User",
 	})
 	if err != nil {
@@ -623,7 +748,7 @@ func TestRegistrarUsuarioIDsInyectados(t *testing.T) {
 
 func TestRegistrarUsuarioPasswordHasheado(t *testing.T) {
 	var hashRecibido string
-	uc := register.NewRegistrarUsuarioCasoDeUso(
+	uc := newUCWithRepos(
 		&mockUsuarioRepo{
 			crearFunc: func(_ context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
 				return u, nil
@@ -657,10 +782,12 @@ func TestRegistrarUsuarioPasswordHasheado(t *testing.T) {
 				return nil
 			},
 		},
+		&mockRolPermisoRepo{},
+		&mockRolPublisher{},
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@example.com", 		Password: "Secreto1!",
+		Correo: "test@example.com", Password: "Secreto1!",
 		Nombre: "Test", Apellido: "User",
 	})
 	if err != nil {
@@ -688,7 +815,7 @@ func TestRegistrarUsuarioSlugGenerado(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.nombre+"_"+tt.apellido, func(t *testing.T) {
 			var tenantCreado *tenant.Tenant
-			uc := register.NewRegistrarUsuarioCasoDeUso(
+			uc := newUCWithRepos(
 				&mockUsuarioRepo{
 					crearFunc: func(_ context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
 						return u, nil
@@ -722,6 +849,8 @@ func TestRegistrarUsuarioSlugGenerado(t *testing.T) {
 						return nil
 					},
 				},
+				&mockRolPermisoRepo{},
+				&mockRolPublisher{},
 			)
 
 			_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
@@ -741,9 +870,9 @@ func TestRegistrarUsuarioSlugGenerado(t *testing.T) {
 func TestRegistrarUsuarioCamposCorreoYTelefonoOpcional(t *testing.T) {
 	uc := newUCSuccess()
 
-		resp, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-			Correo: "test@domain.com", Password: "Secreto1!",
-			Nombre: "Test", Apellido: "User", Telefono: "0987654321",
+	resp, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
+		Correo: "test@domain.com", Password: "Secreto1!",
+		Nombre: "Test", Apellido: "User", Telefono: "0987654321",
 	})
 	if err != nil {
 		t.Fatalf("error inesperado: %v", err)
@@ -760,7 +889,7 @@ func TestRegistrarUsuario_AsignaRolAdministrador(t *testing.T) {
 		rolIDAsignado     string
 	)
 
-	uc := register.NewRegistrarUsuarioCasoDeUso(
+	uc := newUCWithRepos(
 		&mockUsuarioRepo{
 			crearFunc: func(_ context.Context, u *usuariodomain.Usuario) (*usuariodomain.Usuario, error) {
 				return u, nil
@@ -796,10 +925,12 @@ func TestRegistrarUsuario_AsignaRolAdministrador(t *testing.T) {
 				return nil
 			},
 		},
+		&mockRolPermisoRepo{},
+		&mockRolPublisher{},
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
-		Correo: "test@example.com", 		Password: "Secreto1!",
+		Correo: "test@example.com", Password: "Secreto1!",
 		Nombre: "Test", Apellido: "User",
 	})
 	if err != nil {

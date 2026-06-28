@@ -259,8 +259,13 @@ export async function invitarUsuario({ correo, rol_id }) {
   return res.data.data;
 }
 
-export async function aceptarInvitacion({ token }) {
-  const res = await client.post('/api/v1/invitaciones/aceptar', { token });
+export async function getInvitacionInfo(token) {
+  const res = await client.get(`/api/v1/invitaciones/${token}`);
+  return res.data.data;
+}
+
+export async function aceptarInvitacion(token) {
+  const res = await client.post(`/api/v1/invitaciones/${token}/aceptar`);
   return res.data.data;
 }
 
@@ -280,10 +285,18 @@ export async function reenviarInvitacion(invitacionID) {
     const res = await client.post(`/api/v1/invitaciones/${invitacionID}/reenviar`);
     return res.data.data;
   } catch {
-    return null;
+    throw new Error('Error al reenviar invitación');
   }
 }
 
+export async function eliminarInvitacion(invitacionID) {
+  try {
+    const res = await client.delete(`/api/v1/invitaciones/${invitacionID}`);
+    return res.data.data;
+  } catch {
+    throw new Error('Error al eliminar invitación');
+  }
+}
 
 // ── Permisos de roles ──────────────────────────────────────────
 export async function getPermisos() {

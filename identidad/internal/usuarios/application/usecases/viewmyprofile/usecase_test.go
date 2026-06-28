@@ -27,6 +27,9 @@ func (m *mockUsuarioRepoView) ObtenerPorID(ctx context.Context, id string) (*usu
 	}
 	return nil, nil
 }
+func (m *mockUsuarioRepoView) ObtenerPorCorreo(ctx context.Context, correo string) (*usuariodomain.Usuario, error) {
+	return nil, nil
+}
 func (m *mockUsuarioRepoView) Listar(ctx context.Context, _ usuariodomain.EspecificacionUsuario, _ shareddomain.Paginacion) ([]*usuariodomain.Usuario, error) {
 	return nil, nil
 }

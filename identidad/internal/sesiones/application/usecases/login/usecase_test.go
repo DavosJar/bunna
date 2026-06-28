@@ -56,6 +56,17 @@ func (m *mockUsuarioRepo) Eliminar(ctx context.Context, id string) error { retur
 func (m *mockUsuarioRepo) ObtenerPorID(ctx context.Context, id string) (*usuario_domain.Usuario, error) {
 	return nil, nil
 }
+func (m *mockUsuarioRepo) ObtenerPorCorreo(ctx context.Context, correo string) (*usuario_domain.Usuario, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	for _, u := range m.usuarios {
+		if u.Correo() == correo {
+			return u, nil
+		}
+	}
+	return nil, nil
+}
 func (m *mockUsuarioRepo) Listar(ctx context.Context, spec usuario_domain.EspecificacionUsuario, pag shared_domain.Paginacion) ([]*usuario_domain.Usuario, error) {
 	return m.usuarios, m.err
 }

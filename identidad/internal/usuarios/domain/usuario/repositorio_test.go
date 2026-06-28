@@ -46,6 +46,15 @@ func (m *mockRepositorio) ObtenerPorID(ctx context.Context, id string) (*Usuario
 	return nil, errors.New("usuario no encontrado")
 }
 
+func (m *mockRepositorio) ObtenerPorCorreo(ctx context.Context, correo string) (*Usuario, error) {
+	for _, u := range m.usuarios {
+		if u.Correo() == correo {
+			return u, nil
+		}
+	}
+	return nil, errors.New("usuario no encontrado")
+}
+
 func (m *mockRepositorio) Listar(ctx context.Context, especificacion EspecificacionUsuario, paginacion domain.Paginacion) ([]*Usuario, error) {
 	resultado := m.filtrar(especificacion)
 	resultado = m.ordenar(resultado, paginacion.Ordenaciones)

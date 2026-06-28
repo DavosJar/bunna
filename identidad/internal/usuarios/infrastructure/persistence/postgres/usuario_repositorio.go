@@ -83,6 +83,18 @@ func (r *usuarioRepositorio) ObtenerPorID(ctx context.Context, id string) (*usua
 	return model.ToDomain(), nil
 }
 
+func (r *usuarioRepositorio) ObtenerPorCorreo(ctx context.Context, correo string) (*usuario.Usuario, error) {
+	var model UsuarioModel
+	result := r.db.WithContext(ctx).Where("LOWER(correo) = LOWER(?)", correo).First(&model)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("usuario no encontrado con correo: %s", correo)
+		}
+		return nil, result.Error
+	}
+	return model.ToDomain(), nil
+}
+
 func (r *usuarioRepositorio) Listar(ctx context.Context, spec usuario.EspecificacionUsuario, pag domain.Paginacion) ([]*usuario.Usuario, error) {
 	query := r.db.WithContext(ctx).Model(&UsuarioModel{})
 

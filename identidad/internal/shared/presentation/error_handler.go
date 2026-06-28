@@ -66,6 +66,7 @@ func MapearError(err error) error {
 		recuperacion.ErrUsuarioNoEncontrado, recuperacion.ErrEnlaceInvalido,
 		verificacion.ErrUsuarioNoEncontrado, verificacion.ErrEnlaceInvalido,
 		invitaciones.ErrNoEncontrada,
+		invitaciones.ErrUsuarioNoRegistrado,
 	) {
 		return huma.Error404NotFound(err.Error())
 	}

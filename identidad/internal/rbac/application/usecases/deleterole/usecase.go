@@ -38,6 +38,10 @@ func (uc *EliminarRolCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoElimin
 		return nil, rbac.ErrRolInmutable
 	}
 
+	if err := uc.rolRepo.Eliminar(ctx, cmd.RolID); err != nil {
+		return nil, fmt.Errorf("error al eliminar rol: %w", err)
+	}
+
 	return &RespuestaEliminarRol{
 		RolID:       cmd.RolID,
 		EliminadoEn: time.Now().Format("2006-01-02T15:04:05Z"),

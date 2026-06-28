@@ -20,27 +20,11 @@ func NewModificarUsuarioCasoDeUso(
 	return &ModificarUsuarioCasoDeUso{userRepo: userRepo, authSvc: authSvc}
 }
 
+// DISABLED — Código inconexo, no eliminar.
+// La modificación de datos de otros usuarios administrativamente está
+// deshabilitada. Cada usuario modifica su propio perfil a través de
+// ModificarMiPerfilCasoDeUso (PUT /api/v1/mi-perfil). Este caso de uso
+// se conserva por si el negocio requiere reactivarlo.
 func (uc *ModificarUsuarioCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoModificarUsuario) (*RespuestaModificarUsuario, error) {
-	ok, err := uc.authSvc.TienePermiso(ctx, cmd.EjecutorID, cmd.TenantID, rbac.PermisoUsuarioModificar)
-	if err != nil {
-		return nil, fmt.Errorf("error al verificar permiso: %w", err)
-	}
-	if !ok {
-		return nil, rbac.ErrPermisoDenegado
-	}
-
-	u, err := uc.userRepo.ObtenerPorID(ctx, cmd.UsuarioID)
-	if err != nil {
-		return nil, fmt.Errorf("usuario no encontrado: %w", err)
-	}
-
-	_ = u // actualmente Usuario no tiene setters públicos, se requeriría agregarlos
-
-	return &RespuestaModificarUsuario{
-		ID:           u.ID(),
-		Correo:       u.Correo(),
-		Nombre:       u.Nombre(),
-		Apellido:     u.Apellido(),
-		ModificadoEn: u.FechaActualizacion().Format("2006-01-02T15:04:05Z"),
-	}, nil
+	return nil, fmt.Errorf("modificación administrativa de usuarios deshabilitada: cada usuario modifica su propio perfil")
 }

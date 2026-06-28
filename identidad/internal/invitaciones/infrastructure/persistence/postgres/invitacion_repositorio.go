@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	invitaciones "github.com/davosjar/bunna/services/identidad/internal/invitaciones/domain"
+	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	"gorm.io/gorm"
 )
 
@@ -59,4 +60,59 @@ func (r *invitacionRepositorio) ObtenerPorID(ctx context.Context, id string) (*i
 		return nil, result.Error
 	}
 	return model.ToDomain(), nil
+}
+
+func (r *invitacionRepositorio) ActualizarTokenHash(ctx context.Context, id string, tokenHash string) error {
+	result := r.db.WithContext(ctx).Model(&InvitacionModel{}).
+		Where("id = ?", id).
+		Update("token_hash", tokenHash)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return invitaciones.ErrNoEncontrada
+	}
+	return nil
+}
+
+func (r *invitacionRepositorio) Eliminar(ctx context.Context, id string) error {
+	result := r.db.WithContext(ctx).Delete(&InvitacionModel{}, "id = ?", id)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return invitaciones.ErrNoEncontrada
+	}
+	return nil
+}
+
+func (r *invitacionRepositorio) ListarPorTenant(ctx context.Context, tenantID string, paginacion shareddomain.Paginacion, estado string) ([]*invitaciones.Invitacion, int, error) {
+	var total int64
+	query := r.db.WithContext(ctx).Model(&InvitacionModel{}).Where("tenant_id = ?", tenantID)
+
+	if estado != "" {
+		if estado == "pendiente" {
+			query = query.Where("aceptada = ? AND expiracion > NOW()", false)
+		} else if estado == "aceptada" {
+			query = query.Where("aceptada = ?", true)
+		} else if estado == "expirada" {
+			query = query.Where("aceptada = ? AND expiracion <= NOW()", false)
+		}
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var models []InvitacionModel
+	offset := (paginacion.Pagina - 1) * paginacion.TamanoPagina
+	if err := query.Offset(offset).Limit(paginacion.TamanoPagina).Order("created_at DESC").Find(&models).Error; err != nil {
+		return nil, 0, err
+	}
+
+	invitacionesList := make([]*invitaciones.Invitacion, len(models))
+	for i, m := range models {
+		invitacionesList[i] = m.ToDomain()
+	}
+	return invitacionesList, int(total), nil
 }

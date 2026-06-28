@@ -75,6 +75,10 @@ func NewAllFacades(reg *registry.Registry) *AllFacades {
 		Invitacion: NewInvitacionFacade(
 			reg.CrearInvitacionCasoDeUso,
 			reg.AceptarInvitacionCasoDeUso,
+			reg.ObtenerInvitacionCasoDeUso,
+			reg.ListarInvitacionesCasoDeUso,
+			reg.ReenviarInvitacionCasoDeUso,
+			reg.EliminarInvitacionCasoDeUso,
 		),
 	}
 }

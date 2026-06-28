@@ -53,6 +53,10 @@ func (m *mockAuthSvc) TienePermiso(ctx context.Context, uid, tid, permiso string
 	return m.permiso, m.err
 }
 
+type mockRolPublisher struct{}
+
+func (m *mockRolPublisher) PublicarRolActualizado(ctx context.Context, rolID, tenantID string, permisos []string) error { return nil }
+
 func TestRevocarPermisoDeRolExitoso(t *testing.T) {
 	authSvc := &mockAuthSvc{permiso: true}
 	uc := revokepermissionfromrole.NewRevocarPermisoDeRolCasoDeUso(
@@ -60,6 +64,7 @@ func TestRevocarPermisoDeRolExitoso(t *testing.T) {
 		&mockPermisoRepo{permiso: &rbac.PermisoDB{ID: "p-1"}},
 		&mockRolPermisoRepo{},
 		authSvc,
+		&mockRolPublisher{},
 	)
 	resp, err := uc.Ejecutar(context.Background(), &revokepermissionfromrole.ComandoRevocarPermisoDeRol{
 		RolID: "r-1", PermisoCodigo: rbac.PermisoRolCrear,
@@ -71,7 +76,7 @@ func TestRevocarPermisoDeRolExitoso(t *testing.T) {
 }
 
 func TestRevocarPermisoDeRolSinPermiso(t *testing.T) {
-	uc := revokepermissionfromrole.NewRevocarPermisoDeRolCasoDeUso(&mockRolRepo{}, &mockPermisoRepo{}, &mockRolPermisoRepo{}, &mockAuthSvc{permiso: false})
+	uc := revokepermissionfromrole.NewRevocarPermisoDeRolCasoDeUso(&mockRolRepo{}, &mockPermisoRepo{}, &mockRolPermisoRepo{}, &mockAuthSvc{permiso: false}, &mockRolPublisher{})
 	_, err := uc.Ejecutar(context.Background(), &revokepermissionfromrole.ComandoRevocarPermisoDeRol{TenantID: "t-1", EjecutorID: "e-1"})
 	if !errors.Is(err, rbac.ErrPermisoDenegado) {
 		t.Errorf("esperaba ErrPermisoDenegado, got %v", err)
@@ -81,7 +86,7 @@ func TestRevocarPermisoDeRolSinPermiso(t *testing.T) {
 func TestRevocarPermisoDeRolRolInmutable(t *testing.T) {
 	uc := revokepermissionfromrole.NewRevocarPermisoDeRolCasoDeUso(
 		&mockRolRepo{rol: &rbac.RolDB{ID: "r-1", EsSistema: true}},
-		&mockPermisoRepo{}, &mockRolPermisoRepo{}, &mockAuthSvc{permiso: true},
+		&mockPermisoRepo{}, &mockRolPermisoRepo{}, &mockAuthSvc{permiso: true}, &mockRolPublisher{},
 	)
 	_, err := uc.Ejecutar(context.Background(), &revokepermissionfromrole.ComandoRevocarPermisoDeRol{
 		RolID: "r-1", PermisoCodigo: rbac.PermisoRolCrear, TenantID: "t-1", EjecutorID: "e-1",
@@ -94,7 +99,7 @@ func TestRevocarPermisoDeRolRolInmutable(t *testing.T) {
 func TestRevocarPermisoDeRolRolNoEncontrado(t *testing.T) {
 	uc := revokepermissionfromrole.NewRevocarPermisoDeRolCasoDeUso(
 		&mockRolRepo{errObtener: errors.New("no encontrado")},
-		&mockPermisoRepo{}, &mockRolPermisoRepo{}, &mockAuthSvc{permiso: true},
+		&mockPermisoRepo{}, &mockRolPermisoRepo{}, &mockAuthSvc{permiso: true}, &mockRolPublisher{},
 	)
 	_, err := uc.Ejecutar(context.Background(), &revokepermissionfromrole.ComandoRevocarPermisoDeRol{
 		RolID: "r-x", PermisoCodigo: rbac.PermisoRolCrear, TenantID: "t-1", EjecutorID: "e-1",
@@ -107,7 +112,7 @@ func TestRevocarPermisoDeRolPermisoNoEncontrado(t *testing.T) {
 	uc := revokepermissionfromrole.NewRevocarPermisoDeRolCasoDeUso(
 		&mockRolRepo{rol: &rbac.RolDB{ID: "r-1", EsSistema: false}},
 		&mockPermisoRepo{errObtener: errors.New("no encontrado")},
-		&mockRolPermisoRepo{}, authSvc,
+		&mockRolPermisoRepo{}, authSvc, &mockRolPublisher{},
 	)
 	_, err := uc.Ejecutar(context.Background(), &revokepermissionfromrole.ComandoRevocarPermisoDeRol{
 		RolID: "r-1", PermisoCodigo: "bad", TenantID: "t-1", EjecutorID: "e-1",
@@ -120,7 +125,7 @@ func TestRevocarPermisoDeRolFalloRevocacion(t *testing.T) {
 	uc := revokepermissionfromrole.NewRevocarPermisoDeRolCasoDeUso(
 		&mockRolRepo{rol: &rbac.RolDB{ID: "r-1", EsSistema: false}},
 		&mockPermisoRepo{permiso: &rbac.PermisoDB{ID: "p-1"}},
-		&mockRolPermisoRepo{errEliminar: errors.New("fallo bd")}, authSvc,
+		&mockRolPermisoRepo{errEliminar: errors.New("fallo bd")}, authSvc, &mockRolPublisher{},
 	)
 	_, err := uc.Ejecutar(context.Background(), &revokepermissionfromrole.ComandoRevocarPermisoDeRol{
 		RolID: "r-1", PermisoCodigo: rbac.PermisoRolCrear, TenantID: "t-1", EjecutorID: "e-1",

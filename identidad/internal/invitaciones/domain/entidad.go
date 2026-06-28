@@ -49,6 +49,10 @@ func NuevaInvitacionDesdeBD(id, tenantID, rolID, email, nombre, tokenHash string
 	}
 }
 
+func (i *Invitacion) ActualizarToken(tokenEnPlano string) {
+	i.tokenHash = hashearToken(tokenEnPlano)
+}
+
 func (i *Invitacion) Expiro(ahora time.Time) bool {
 	return ahora.After(i.expiracion)
 }

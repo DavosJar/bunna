@@ -10,6 +10,7 @@ const (
 	PermisoUsuarioConsultar        = "identidad:usuario:consultar"
 	PermisoUsuarioResetearPassword = "identidad:usuario:resetear_password"
 	PermisoUsuarioExpulsar         = "identidad:usuario:expulsar"
+	PermisoUsuarioInvitar          = "identidad:usuario:invitar"
 	PermisoCredencialesConsultar   = "identidad:credenciales:consultar"
 	PermisoCredencialesDesbloquear = "identidad:credenciales:desbloquear"
 	PermisoRolAsignar              = "identidad:rol:asignar"
@@ -35,6 +36,7 @@ var TodosLosPermisos = []PermisoInfo{
 	{Codigo: PermisoUsuarioConsultar, Nombre: "Consultar Usuario", Descripcion: "Listar y ver detalles de cualquier usuario", Modulo: "identidad"},
 	{Codigo: PermisoUsuarioResetearPassword, Nombre: "Resetear Contraseña", Descripcion: "Resetear la contraseña de otro usuario", Modulo: "identidad"},
 	{Codigo: PermisoUsuarioExpulsar, Nombre: "Expulsar Usuario", Descripcion: "Dar de baja inmediata y revocar todas las sesiones activas", Modulo: "identidad"},
+	{Codigo: PermisoUsuarioInvitar, Nombre: "Invitar Usuario", Descripcion: "Crear invitaciones para que nuevos usuarios se unan al tenant", Modulo: "identidad"},
 	{Codigo: PermisoCredencialesConsultar, Nombre: "Consultar Credenciales", Descripcion: "Ver el estado de seguridad de un usuario", Modulo: "identidad"},
 	{Codigo: PermisoCredencialesDesbloquear, Nombre: "Desbloquear Cuenta", Descripcion: "Quitar el bloqueo de una cuenta inhabilitada por intentos fallidos", Modulo: "identidad"},
 	{Codigo: PermisoRolAsignar, Nombre: "Asignar Rol", Descripcion: "Asignar un rol a un usuario", Modulo: "identidad"},

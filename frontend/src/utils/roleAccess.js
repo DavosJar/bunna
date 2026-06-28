@@ -13,33 +13,6 @@ const ROL_LABELS = {
   caficultor: 'Caficultor',
 };
 
-/** Permisos UI por rol (alineados con seed del backend) */
-const ROL_PERMISOS_UI = {
-  sys_admin: [
-    'identidad:usuario:crear', 'identidad:usuario:modificar', 'identidad:usuario:eliminar',
-    'identidad:usuario:consultar', 'identidad:usuario:expulsar', 'identidad:usuario:resetear_password',
-    'identidad:credenciales:consultar', 'identidad:credenciales:desbloquear',
-    'identidad:ip:consultar', 'identidad:ip:desbloquear',
-    'identidad:sesion:consultar', 'identidad:sesion:forzar_cierre',
-    'identidad:rol:crear', 'identidad:rol:modificar', 'identidad:rol:eliminar',
-    'identidad:rol:asignar', 'identidad:rol:revocar',
-    'identidad:rol:permiso:asignar', 'identidad:rol:permiso:revocar',
-    'identidad:permiso:consultar', 'identidad:tenant:configurar',
-  ],
-  administrador: [
-    'identidad:usuario:consultar', 'identidad:usuario:expulsar',
-    'identidad:rol:crear', 'identidad:rol:modificar', 'identidad:rol:eliminar',
-    'identidad:rol:asignar', 'identidad:rol:revocar',
-    'identidad:rol:permiso:asignar', 'identidad:rol:permiso:revocar',
-    'identidad:permiso:consultar',
-  ],
-  agronomo: [
-    'identidad:usuario:crear', 'identidad:usuario:modificar',
-    'identidad:usuario:consultar', 'identidad:permiso:consultar',
-  ],
-  caficultor: ['identidad:usuario:consultar'],
-};
-
 /** Perfil visual y funcional de cada rol */
 export const ROL_PROFILES = {
   sys_admin: {
@@ -71,8 +44,7 @@ export const ROL_PROFILES = {
     homeRoute: '/fincas',
     tagline: 'Soporte técnico en campo',
     capabilities: [
-      'Crear y editar usuarios del tenant',
-      'Panel admin limitado (sin gestión de roles)',
+      'Consultar usuarios del tenant',
       'Operación: fincas, análisis YOLO, perfil',
     ],
   },
@@ -88,8 +60,6 @@ export const ROL_PROFILES = {
     ],
   },
 };
-
-const PREVIEW_STORAGE_KEY = 'bunna_rol_preview';
 
 /** Etiqueta legible del rol */
 export function formatRol(rol) {
@@ -108,43 +78,6 @@ export function isGlobalSysAdmin(user, permisos = []) {
     && permisos.includes('identidad:ip:consultar');
 }
 
-/** Usuario efectivo para UI (rol real o vista previa) */
-export function buildEffectiveUser(user, rolPreview, permisosReales = []) {
-  if (!user) return null;
-  const esSysAdmin = isGlobalSysAdmin(user, permisosReales);
-  const rolReal = esSysAdmin ? ROLES.SYS_ADMIN : user.rol;
-  const rol = rolPreview || rolReal;
-  return { ...user, rol, rolReal, esSysAdmin, rolPreview: rolPreview || null };
-}
-
-/** Permisos para cálculos de UI */
-export function getPermisosEfectivos(user, permisosReales = [], rolPreview = null) {
-  if (!user) return [];
-  if (rolPreview) return ROL_PERMISOS_UI[rolPreview] || [];
-  if (isGlobalSysAdmin(user, permisosReales)) return ROL_PERMISOS_UI.sys_admin;
-  return permisosReales;
-}
-
-export function puedePrevisualizarRol(user, permisosReales = []) {
-  if (!user) return false;
-  return user.rol === ROLES.ADMINISTRADOR || isGlobalSysAdmin(user, permisosReales);
-}
-
-export function loadRolPreview() {
-  try {
-    const v = sessionStorage.getItem(PREVIEW_STORAGE_KEY);
-    if (v && ROL_PROFILES[v]) return v;
-  } catch { /* ignore */ }
-  return null;
-}
-
-export function saveRolPreview(rol) {
-  try {
-    if (rol && ROL_PROFILES[rol]) sessionStorage.setItem(PREVIEW_STORAGE_KEY, rol);
-    else sessionStorage.removeItem(PREVIEW_STORAGE_KEY);
-  } catch { /* ignore */ }
-}
-
 /** Panel de administración de identidad */
 export function puedeAccederAdmin(user, permisos = []) {
   if (!user) return false;
@@ -152,7 +85,7 @@ export function puedeAccederAdmin(user, permisos = []) {
   if (user.rol === ROLES.CAFICULTOR) return false;
 
   const permisosAdmin = [
-    'identidad:usuario:crear',
+    'identidad:usuario:invitar',
     'identidad:usuario:modificar',
     'identidad:usuario:eliminar',
     'identidad:usuario:expulsar',
@@ -193,7 +126,7 @@ export function getAdminTabs(user, permisos = []) {
   // Tab Invitaciones: solo para administradores y sys_admin (quienes pueden invitar)
   const veInvitaciones = user.rol === ROLES.SYS_ADMIN
     || user.rol === ROLES.ADMINISTRADOR
-    || permisos.includes('identidad:usuario:crear');
+    || permisos.includes('identidad:usuario:invitar');
   if (veInvitaciones) tabs.push('Invitaciones');
 
   const veRoles = user.rol === ROLES.SYS_ADMIN

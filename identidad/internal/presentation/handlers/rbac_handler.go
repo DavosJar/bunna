@@ -494,20 +494,20 @@ func (h *ListarPermisosHandler) Register(api huma.API) {
 		Method:      http.MethodGet,
 		Path:        "/api/v1/permisos",
 		Summary:     "Listar permisos",
-		Description: "Lista todos los permisos disponibles en el sistema.",
+		Description: "Lista los permisos del usuario autenticado según su rol en el tenant activo.",
 		Tags:        []string{"Roles"},
 	}, h.handle)
 }
 
 func (h *ListarPermisosHandler) handle(ctx context.Context, input *struct{}) (*ListarPermisosOutput, error) {
-	ejecutorID := middleware.GetUsuarioIDFromCtx(ctx)
-	if ejecutorID == "" {
+	rol := middleware.GetRolFromCtx(ctx)
+	if rol == "" {
 		return nil, huma.Error401Unauthorized("token requerido")
 	}
 
 	tenantID := middleware.GetTenantIDFromCtx(ctx)
 
-	resp, err := h.facade.ListarPermisos(ctx, ejecutorID, tenantID)
+	resp, err := h.facade.ListarMisPermisos(ctx, rol, tenantID)
 	if err != nil {
 		return nil, presentation.MapearError(err)
 	}
@@ -515,7 +515,7 @@ func (h *ListarPermisosHandler) handle(ctx context.Context, input *struct{}) (*L
 	items := make([]dto.PermisoItem, len(resp.Permisos))
 	for i, p := range resp.Permisos {
 		items[i] = dto.PermisoItem{
-			ID:          p.ID,
+			ID:          "",
 			Codigo:      p.Codigo,
 			Nombre:      p.Nombre,
 			Descripcion: p.Descripcion,
@@ -525,7 +525,7 @@ func (h *ListarPermisosHandler) handle(ctx context.Context, input *struct{}) (*L
 	out := &ListarPermisosOutput{}
 	out.Body = presentation.NewApiResponse(dto.ListarPermisosResponse{
 		Permisos: items,
-		Total:    resp.Total,
+		Total:    len(items),
 	})
 	return out, nil
 }

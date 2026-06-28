@@ -130,6 +130,28 @@ func (r *rolRepositorio) ActualizarDescripcion(ctx context.Context, id, descripc
 		Update("descripcion", descripcion).Error
 }
 
+func (r *rolRepositorio) Eliminar(ctx context.Context, id string) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Delete role-permission assignments
+		if err := tx.Where("rol_id = ?", id).Delete(&RolPermisoModel{}).Error; err != nil {
+			return err
+		}
+		// Delete user-role assignments (global)
+		if err := tx.Where("rol_id = ?", id).Delete(&UsuarioRolModel{}).Error; err != nil {
+			return err
+		}
+		// Delete user-tenant-role assignments
+		if err := tx.Where("rol_id = ?", id).Delete(&UsuarioTenantRolModel{}).Error; err != nil {
+			return err
+		}
+		// Delete the role itself
+		if err := tx.Delete(&RolModel{}, "id = ?", id).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
 func toRolDB(m *RolModel) *rbac.RolDB {
 	return &rbac.RolDB{
 		ID:          m.ID,

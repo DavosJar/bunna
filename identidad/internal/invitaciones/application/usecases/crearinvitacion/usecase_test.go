@@ -22,6 +22,8 @@ func (m *mockInvRepo) Crear(ctx context.Context, inv *invitaciones.Invitacion) e
 func (m *mockInvRepo) ObtenerPorTokenHash(ctx context.Context, hash string) (*invitaciones.Invitacion, error) { return nil, nil }
 func (m *mockInvRepo) MarcarAceptada(ctx context.Context, id string) error { return nil }
 func (m *mockInvRepo) ObtenerPorID(ctx context.Context, id string) (*invitaciones.Invitacion, error) { return nil, nil }
+func (m *mockInvRepo) ListarPorTenant(ctx context.Context, tenantID string, pag shareddomain.Paginacion, estado string) ([]*invitaciones.Invitacion, int, error) { return nil, 0, nil }
+func (m *mockInvRepo) ActualizarTokenHash(ctx context.Context, id string, tokenHash string) error { return nil }
 
 type mockTenantRepo struct {
 	tenant *tenant.Tenant
@@ -52,6 +54,15 @@ func (m *mockGenID) NextID(ctx context.Context) (string, error) {
 	return m.id, nil
 }
 
+type mockAuthSvc struct {
+	ok  bool
+	err error
+}
+
+func (m *mockAuthSvc) TienePermiso(ctx context.Context, usuarioID, tenantID, codigoPermiso string) (bool, error) {
+	return m.ok, m.err
+}
+
 func TestCrearInvitacionExitoso(t *testing.T) {
 	now := time.Now()
 	tenantObj := tenant.NuevoTenantDesdeBD("t-1", "Mi Tenant", "mi-tenant", true, now, now)
@@ -60,7 +71,7 @@ func TestCrearInvitacionExitoso(t *testing.T) {
 	rolRepo := &mockRolRepo{rol: &rbac.RolDB{ID: "r-1", Nombre: "admin"}}
 	emailSvc := &notificaciones.MockEmailServicio{}
 	genID := &mockGenID{id: "inv-id-1"}
-	uc := crearInvitacion.NewCrearInvitacionCasoDeUso(invRepo, tenantRepo, rolRepo, emailSvc, genID, "http://frontend", 48*time.Hour)
+	uc := crearInvitacion.NewCrearInvitacionCasoDeUso(&mockAuthSvc{ok: true}, invRepo, tenantRepo, rolRepo, emailSvc, genID, "http://frontend", 48*time.Hour)
 
 	resp, err := uc.Ejecutar(context.Background(), &crearInvitacion.ComandoCrearInvitacion{
 		TenantID: "t-1", RolID: "r-1", Correo: "invitado@test.com",
@@ -88,7 +99,7 @@ func TestCrearInvitacionExitoso(t *testing.T) {
 }
 
 func TestCrearInvitacionCorreoVacio(t *testing.T) {
-	uc := crearInvitacion.NewCrearInvitacionCasoDeUso(&mockInvRepo{}, &mockTenantRepo{}, &mockRolRepo{}, &notificaciones.MockEmailServicio{}, &mockGenID{}, "", 0)
+	uc := crearInvitacion.NewCrearInvitacionCasoDeUso(&mockAuthSvc{ok: true}, &mockInvRepo{}, &mockTenantRepo{}, &mockRolRepo{}, &notificaciones.MockEmailServicio{}, &mockGenID{}, "", 0)
 	_, err := uc.Ejecutar(context.Background(), &crearInvitacion.ComandoCrearInvitacion{
 		TenantID: "t-1", RolID: "r-1", Correo: "",
 	})
@@ -98,7 +109,7 @@ func TestCrearInvitacionCorreoVacio(t *testing.T) {
 }
 
 func TestCrearInvitacionCorreoInvalido(t *testing.T) {
-	uc := crearInvitacion.NewCrearInvitacionCasoDeUso(&mockInvRepo{}, &mockTenantRepo{}, &mockRolRepo{}, &notificaciones.MockEmailServicio{}, &mockGenID{}, "", 0)
+	uc := crearInvitacion.NewCrearInvitacionCasoDeUso(&mockAuthSvc{ok: true}, &mockInvRepo{}, &mockTenantRepo{}, &mockRolRepo{}, &notificaciones.MockEmailServicio{}, &mockGenID{}, "", 0)
 	_, err := uc.Ejecutar(context.Background(), &crearInvitacion.ComandoCrearInvitacion{
 		TenantID: "t-1", RolID: "r-1", Correo: "not-an-email",
 	})
@@ -108,7 +119,7 @@ func TestCrearInvitacionCorreoInvalido(t *testing.T) {
 }
 
 func TestCrearInvitacionRolVacio(t *testing.T) {
-	uc := crearInvitacion.NewCrearInvitacionCasoDeUso(&mockInvRepo{}, &mockTenantRepo{}, &mockRolRepo{}, &notificaciones.MockEmailServicio{}, &mockGenID{}, "", 0)
+	uc := crearInvitacion.NewCrearInvitacionCasoDeUso(&mockAuthSvc{ok: true}, &mockInvRepo{}, &mockTenantRepo{}, &mockRolRepo{}, &notificaciones.MockEmailServicio{}, &mockGenID{}, "", 0)
 	_, err := uc.Ejecutar(context.Background(), &crearInvitacion.ComandoCrearInvitacion{
 		TenantID: "t-1", RolID: "", Correo: "a@b.com",
 	})
@@ -119,6 +130,7 @@ func TestCrearInvitacionRolVacio(t *testing.T) {
 
 func TestCrearInvitacionTenantNoEncontrado(t *testing.T) {
 	uc := crearInvitacion.NewCrearInvitacionCasoDeUso(
+		&mockAuthSvc{ok: true},
 		&mockInvRepo{}, &mockTenantRepo{err: errors.New("no encontrado")},
 		&mockRolRepo{}, &notificaciones.MockEmailServicio{}, &mockGenID{}, "", 0,
 	)
@@ -134,6 +146,7 @@ func TestCrearInvitacionRolNoEncontrado(t *testing.T) {
 	now := time.Now()
 	tenantObj := tenant.NuevoTenantDesdeBD("t-1", "T", "t", true, now, now)
 	uc := crearInvitacion.NewCrearInvitacionCasoDeUso(
+		&mockAuthSvc{ok: true},
 		&mockInvRepo{}, &mockTenantRepo{tenant: tenantObj},
 		&mockRolRepo{err: errors.New("no encontrado")},
 		&notificaciones.MockEmailServicio{}, &mockGenID{}, "", 0,
@@ -150,6 +163,7 @@ func TestCrearInvitacionFalloAlCrear(t *testing.T) {
 	now := time.Now()
 	tenantObj := tenant.NuevoTenantDesdeBD("t-1", "T", "t", true, now, now)
 	uc := crearInvitacion.NewCrearInvitacionCasoDeUso(
+		&mockAuthSvc{ok: true},
 		&mockInvRepo{errCrear: errors.New("fallo bd")}, &mockTenantRepo{tenant: tenantObj},
 		&mockRolRepo{rol: &rbac.RolDB{ID: "r-1"}},
 		&notificaciones.MockEmailServicio{}, &mockGenID{}, "", 0,

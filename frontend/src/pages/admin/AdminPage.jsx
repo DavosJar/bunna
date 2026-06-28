@@ -2,15 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { usePermisos } from '../../hooks/usePermisos';
+import { showToast } from '../../services/toastService';
 import {
-  getUsuarios, invitarUsuario, createUsuario, updateUsuario, bajaUsuario, expulsarUsuario, unlockUsuario,
+  getUsuarios, invitarUsuario, updateUsuario, bajaUsuario, expulsarUsuario, unlockUsuario,
   resetPasswordUsuario, getCredenciales,
   getRoles, createRol, updateRol, deleteRol, getPermisos,
   asignarRol, revocarRol,
   getMisPermisos, asignarPermisoARol, revocarPermisoDeRol,
   getSesiones, cerrarSesion,
   getIPsBloqueadas, desbloquearIP,
-  getInvitaciones, reenviarInvitacion,
+  getInvitaciones, reenviarInvitacion, eliminarInvitacion,
 } from '../../services/identidadApi';
 import TabSistema from './TabSistema';
 import { IconAlert, IconCheck, IconX, IconRefresh } from '../../components/icons/Icons';
@@ -135,7 +136,6 @@ function TabUsuarios() {
   const [formError, setFormError] = useState('');
   const [rolesOptions, setRolesOptions] = useState([]);
   const [rolSeleccionado, setRolSeleccionado] = useState('');
-  const [modoCrear, setModoCrear] = useState('invitar');
   const [credenciales, setCredenciales] = useState(null);
   const [resetPassword, setResetPassword] = useState('');
 
@@ -163,9 +163,18 @@ function TabUsuarios() {
 
   const handleAccion = async () => {
     try {
-      if (modal.tipo === 'baja') await bajaUsuario(modal.usuario.id);
-      if (modal.tipo === 'expulsar') await expulsarUsuario(modal.usuario.id);
-      if (modal.tipo === 'unlock') await unlockUsuario(modal.usuario.id);
+      if (modal.tipo === 'baja') {
+        await bajaUsuario(modal.usuario.id);
+        showToast('Usuario dado de baja', 'success');
+      }
+      if (modal.tipo === 'expulsar') {
+        await expulsarUsuario(modal.usuario.id);
+        showToast('Usuario expulsado', 'success');
+      }
+      if (modal.tipo === 'unlock') {
+        await unlockUsuario(modal.usuario.id);
+        showToast('Cuenta desbloqueada', 'success');
+      }
       if (modal.tipo === 'crear') {
         const validation = validateEmail(form.correo);
         if (!validation.valid) {
@@ -173,32 +182,30 @@ function TabUsuarios() {
           return;
         }
         setFormError('');
-        if (modoCrear === 'invitar') {
-          if (!rolSeleccionado) {
-            setFormError('Selecciona un rol para la invitación.');
-            return;
-          }
-          await invitarUsuario({ correo: form.correo, rol_id: rolSeleccionado });
-        } else {
-          await createUsuario({
-            correo: form.correo,
-            nombre: form.nombre,
-            apellido: form.apellido,
-            password: form.password,
-          });
+        if (!rolSeleccionado) {
+          setFormError('Selecciona un rol para la invitación.');
+          return;
         }
+        await invitarUsuario({ correo: form.correo, rol_id: rolSeleccionado });
+        showToast(`Invitación enviada a ${form.correo}`, 'success');
       }
       if (modal.tipo === 'reset-password') {
         await resetPasswordUsuario(modal.usuario.id, resetPassword);
+        showToast('Contraseña reseteada', 'success');
       }
-      if (modal.tipo === 'editar') await updateUsuario(modal.usuario.id, { nombre: form.nombre, apellido: form.apellido });
-    } catch { } finally {
+      if (modal.tipo === 'editar') {
+        await updateUsuario(modal.usuario.id, { nombre: form.nombre, apellido: form.apellido });
+        showToast('Usuario actualizado', 'success');
+      }
+    } catch (err) {
+      const detail = err.response?.data?.detail || err.message || 'Error inesperado';
+      showToast(detail, 'error');
+    } finally {
       if (modal.tipo !== 'credenciales') {
         setModal(null);
         setForm({ correo: '' });
         setFormError('');
         setRolSeleccionado('');
-        setModoCrear('invitar');
         setResetPassword('');
         cargar();
       }
@@ -228,8 +235,8 @@ function TabUsuarios() {
       <div className="admin-card">
         <div className="admin-card__top">
           <h2 className="admin-card__title">Usuarios ({total})</h2>
-          {(puede('identidad:usuario:crear') || puede('identidad:usuario:modificar')) && (
-            <button className="btn-add" onClick={() => setModal({ tipo: 'crear' })}>+ Invitar / Crear</button>
+          {puede('identidad:usuario:invitar') && (
+            <button className="btn-add" onClick={() => setModal({ tipo: 'crear' })}>+ Invitar</button>
           )}
         </div>
         <div className="admin-search">
@@ -296,7 +303,7 @@ function TabUsuarios() {
       )}
       {modal?.tipo === 'expulsar' && (
         <Modal title="Expulsar usuario" onClose={() => setModal(null)} onConfirm={handleAccion} confirmLabel="Expulsar" danger>
-          <p style={{ color: 'var(--color-gray-600)', fontSize: '0.9rem' }}>¿Expulsar y cerrar todas las sesiones de <strong>{modal.usuario.nombre}</strong>?</p>
+          <p style={{ color: 'var(--color-gray-600)', fontSize: '0.9rem' }}>¿Expulsar a <strong>{modal.usuario.nombre}</strong> de este tenant?</p>
         </Modal>
       )}
       {modal?.tipo === 'unlock' && (
@@ -311,42 +318,27 @@ function TabUsuarios() {
         />
       )}
       {(modal?.tipo === 'crear' || modal?.tipo === 'editar') && (
-        <Modal title={modal.tipo === 'crear' ? 'Nuevo usuario' : 'Editar usuario'} onClose={() => setModal(null)} onConfirm={handleAccion} confirmLabel={modal.tipo === 'crear' ? (modoCrear === 'invitar' ? 'Invitar' : 'Crear') : 'Guardar'}>
+        <Modal title={modal.tipo === 'crear' ? 'Invitar usuario' : 'Editar usuario'} onClose={() => setModal(null)} onConfirm={handleAccion} confirmLabel={modal.tipo === 'crear' ? 'Invitar' : 'Guardar'}>
           {modal.tipo === 'crear' ? (
             <>
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                <button type="button" className={`btn-admin ${modoCrear === 'invitar' ? 'btn-admin--primary' : ''}`} onClick={() => setModoCrear('invitar')}>Invitar</button>
-                <button type="button" className={`btn-admin ${modoCrear === 'directo' ? 'btn-admin--primary' : ''}`} onClick={() => setModoCrear('directo')}>Crear directo</button>
-              </div>
               <div className="form-group">
                 <label className="form-label">Correo electrónico</label>
                 <input className="form-input" type="email" placeholder="usuario@correo.com" value={form.correo} onChange={(e) => { setForm(f => ({ ...f, correo: e.target.value })); setFormError(''); }} />
                 {formError && <p className="form-error">{formError}</p>}
               </div>
-              {modoCrear === 'directo' && (
-                <>
-                  <div className="form-group"><label className="form-label">Nombre</label><input className="form-input" value={form.nombre || ''} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} required /></div>
-                  <div className="form-group"><label className="form-label">Apellido</label><input className="form-input" value={form.apellido || ''} onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} required /></div>
-                  <div className="form-group"><label className="form-label">Contraseña</label><input className="form-input" type="password" value={form.password || ''} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} required /></div>
-                </>
-              )}
-              {modoCrear === 'invitar' && (
-                <>
-                  <p style={{ color: 'var(--color-gray-600)', fontSize: '0.8rem', marginTop: '0.25rem' }}>Se enviará una invitación al correo.</p>
-                  <div className="form-group" style={{ marginTop: '0.75rem' }}>
-                    <label className="form-label">Rol</label>
-                    <select className="form-input" value={rolSeleccionado} onChange={(e) => setRolSeleccionado(e.target.value)} required>
-                      <option value="">Selecciona un rol...</option>
-                      {rolesOptions.map(r => (
-                        <option key={r.id} value={r.id}>{r.nombre}</option>
-                      ))}
-                    </select>
-                    <p style={{ color: 'var(--color-gray-500)', fontSize: '0.78rem', marginTop: '0.35rem' }}>
-                      El invitado entrará con este rol al aceptar. Para probar caficultor o agrónomo, invita otro correo y entra con esa cuenta.
-                    </p>
-                  </div>
-                </>
-              )}
+              <p style={{ color: 'var(--color-gray-600)', fontSize: '0.8rem', marginTop: '0.25rem' }}>Se enviará una invitación al correo.</p>
+              <div className="form-group" style={{ marginTop: '0.75rem' }}>
+                <label className="form-label">Rol</label>
+                <select className="form-input" value={rolSeleccionado} onChange={(e) => setRolSeleccionado(e.target.value)} required>
+                  <option value="">Selecciona un rol...</option>
+                  {rolesOptions.map(r => (
+                    <option key={r.id} value={r.id}>{r.nombre}</option>
+                  ))}
+                </select>
+                <p style={{ color: 'var(--color-gray-500)', fontSize: '0.78rem', marginTop: '0.35rem' }}>
+                  El invitado entrará con este rol al aceptar. Para probar caficultor o agrónomo, invita otro correo y entra con esa cuenta.
+                </p>
+              </div>
             </>
           ) : (
             <div className="form-row">
@@ -400,6 +392,7 @@ function TabInvitaciones() {
   const [loading, setLoading] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState('');
   const [reenvios, setReenvios] = useState({}); // id -> 'enviando'|'ok'|'error'
+  const [eliminando, setEliminando] = useState(null); // invitation id being deleted or null
   const { puede } = usePermisos();
 
   const cargar = async () => {
@@ -418,10 +411,24 @@ function TabInvitaciones() {
     try {
       await reenviarInvitacion(inv.id);
       setReenvios(r => ({ ...r, [inv.id]: 'ok' }));
+      cargar();  // silent reload after reenviar
       setTimeout(() => setReenvios(r => { const n = { ...r }; delete n[inv.id]; return n; }), 3000);
     } catch {
       setReenvios(r => ({ ...r, [inv.id]: 'error' }));
       setTimeout(() => setReenvios(r => { const n = { ...r }; delete n[inv.id]; return n; }), 3000);
+    }
+  };
+
+  const handleEliminar = async () => {
+    if (!eliminando) return;
+    try {
+      await eliminarInvitacion(eliminando);
+      setEliminando(null);
+      cargar();
+      showToast('Invitación cancelada', 'success');
+    } catch (err) {
+      setEliminando(null);
+      showToast(err?.message || 'Error al cancelar invitación', 'error');
     }
   };
 
@@ -446,7 +453,7 @@ function TabInvitaciones() {
           <div className="admin-empty">
             <p style={{ marginBottom: '0.5rem' }}>No hay invitaciones{filtroEstado ? ` con estado "${filtroEstado}"` : ' enviadas aún'}.</p>
             <p style={{ fontSize: '0.82rem', color: 'var(--color-gray-400)' }}>
-              Usa el botón <strong>+ Invitar / Crear</strong> en la pestaña Usuarios para enviar una invitación.
+              Usa el botón <strong>+ Invitar</strong> en la pestaña Usuarios para enviar una invitación.
             </p>
           </div>
         ) : (
@@ -487,7 +494,7 @@ function TabInvitaciones() {
                         {inv.expiracion ? new Date(inv.expiracion).toLocaleDateString() : '—'}
                       </td>
                       <td>
-                        {inv.estado === 'pendiente' && puede('identidad:usuario:crear') && (
+                        {inv.estado === 'pendiente' && puede('identidad:usuario:invitar') && (
                           <button
                             className={`btn-admin btn-admin--primary`}
                             onClick={() => handleReenviar(inv)}
@@ -499,6 +506,15 @@ function TabInvitaciones() {
                               : 'Reenviar'}
                           </button>
                         )}
+                        {inv.estado === 'pendiente' && puede('identidad:usuario:invitar') && (
+                          <button
+                            className="btn-admin btn-admin--danger"
+                            onClick={() => setEliminando(inv.id)}
+                            style={{ marginLeft: '0.4rem' }}
+                          >
+                            Cancelar
+                          </button>
+                        )}
                         {inv.estado !== 'pendiente' && <span style={{ color: 'var(--color-gray-300)', fontSize: '0.8rem' }}>—</span>}
                       </td>
                     </tr>
@@ -508,6 +524,20 @@ function TabInvitaciones() {
             </table>
           </div>
         )}
+
+      {eliminando && (
+        <Modal
+          title="Cancelar invitación"
+          onClose={() => setEliminando(null)}
+          onConfirm={handleEliminar}
+          confirmLabel="Cancelar invitación"
+          danger
+        >
+          <p style={{ color: 'var(--color-gray-600)', fontSize: '0.9rem' }}>
+            ¿Cancelar esta invitación? El enlace ya no será válido.
+          </p>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -893,7 +923,7 @@ function TabIPsBloqueadas() {
 }
 
 export default function AdminPage() {
-  const { esSysAdmin, esAgronomo, rolLabel, adminTabs, enVistaPrevia } = usePermisos();
+  const { esSysAdmin, esAgronomo, rolLabel, adminTabs } = usePermisos();
   const [tabActiva, setTabActiva] = useState('Usuarios');
 
   const TABS = adminTabs.length ? adminTabs : ['Usuarios'];
@@ -912,11 +942,9 @@ export default function AdminPage() {
 
   return (
     <Layout title="Panel de administración" subtitle={subtitle}>
-      {!enVistaPrevia && (
-        <div className="admin-role-hint">
-          📧 <strong>Invitar a tu equipo:</strong> ve a <strong>Usuarios → + Invitar</strong>, pon el correo y elige el rol (agrónomo o caficultor). Recibirán un enlace por correo para unirse con su propia cuenta.
-        </div>
-      )}
+      <div className="admin-role-hint">
+        📧 <strong>Invitar a tu equipo:</strong> ve a <strong>Usuarios → + Invitar</strong>, pon el correo y elige el rol (agrónomo o caficultor). Recibirán un enlace por correo para unirse con su propia cuenta.
+      </div>
       <div className="admin-tabs">
         {TABS.map((tab) => (
           <button key={tab} className={`admin-tab ${tabActiva === tab ? 'admin-tab--active' : ''}`} onClick={() => setTabActiva(tab)}>

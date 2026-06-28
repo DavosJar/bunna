@@ -17,41 +17,23 @@ import (
 )
 
 type RegistrarUsuarioCasoDeUso struct {
-	userRepo           usuario.UsuarioRepositorio
-	credRepo           seguridad.CredencialesRepositorio
-	encSvc             seguridad.EncriptacionServicio
-	idGen              shareddomain.GeneradorID
-	tenantRepo         tenant.TenantRepositorio
-	membresiaRepo      tenant.MembresiaRepositorio
-	rolRepo              rbac.RolRepositorio
-	usuarioTenantRolRepo rbac.UsuarioTenantRolRepositorio
-	rolPermisoRepo       rbac.RolPermisoRepositorio
-	rolPublisher         rbac.RolPublisher
+	uow         UnitOfWork
+	encSvc      seguridad.EncriptacionServicio
+	idGen       shareddomain.GeneradorID
+	rolPublisher rbac.RolPublisher
 }
 
 func NewRegistrarUsuarioCasoDeUso(
-	userRepo usuario.UsuarioRepositorio,
-	credRepo seguridad.CredencialesRepositorio,
+	uow UnitOfWork,
 	encSvc seguridad.EncriptacionServicio,
 	idGen shareddomain.GeneradorID,
-	tenantRepo tenant.TenantRepositorio,
-	membresiaRepo tenant.MembresiaRepositorio,
-	rolRepo rbac.RolRepositorio,
-	usuarioTenantRolRepo rbac.UsuarioTenantRolRepositorio,
-	rolPermisoRepo rbac.RolPermisoRepositorio,
 	rolPublisher rbac.RolPublisher,
 ) *RegistrarUsuarioCasoDeUso {
 	return &RegistrarUsuarioCasoDeUso{
-		userRepo:             userRepo,
-		credRepo:             credRepo,
-		encSvc:               encSvc,
-		idGen:                idGen,
-		tenantRepo:           tenantRepo,
-		membresiaRepo:        membresiaRepo,
-		rolRepo:              rolRepo,
-		usuarioTenantRolRepo: usuarioTenantRolRepo,
-		rolPermisoRepo:       rolPermisoRepo,
-		rolPublisher:         rolPublisher,
+		uow:         uow,
+		encSvc:      encSvc,
+		idGen:       idGen,
+		rolPublisher: rolPublisher,
 	}
 }
 
@@ -65,14 +47,9 @@ func (uc *RegistrarUsuarioCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoR
 		return nil, fmt.Errorf("error al generar ID de usuario: %w", err)
 	}
 
-	nuevoUsuario, err := usuario.NuevoUsuario(usuarioID, cmd.Correo, cmd.Nombre, cmd.Apellido, cmd.Telefono)
+	tenantID, err := uc.idGen.NextID(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error al crear usuario: %w", err)
-	}
-
-	usuarioCreado, err := uc.userRepo.Crear(ctx, nuevoUsuario)
-	if err != nil {
-		return nil, fmt.Errorf("error al persistir usuario: %w", err)
+		return nil, fmt.Errorf("error al generar ID de tenant: %w", err)
 	}
 
 	passwordHash, err := uc.encSvc.Hashear(cmd.Password)
@@ -80,78 +57,90 @@ func (uc *RegistrarUsuarioCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoR
 		return nil, fmt.Errorf("error al hashear password: %w", err)
 	}
 
-	nuevasCredenciales := seguridad.NuevaCredencialesUsuario(usuarioCreado.ID(), passwordHash)
-	_, err = uc.credRepo.Crear(ctx, nuevasCredenciales)
-	if err != nil {
-		return nil, fmt.Errorf("error al persistir credenciales: %w", err)
-	}
-
-	tenantID, err := uc.idGen.NextID(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error al generar ID de tenant: %w", err)
-	}
-
 	nombreTenant := fmt.Sprintf("%s %s", cmd.Nombre, cmd.Apellido)
 	slugTenant := generarSlug(nombreTenant)
 
-	slugTenant = uc.asegurarSlugUnico(ctx, slugTenant, tenantID)
+	var respuesta *RespuestaRegistrarUsuario
 
-	nuevoTenant, err := tenant.NuevoTenant(tenantID, nombreTenant, slugTenant)
+	err = uc.uow.Transaccional(ctx, func(tx UnitOfWork) error {
+		nuevoUsuario, err := usuario.NuevoUsuario(usuarioID, cmd.Correo, cmd.Nombre, cmd.Apellido, cmd.Telefono)
+		if err != nil {
+			return fmt.Errorf("error al crear usuario: %w", err)
+		}
+
+		usuarioCreado, err := tx.UsuarioRepository().Crear(ctx, nuevoUsuario)
+		if err != nil {
+			return fmt.Errorf("error al persistir usuario: %w", err)
+		}
+
+		nuevasCredenciales := seguridad.NuevaCredencialesUsuario(usuarioCreado.ID(), passwordHash)
+		if _, err = tx.CredencialesRepository().Crear(ctx, nuevasCredenciales); err != nil {
+			return fmt.Errorf("error al persistir credenciales: %w", err)
+		}
+
+		slugUnico := uc.asegurarSlugUnico(ctx, slugTenant, tenantID, tx)
+
+		nuevoTenant, err := tenant.NuevoTenant(tenantID, nombreTenant, slugUnico)
+		if err != nil {
+			return fmt.Errorf("error al crear tenant: %w", err)
+		}
+
+		tenantCreado, err := tx.TenantRepository().Crear(ctx, nuevoTenant)
+		if err != nil {
+			return fmt.Errorf("error al persistir tenant: %w", err)
+		}
+
+		membresia, err := tenant.NuevaMembresia(usuarioCreado.ID(), tenantCreado.ID())
+		if err != nil {
+			return fmt.Errorf("error al crear membresía: %w", err)
+		}
+
+		if err := tx.MembresiaRepository().Crear(ctx, membresia); err != nil {
+			return fmt.Errorf("error al persistir membresía: %w", err)
+		}
+
+		rolAdmin, err := tx.RolRepository().ObtenerPorNombre(ctx, rbac.RolAdministrador)
+		if err != nil {
+			return fmt.Errorf("error al obtener rol administrador: %w", err)
+		}
+
+		if err := tx.UsuarioTenantRolRepository().Crear(ctx, usuarioCreado.ID(), tenantCreado.ID(), rolAdmin.ID); err != nil {
+			return fmt.Errorf("error al asignar rol administrador: %w", err)
+		}
+
+		permisosAdmin, err := tx.RolPermisoRepository().ListarPorRolYTenant(ctx, rolAdmin.ID, rbac.TenantIDSistema)
+		if err != nil {
+			return fmt.Errorf("error al obtener permisos base del administrador: %w", err)
+		}
+
+		var codigosPermisos []string
+		for _, p := range permisosAdmin {
+			codigosPermisos = append(codigosPermisos, p.Codigo)
+		}
+
+		respuesta = &RespuestaRegistrarUsuario{
+			UsuarioID: usuarioCreado.ID(),
+			TenantID:  tenantCreado.ID(),
+			Correo:    usuarioCreado.Correo(),
+			Estado:    string(usuarioCreado.Estado()),
+			CreadoEn:  usuarioCreado.FechaCreacion(),
+		}
+
+		if err := uc.rolPublisher.PublicarRolActualizado(ctx, rbac.RolAdministrador, tenantCreado.ID(), codigosPermisos); err != nil {
+			return fmt.Errorf("error al publicar rol administrador para el nuevo tenant: %w", err)
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		return nil, fmt.Errorf("error al crear tenant: %w", err)
+		return nil, err
 	}
-
-	tenantCreado, err := uc.tenantRepo.Crear(ctx, nuevoTenant)
-	if err != nil {
-		return nil, fmt.Errorf("error al persistir tenant: %w", err)
-	}
-
-	membresia, err := tenant.NuevaMembresia(usuarioCreado.ID(), tenantCreado.ID())
-	if err != nil {
-		return nil, fmt.Errorf("error al crear membresía: %w", err)
-	}
-
-	if err := uc.membresiaRepo.Crear(ctx, membresia); err != nil {
-		return nil, fmt.Errorf("error al persistir membresía: %w", err)
-	}
-
-	rolAdmin, err := uc.rolRepo.ObtenerPorNombre(ctx, rbac.RolAdministrador)
-	if err != nil {
-		return nil, fmt.Errorf("error al obtener rol administrador: %w", err)
-	}
-
-	if err := uc.usuarioTenantRolRepo.Crear(ctx, usuarioCreado.ID(), tenantCreado.ID(), rolAdmin.ID); err != nil {
-		return nil, fmt.Errorf("error al asignar rol administrador: %w", err)
-	}
-
-	// Extraer los permisos del rol administrador base (en el tenant de sistema)
-	permisosAdmin, err := uc.rolPermisoRepo.ListarPorRolYTenant(ctx, rolAdmin.ID, rbac.TenantIDSistema)
-	if err != nil {
-		return nil, fmt.Errorf("error al obtener permisos base del administrador: %w", err)
-	}
-
-	// Extraer solo los códigos de los permisos
-	var codigosPermisos []string
-	for _, p := range permisosAdmin {
-		codigosPermisos = append(codigosPermisos, p.Codigo)
-	}
-
-	// Publicar los permisos del administrador para este nuevo tenant a Kafka
-	if err := uc.rolPublisher.PublicarRolActualizado(ctx, rbac.RolAdministrador, tenantCreado.ID(), codigosPermisos); err != nil {
-		return nil, fmt.Errorf("error al publicar rol administrador para el nuevo tenant: %w", err)
-	}
-
-	return &RespuestaRegistrarUsuario{
-		UsuarioID: usuarioCreado.ID(),
-		TenantID:  tenantCreado.ID(),
-		Correo:    usuarioCreado.Correo(),
-		Estado:    string(usuarioCreado.Estado()),
-		CreadoEn:  usuarioCreado.FechaCreacion(),
-	}, nil
+	return respuesta, nil
 }
 
-func (uc *RegistrarUsuarioCasoDeUso) asegurarSlugUnico(ctx context.Context, slug, tenantID string) string {
-	if _, err := uc.tenantRepo.ObtenerPorSlug(ctx, slug); err != nil {
+func (uc *RegistrarUsuarioCasoDeUso) asegurarSlugUnico(ctx context.Context, slug, tenantID string, tx UnitOfWork) string {
+	if _, err := tx.TenantRepository().ObtenerPorSlug(ctx, slug); err != nil {
 		return slug
 	}
 	maxLen := len(tenantID)

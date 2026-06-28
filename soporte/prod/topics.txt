@@ -1,9 +1,9 @@
 dev.permisos
-test.permisos
-prod.permisos
 dev.iam.roles
+test.permisos
 test.iam.roles
+prod.permisos
 prod.iam.roles
 telemetry
 hardware.metrics
-
+hardware.alerts

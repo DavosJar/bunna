@@ -75,8 +75,8 @@ async fn main() -> anyhow::Result<()> {
 
     let publisher = KafkaPublisher::new(
         &config.kafka_brokers,
-        "hardware.metrics",
-        "hardware.alerts",
+        &config.kafka_topic_metrics,
+        &config.kafka_topic_alerts,
         snapshot_for_publisher_rx,
         alert_rx,
     )?;

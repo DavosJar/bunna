@@ -5,6 +5,8 @@ use std::env;
 pub struct Config {
     pub node_id: String,
     pub kafka_brokers: String,
+    pub kafka_topic_metrics: String,
+    pub kafka_topic_alerts: String,
     pub interval_ms: u64,
     pub cpu_warn: f64,
     pub cpu_critical: f64,
@@ -20,6 +22,10 @@ impl Config {
         Ok(Self {
             node_id: env::var("NODE_ID").context("NODE_ID not set")?,
             kafka_brokers: env::var("KAFKA_BROKERS").unwrap_or_else(|_| "localhost:9092".to_string()),
+            kafka_topic_metrics: env::var("KAFKA_TOPIC_METRICS")
+                .unwrap_or_else(|_| "hardware.metrics".to_string()),
+            kafka_topic_alerts: env::var("KAFKA_TOPIC_ALERTS")
+                .unwrap_or_else(|_| "hardware.alerts".to_string()),
             interval_ms: env::var("INTERVAL_MS")
                 .unwrap_or_else(|_| "10000".to_string())
                 .parse()?,

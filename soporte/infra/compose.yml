@@ -17,7 +17,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_HEAP_OPTS: ${KAFKA_HEAP_OPTS:--Xms128M -Xmx256M}
+      KAFKA_HEAP_OPTS: ${KAFKA_HEAP_OPTS:--Xms512M -Xmx1G}
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     command: |
       bash -c '
@@ -45,13 +45,13 @@ services:
           - ${PLACEMENT_CONSTRAINT:-node.role == worker}
 
   hardware-monitor-agent:
-    image: 172.31.36.189:5000/hardware-monitor-agent:release
+    image: ${REGISTRY:-172.31.36.189:5000}/hardware-monitor-agent:release
     depends_on:
       - kafka
     environment:
       - KAFKA_BROKERS=kafka:9092
       - SAMPLE_INTERVAL_MS=5000
-      - CLOUD_PROVIDER=AWS
+      - CLOUD_PROVIDER=local
       - NODE_ID={{.Node.Hostname}}
     volumes:
       - /etc/hostname:/etc/host_hostname:ro
@@ -59,7 +59,7 @@ services:
       mode: global
 
   servicio-monitoreo:
-    image: 172.31.36.189:5000/servicio-monitoreo:release
+    image: ${REGISTRY:-172.31.36.189:5000}/servicio-monitoreo:release
     depends_on:
       - kafka
       - clickhouse
@@ -84,15 +84,15 @@ services:
     image: ${CH_IMAGE:-clickhouse/clickhouse-server:latest}
     ports:
       - target: 8123
-        published: ${CH_HTTP_PORT:-18123}
+        published: ${CH_HTTP_PORT:-8123}
       - target: 9000
-        published: ${CH_NATIVE_PORT:-19000}
+        published: ${CH_NATIVE_PORT:-9000}
     environment:
       - CLICKHOUSE_USER=${CH_USER:-monitoreo}
       - CLICKHOUSE_PASSWORD=${CH_PASS:-monitoreo_dev}
       - CLICKHOUSE_DB=${CH_DB:-bunna_monitoreo}
     volumes:
-      - clickhouse_data_test:/var/lib/clickhouse
+      - clickhouse_data_infra:/var/lib/clickhouse
     configs:
       - source: clickhouse_init_sql
         target: /docker-entrypoint-initdb.d/001_tablas.sql
@@ -106,7 +106,7 @@ services:
     image: ${GRAFANA_IMAGE:-grafana/grafana:latest}
     ports:
       - target: 3000
-        published: ${GRAFANA_PORT:-13000}
+        published: ${GRAFANA_PORT:-3000}
     environment:
       - GF_INSTALL_PLUGINS=${GF_INSTALL_PLUGINS:-grafana-clickhouse-datasource}
       - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER:-admin}
@@ -130,52 +130,44 @@ services:
         target: /etc/grafana/provisioning/dashboards/api-full-telemetry.json
     deploy:
       replicas: 1
-
-  identidad:
-    image: 172.31.36.189:5000/identidad:release
-    depends_on:
-      - kafka
-    env_file:
-      - ./identidad.env
-    environment:
-      - DB_SSLMODE=require
-      - KAFKA_BROKERS=kafka:9092
-    ports:
-      - target: 8080
-        published: 18080
-    deploy:
-      replicas: 1
+      resources:
+        limits:
+          cpus: ${GRAFANA_CPU_LIMIT:-0.5}
+          memory: ${GRAFANA_MEM_LIMIT:-256M}
+        reservations:
+          cpus: '0.25'
+          memory: 128M
       placement:
         constraints:
           - ${PLACEMENT_CONSTRAINT:-node.role == worker}
 
 volumes:
-  clickhouse_data_test:
+  clickhouse_data_infra:
 
 networks:
   default:
-    name: bunna-test-net
+    name: bunna-prod-net
     driver: overlay
     attachable: true
 
 configs:
   topics_txt:
-    file: ./topics.txt
+    file: ../prod/topics.txt
   clickhouse_datasource:
-    file: ../../servicio-monitoreo/grafana/datasources/clickhouse.yaml
+    file: ../../../servicio-monitoreo/grafana/datasources/clickhouse.yaml
   dashboards_provider:
-    file: ../../servicio-monitoreo/grafana/dashboards/proveedor.yaml
+    file: ../../../servicio-monitoreo/grafana/dashboards/proveedor.yaml
   hardware_metrics_dashboard:
-    file: ../../servicio-monitoreo/grafana/dashboards/hardware-metrics.json
+    file: ../../../servicio-monitoreo/grafana/dashboards/hardware-metrics.json
   api_telemetry_dashboard:
-    file: ../../servicio-monitoreo/grafana/dashboards/api-telemetry.json
+    file: ../../../servicio-monitoreo/grafana/dashboards/api-telemetry.json
   business_ops_dashboard:
-    file: ../../servicio-monitoreo/grafana/dashboards/business-ops.json
+    file: ../../../servicio-monitoreo/grafana/dashboards/business-ops.json
   data_queries_dashboard:
-    file: ../../servicio-monitoreo/grafana/dashboards/data-queries.json
+    file: ../../../servicio-monitoreo/grafana/dashboards/data-queries.json
   api_endpoint_deep_dive_dashboard:
-    file: ../../servicio-monitoreo/grafana/dashboards/api-endpoint-deep-dive.json
+    file: ../../../servicio-monitoreo/grafana/dashboards/api-endpoint-deep-dive.json
   api_full_telemetry_dashboard:
-    file: ../../servicio-monitoreo/grafana/dashboards/api-full-telemetry.json
+    file: ../../../servicio-monitoreo/grafana/dashboards/api-full-telemetry.json
   clickhouse_init_sql:
-    file: ../../servicio-monitoreo/config/clickhouse/init/001_tablas.sql
+    file: ../../../servicio-monitoreo/config/clickhouse/init/001_tablas.sql

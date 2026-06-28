@@ -154,20 +154,20 @@ configs:
   topics_txt:
     file: ../prod/topics.txt
   clickhouse_datasource:
-    file: ../../../servicio-monitoreo/grafana/datasources/clickhouse.yaml
+    file: ../../servicio-monitoreo/grafana/datasources/clickhouse.yaml
   dashboards_provider:
-    file: ../../../servicio-monitoreo/grafana/dashboards/proveedor.yaml
+    file: ../../servicio-monitoreo/grafana/dashboards/proveedor.yaml
   hardware_metrics_dashboard:
-    file: ../../../servicio-monitoreo/grafana/dashboards/hardware-metrics.json
+    file: ../../servicio-monitoreo/grafana/dashboards/hardware-metrics.json
   api_telemetry_dashboard:
-    file: ../../../servicio-monitoreo/grafana/dashboards/api-telemetry.json
+    file: ../../servicio-monitoreo/grafana/dashboards/api-telemetry.json
   business_ops_dashboard:
-    file: ../../../servicio-monitoreo/grafana/dashboards/business-ops.json
+    file: ../../servicio-monitoreo/grafana/dashboards/business-ops.json
   data_queries_dashboard:
-    file: ../../../servicio-monitoreo/grafana/dashboards/data-queries.json
+    file: ../../servicio-monitoreo/grafana/dashboards/data-queries.json
   api_endpoint_deep_dive_dashboard:
-    file: ../../../servicio-monitoreo/grafana/dashboards/api-endpoint-deep-dive.json
+    file: ../../servicio-monitoreo/grafana/dashboards/api-endpoint-deep-dive.json
   api_full_telemetry_dashboard:
-    file: ../../../servicio-monitoreo/grafana/dashboards/api-full-telemetry.json
+    file: ../../servicio-monitoreo/grafana/dashboards/api-full-telemetry.json
   clickhouse_init_sql:
-    file: ../../../servicio-monitoreo/config/clickhouse/init/001_tablas.sql
+    file: ../../servicio-monitoreo/config/clickhouse/init/001_tablas.sql

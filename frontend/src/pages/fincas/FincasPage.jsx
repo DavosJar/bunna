@@ -211,6 +211,7 @@ export default function FincasPage() {
               const API_BASE = import.meta.env.VITE_YOLO_API_URL || (import.meta.env.PROD ? 'https://i2u6hsbhf1.execute-api.us-east-2.amazonaws.com' : '/yolo');
               const newD = {
                 id: rm.diagnosticoID,
+                diagnosticoID: rm.diagnosticoID,
                 muestraID: rm.id,
                 estado: rm.estadoDiagnostico,
                 origen: 'iot', // Debe ser 'iot' para que la UI muestre 📷 Cámara IoT

@@ -163,6 +163,7 @@ func New(all *facades.AllFacades, cfg Config) *gin.Engine {
 	handlers.NewRevocarPermisoDeRolHandler(all.Rbac).Register(api)
 	handlers.NewListarPermisosHandler(all.Rbac).Register(api)
 	handlers.NewListarMisPermisosHandler(all.Rbac).Register(api)
+	handlers.NewListarRolesDeUsuarioHandler(all.Rbac).Register(api)
 
 	// Registrar handlers — Tenants
 	handlers.NewListarMisTenantsHandler(all.Tenant).Register(api)

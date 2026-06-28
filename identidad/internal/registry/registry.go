@@ -2,6 +2,7 @@ package registry
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/davosjar/bunna/services/identidad/internal/config"
@@ -16,6 +17,7 @@ import (
 	notificaciones_email "github.com/davosjar/bunna/services/identidad/internal/notificaciones/infrastructure/email"
 	checkpermission "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/checkpermission"
 	uc_listarmispermisos "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listarmispermisos"
+	uc_listarrolesdeusuario "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listarrolesdeusuario"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignpermissiontorole"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/assignrole"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/createrole"
@@ -143,9 +145,10 @@ type Registry struct {
 	ForzarCierreSesionCasoDeUso decorator.UseCase[*uc_terminatesession.ComandoForzarCierreSesion, *uc_terminatesession.RespuestaForzarCierreSesion]
 
 	// Casos de uso — roles y permisos
-	ListarRolesCasoDeUso         decorator.UseCase[*listroles.ComandoListarRoles, *listroles.RespuestaListarRoles]
-	ListarPermisosCasoDeUso      *uc_listpermisos.ListarPermisosCasoDeUso
-	ListarMisPermisosCasoDeUso   *uc_listarmispermisos.ListarMisPermisosCasoDeUso
+	ListarRolesCasoDeUso              decorator.UseCase[*listroles.ComandoListarRoles, *listroles.RespuestaListarRoles]
+	ListarPermisosCasoDeUso           *uc_listpermisos.ListarPermisosCasoDeUso
+	ListarMisPermisosCasoDeUso        *uc_listarmispermisos.ListarMisPermisosCasoDeUso
+	ListarRolesDeUsuarioCasoDeUso     *uc_listarrolesdeusuario.ListarRolesDeUsuarioCasoDeUso
 	CrearRolCasoDeUso            decorator.UseCase[*createrole.ComandoCrearRol, *createrole.RespuestaCrearRol]
 	ModificarRolCasoDeUso        decorator.UseCase[*updaterole.ComandoModificarRol, *updaterole.RespuestaModificarRol]
 	EliminarRolCasoDeUso         decorator.UseCase[*deleterole.ComandoEliminarRol, *deleterole.RespuestaEliminarRol]
@@ -251,7 +254,14 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 	authSvc := checkpermission.NewVerificarPermisoCasoDeUso(usuarioRolRepo, usuarioTenantRolRepo, permisoRepo)
 
 	// Roles Publisher
-	rolesTopic := "dev.iam.roles" // Podría venir de config.KafkaTopicRoles
+	rolesTopic := os.Getenv("KAFKA_TOPIC_ROLES")
+	if rolesTopic == "" {
+		env := os.Getenv("ENVIRONMENT")
+		if env == "" {
+			env = "dev"
+		}
+		rolesTopic = env + ".iam.roles"
+	}
 	rolesPublisher := publishers.NewRolesPublisher(strings.Split(cfg.KafkaBrokers, ","), rolesTopic)
 
 	emailSvc := notificaciones_email.NewSMTPServicio(notificaciones_email.ConfigSMTP{
@@ -364,6 +374,7 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 
 	// Casos de uso — roles y permisos (solo los que tienen Ejecutar de 1 método)
 	listarRolesUC := listroles.NewListarRolesCasoDeUso(rolRepo, permisoRepo, authSvc)
+	listarRolesDeUsuarioUC := uc_listarrolesdeusuario.NewListarRolesDeUsuarioCasoDeUso(usuarioTenantRolRepo)
 	crearRolUC := createrole.NewCrearRolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc)
 	modificarRolUC := updaterole.NewModificarRolCasoDeUso(rolRepo, authSvc)
 	eliminarRolUC := deleterole.NewEliminarRolCasoDeUso(rolRepo, authSvc)
@@ -536,9 +547,10 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		ConfirmarRecuperacionCasoDeUso:    confirmarRecuperacionUC,
 
 		// Casos de uso — roles y permisos
-		ListarRolesCasoDeUso:         listarRolesUC,
-		ListarPermisosCasoDeUso:      uc_listpermisos.NewListarPermisosCasoDeUso(permisoRepo, authSvc),
-		ListarMisPermisosCasoDeUso:   listarMisPermisosCasoDeUso,
+		ListarRolesCasoDeUso:              listarRolesUC,
+		ListarPermisosCasoDeUso:           uc_listpermisos.NewListarPermisosCasoDeUso(permisoRepo, authSvc),
+		ListarMisPermisosCasoDeUso:        listarMisPermisosCasoDeUso,
+		ListarRolesDeUsuarioCasoDeUso:     listarRolesDeUsuarioUC,
 		CrearRolCasoDeUso:            crearRolUC,
 		ModificarRolCasoDeUso:        modificarRolUC,
 		EliminarRolCasoDeUso:         eliminarRolUC,

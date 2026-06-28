@@ -11,6 +11,7 @@ import (
 	uc_listarmispermisos "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listarmispermisos"
 	uc_listpermisos "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listpermisos"
 	uc_listroles "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listroles"
+	uc_listarrolesdeusuario "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/listarrolesdeusuario"
 	uc_revokepermissionfromrole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/revokepermissionfromrole"
 	uc_revokerole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/revokerole"
 	uc_updaterole "github.com/davosjar/bunna/services/identidad/internal/rbac/application/usecases/updaterole"
@@ -142,6 +143,15 @@ type RespuestaRevocarPermisoDeRol struct {
 	RevocadoEn    string
 }
 
+type ComandoListarRolesDeUsuario struct {
+	UsuarioID string
+	TenantID  string
+}
+
+type RespuestaListarRolesDeUsuario struct {
+	Roles []uc_listarrolesdeusuario.RolDeUsuarioDTO
+}
+
 type RbacFacade interface {
 	ListarRoles(ctx context.Context, cmd ComandoListarRoles) (*RespuestaListarRoles, error)
 	ListarPermisos(ctx context.Context, ejecutorID, tenantID string) (*RespuestaListarPermisos, error)
@@ -153,6 +163,7 @@ type RbacFacade interface {
 	RevocarRol(ctx context.Context, cmd ComandoRevocarRol) (*RespuestaRevocarRol, error)
 	AsignarPermisoARol(ctx context.Context, cmd ComandoAsignarPermisoARol) (*RespuestaAsignarPermisoARol, error)
 	RevocarPermisoDeRol(ctx context.Context, cmd ComandoRevocarPermisoDeRol) (*RespuestaRevocarPermisoDeRol, error)
+	ListarRolesDeUsuario(ctx context.Context, cmd ComandoListarRolesDeUsuario) (*RespuestaListarRolesDeUsuario, error)
 }
 
 type rbacFacadeImpl struct {
@@ -166,6 +177,7 @@ type rbacFacadeImpl struct {
 	revocarRol          decorator.UseCase[*uc_revokerole.ComandoRevocarRol, *uc_revokerole.RespuestaRevocarRol]
 	asignarPermisoARol  decorator.UseCase[*uc_assignpermissiontorole.ComandoAsignarPermisoARol, *uc_assignpermissiontorole.RespuestaAsignarPermisoARol]
 	revocarPermisoDeRol decorator.UseCase[*uc_revokepermissionfromrole.ComandoRevocarPermisoDeRol, *uc_revokepermissionfromrole.RespuestaRevocarPermisoDeRol]
+	listarRolesDeUsuario *uc_listarrolesdeusuario.ListarRolesDeUsuarioCasoDeUso
 }
 
 func NewRbacFacade(
@@ -179,18 +191,20 @@ func NewRbacFacade(
 	revocarRol decorator.UseCase[*uc_revokerole.ComandoRevocarRol, *uc_revokerole.RespuestaRevocarRol],
 	asignarPermisoARol decorator.UseCase[*uc_assignpermissiontorole.ComandoAsignarPermisoARol, *uc_assignpermissiontorole.RespuestaAsignarPermisoARol],
 	revocarPermisoDeRol decorator.UseCase[*uc_revokepermissionfromrole.ComandoRevocarPermisoDeRol, *uc_revokepermissionfromrole.RespuestaRevocarPermisoDeRol],
+	listarRolesDeUsuario *uc_listarrolesdeusuario.ListarRolesDeUsuarioCasoDeUso,
 ) RbacFacade {
 	return &rbacFacadeImpl{
-		listarRoles:         listarRoles,
-		listarPermisos:      listarPermisos,
-		listarMisPermisos:   listarMisPermisos,
-		crearRol:            crearRol,
-		modificarRol:        modificarRol,
-		eliminarRol:         eliminarRol,
-		asignarRol:          asignarRol,
-		revocarRol:          revocarRol,
-		asignarPermisoARol:  asignarPermisoARol,
-		revocarPermisoDeRol: revocarPermisoDeRol,
+		listarRoles:            listarRoles,
+		listarPermisos:         listarPermisos,
+		listarMisPermisos:      listarMisPermisos,
+		crearRol:               crearRol,
+		modificarRol:           modificarRol,
+		eliminarRol:            eliminarRol,
+		asignarRol:             asignarRol,
+		revocarRol:             revocarRol,
+		asignarPermisoARol:     asignarPermisoARol,
+		revocarPermisoDeRol:    revocarPermisoDeRol,
+		listarRolesDeUsuario:   listarRolesDeUsuario,
 	}
 }
 
@@ -345,6 +359,19 @@ func (f *rbacFacadeImpl) AsignarPermisoARol(ctx context.Context, cmd ComandoAsig
 		RolID:         resp.RolID,
 		PermisoCodigo: resp.PermisoCodigo,
 		AsignadoEn:    resp.AsignadoEn,
+	}, nil
+}
+
+func (f *rbacFacadeImpl) ListarRolesDeUsuario(ctx context.Context, cmd ComandoListarRolesDeUsuario) (*RespuestaListarRolesDeUsuario, error) {
+	resp, err := f.listarRolesDeUsuario.Ejecutar(ctx, &uc_listarrolesdeusuario.ComandoListarRolesDeUsuario{
+		UsuarioID: cmd.UsuarioID,
+		TenantID:  cmd.TenantID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &RespuestaListarRolesDeUsuario{
+		Roles: resp.Roles,
 	}, nil
 }
 

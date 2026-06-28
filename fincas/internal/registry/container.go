@@ -331,7 +331,11 @@ func NewRegistry() *Registry {
 	if kafkaBrokers != "" {
 		topicRoles := os.Getenv("KAFKA_TOPIC_ROLES")
 		if topicRoles == "" {
-			topicRoles = "dev.iam.roles"
+			env := os.Getenv("ENVIRONMENT")
+			if env == "" {
+				env = "dev"
+			}
+			topicRoles = env + ".iam.roles"
 		}
 		brokers := strings.Split(kafkaBrokers, ",")
 		rolesConsumer = iamconsumers.NewRolesConsumer(brokers, topicRoles, iamRepo)

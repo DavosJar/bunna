@@ -7,7 +7,7 @@ import {
   getUsuarios, invitarUsuario, updateUsuario, bajaUsuario, expulsarUsuario, unlockUsuario,
   resetPasswordUsuario, getCredenciales,
   getRoles, createRol, updateRol, deleteRol, getPermisos,
-  asignarRol, revocarRol,
+  asignarRol, revocarRol, getRolesUsuario,
   getMisPermisos, asignarPermisoARol, revocarPermisoDeRol,
   getSesiones, cerrarSesion,
   getIPsBloqueadas, desbloquearIP,
@@ -47,8 +47,10 @@ function ModalRoles({ usuario, onClose }) {
     setLoading(true);
     Promise.all([
       getRoles(),
-    ]).then(([rolesData]) => {
+      getRolesUsuario(usuario.id),
+    ]).then(([rolesData, rolesUsuarioData]) => {
       setRoles((rolesData.roles || []).filter(r => r.nombre !== 'sys_admin'));
+      setRolesUsuario(rolesUsuarioData.map(r => r.rol_id));
     }).finally(() => setLoading(false));
   }, []);
 
@@ -100,14 +102,17 @@ function ModalRoles({ usuario, onClose }) {
                   <td><strong>{r.nombre}</strong></td>
                   <td style={{ fontSize: '0.8rem', color: 'var(--color-gray-500)' }}>{r.descripcion}</td>
                   <td>
-                    <button className="btn-admin btn-admin--primary" style={{ marginRight: 4 }}
-                      onClick={() => handleAsignar(r.id)}>
-                      Asignar
-                    </button>
-                    <button className="btn-admin btn-admin--danger"
-                      onClick={() => handleRevocar(r.id)}>
-                      Revocar
-                    </button>
+                    {!rolesUsuario.includes(r.id) ? (
+                      <button className="btn-admin btn-admin--primary" style={{ marginRight: 4 }}
+                        onClick={() => handleAsignar(r.id)}>
+                        Asignar
+                      </button>
+                    ) : (
+                      <button className="btn-admin btn-admin--danger"
+                        onClick={() => handleRevocar(r.id)}>
+                        Revocar
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

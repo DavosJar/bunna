@@ -298,6 +298,11 @@ export async function eliminarInvitacion(invitacionID) {
   }
 }
 
+export async function getRolesUsuario(usuarioID) {
+  const res = await client.get(`/api/v1/usuarios/${usuarioID}/roles`);
+  return res.data?.data?.roles || [];
+}
+
 // ── Permisos de roles ──────────────────────────────────────────
 export async function getPermisos() {
   const res = await client.get('/api/v1/permisos');

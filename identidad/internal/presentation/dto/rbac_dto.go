@@ -92,3 +92,12 @@ type ListarPermisosResponse struct {
 	Permisos []PermisoItem `json:"permisos" doc:"Lista de permisos"`
 	Total    int           `json:"total"    doc:"Total de resultados"`
 }
+
+type ListarRolesDeUsuarioResponse struct {
+	Roles []RolDeUsuarioItem `json:"roles"`
+}
+
+type RolDeUsuarioItem struct {
+	RolID  string `json:"rol_id"`
+	Nombre string `json:"nombre"`
+}

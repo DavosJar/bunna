@@ -49,8 +49,6 @@ func (r *verificacionRepositorio) MarcarVerificado(ctx context.Context, usuarioI
 		Updates(map[string]interface{}{
 			"estado_verificacion_correo": "VERIFICADO",
 			"estado":                     "ACTIVO",
-			"verificacion_token_hash":    "",
-			"verificacion_expiracion":    nil,
 		}).Error
 }
 

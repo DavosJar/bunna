@@ -54,6 +54,13 @@ func (uc *ConfirmarVerificacionCasoDeUso) Ejecutar(ctx context.Context, cmd *Com
 		return nil, dominio.ErrEnlaceInvalido
 	}
 
+	// Si ya está verificado, es idempotente
+	if usuario.EstadoVerificacion == "VERIFICADO" {
+		return &RespuestaConfirmarVerificacion{
+			Mensaje: "Correo ya verificado",
+		}, nil
+	}
+
 	if usuario.PruebaVerificacion.Expiro(time.Now()) {
 		if err := uc.repo.ActualizarPrueba(ctx, usuario.ID, dominio.PruebaVerificacionVacia()); err != nil {
 			fmt.Printf("[ConfirmarVerificacionCasoDeUso] Error al limpiar prueba: %v\n", err)

@@ -56,6 +56,7 @@ func NewAllFacades(reg *registry.Registry) *AllFacades {
 			reg.RevocarRolCasoDeUso,
 			reg.AsignarPermisoARolCasoDeUso,
 			reg.RevocarPermisoDeRolCasoDeUso,
+			reg.ListarRolesDeUsuarioCasoDeUso,
 		),
 		Tenant: NewTenantFacade(
 			reg.ListarMisTenantsCasoDeUso,

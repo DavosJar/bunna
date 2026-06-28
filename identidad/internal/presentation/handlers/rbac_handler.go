@@ -499,6 +499,51 @@ func (h *ListarPermisosHandler) Register(api huma.API) {
 	}, h.handle)
 }
 
+// ── Listar Roles de Usuario ──────────────────────────────────────────────────
+type ListarRolesDeUsuarioInput struct {
+	UsuarioID string `path:"usuarioID" doc:"ID del usuario"`
+}
+type ListarRolesDeUsuarioOutput struct {
+	Body presentation.ApiResponse[dto.ListarRolesDeUsuarioResponse]
+}
+type ListarRolesDeUsuarioHandler struct {
+	facade facades.RbacFacade
+}
+func NewListarRolesDeUsuarioHandler(facade facades.RbacFacade) *ListarRolesDeUsuarioHandler {
+	return &ListarRolesDeUsuarioHandler{facade: facade}
+}
+func (h *ListarRolesDeUsuarioHandler) Register(api huma.API) {
+	huma.Register(api, huma.Operation{
+		OperationID: "listar-roles-usuario",
+		Method:      http.MethodGet,
+		Path:        "/api/v1/usuarios/{usuarioID}/roles",
+		Summary:     "Listar roles de un usuario en el tenant activo",
+		Tags:        []string{"Usuarios"},
+	}, h.handle)
+}
+func (h *ListarRolesDeUsuarioHandler) handle(ctx context.Context, input *ListarRolesDeUsuarioInput) (*ListarRolesDeUsuarioOutput, error) {
+	tenantID := middleware.GetTenantIDFromCtx(ctx)
+	if tenantID == "" {
+		return nil, huma.Error400BadRequest("tenant no encontrado en el token")
+	}
+	resp, err := h.facade.ListarRolesDeUsuario(ctx, facades.ComandoListarRolesDeUsuario{
+		UsuarioID: input.UsuarioID,
+		TenantID:  tenantID,
+	})
+	if err != nil {
+		return nil, presentation.MapearError(err)
+	}
+	items := make([]dto.RolDeUsuarioItem, len(resp.Roles))
+	for i, r := range resp.Roles {
+		items[i] = dto.RolDeUsuarioItem{RolID: r.RolID, Nombre: r.Nombre}
+	}
+	out := &ListarRolesDeUsuarioOutput{}
+	out.Body = presentation.NewApiResponse(dto.ListarRolesDeUsuarioResponse{
+		Roles: items,
+	})
+	return out, nil
+}
+
 func (h *ListarPermisosHandler) handle(ctx context.Context, input *struct{}) (*ListarPermisosOutput, error) {
 	rol := middleware.GetRolFromCtx(ctx)
 	if rol == "" {

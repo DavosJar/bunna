@@ -130,13 +130,6 @@ services:
         target: /etc/grafana/provisioning/dashboards/api-full-telemetry.json
     deploy:
       replicas: 1
-      resources:
-        limits:
-          cpus: ${GRAFANA_CPU_LIMIT:-0.5}
-          memory: ${GRAFANA_MEM_LIMIT:-256M}
-        reservations:
-          cpus: '0.25'
-          memory: 128M
       placement:
         constraints:
           - ${PLACEMENT_CONSTRAINT:-node.role == worker}

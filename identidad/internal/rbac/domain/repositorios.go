@@ -38,6 +38,11 @@ type UsuarioRolRepositorio interface {
 	Eliminar(ctx context.Context, usuarioID, rolID string) error
 	ListarRolesPorUsuario(ctx context.Context, usuarioID string) ([]*RolDB, error)
 	TieneRol(ctx context.Context, usuarioID, rolNombre string) (bool, error)
+	// ObtenerUsuarioConRol retorna el ID del primer usuario con el rol dado
+	// (por nombre de rol). `encontrado=false` si no hay ninguno; en ese caso
+	// no se retorna error. Pensado para el pre-check de idempotencia del
+	// bootstrap del primer sys_admin.
+	ObtenerUsuarioConRol(ctx context.Context, rolNombre string) (usuarioID string, encontrado bool, err error)
 }
 
 // UsuarioTenantRolRepositorio maneja roles de usuario dentro de un tenant

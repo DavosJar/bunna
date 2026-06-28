@@ -14,24 +14,31 @@ type mockUsuarioRolRepo struct {
 	err   error
 }
 
-func (m *mockUsuarioRolRepo) Crear(ctx context.Context, uid, rid string) error { return nil }
+func (m *mockUsuarioRolRepo) Crear(ctx context.Context, uid, rid string) error    { return nil }
 func (m *mockUsuarioRolRepo) Eliminar(ctx context.Context, uid, rid string) error { return nil }
 func (m *mockUsuarioRolRepo) ListarRolesPorUsuario(ctx context.Context, uid string) ([]*rbac.RolDB, error) {
 	return m.roles, m.err
 }
-func (m *mockUsuarioRolRepo) TieneRol(ctx context.Context, uid, rol string) (bool, error) { return false, nil }
+func (m *mockUsuarioRolRepo) TieneRol(ctx context.Context, uid, rol string) (bool, error) {
+	return false, nil
+}
+func (m *mockUsuarioRolRepo) ObtenerUsuarioConRol(ctx context.Context, rolNombre string) (string, bool, error) {
+	return "", false, nil
+}
 
 type mockUTRR struct {
 	roles []*rbac.RolDB
 	err   error
 }
 
-func (m *mockUTRR) Crear(ctx context.Context, uid, tid, rid string) error { return nil }
+func (m *mockUTRR) Crear(ctx context.Context, uid, tid, rid string) error    { return nil }
 func (m *mockUTRR) Eliminar(ctx context.Context, uid, tid, rid string) error { return nil }
 func (m *mockUTRR) ListarRolesPorUsuarioEnTenant(ctx context.Context, uid, tid string) ([]*rbac.RolDB, error) {
 	return m.roles, m.err
 }
-func (m *mockUTRR) TieneRolEnTenant(ctx context.Context, uid, tid, rol string) (bool, error) { return false, nil }
+func (m *mockUTRR) TieneRolEnTenant(ctx context.Context, uid, tid, rol string) (bool, error) {
+	return false, nil
+}
 
 type mockPermisoRepo struct {
 	permisos []*rbac.PermisoDB
@@ -41,9 +48,13 @@ type mockPermisoRepo struct {
 func (m *mockPermisoRepo) ObtenerPorCodigo(ctx context.Context, codigo string) (*rbac.PermisoDB, error) {
 	return nil, m.err
 }
-func (m *mockPermisoRepo) Listar(ctx context.Context) ([]*rbac.PermisoDB, error) { return m.permisos, m.err }
+func (m *mockPermisoRepo) Listar(ctx context.Context) ([]*rbac.PermisoDB, error) {
+	return m.permisos, m.err
+}
 func (m *mockPermisoRepo) Crear(ctx context.Context, p *rbac.PermisoDB) error { return nil }
-func (m *mockPermisoRepo) ActualizarNombreDescripcion(ctx context.Context, id, nombre, desc string) error { return nil }
+func (m *mockPermisoRepo) ActualizarNombreDescripcion(ctx context.Context, id, nombre, desc string) error {
+	return nil
+}
 func (m *mockPermisoRepo) ListarPorRol(ctx context.Context, rolID, tenantID string) ([]*rbac.PermisoDB, error) {
 	return m.permisos, m.err
 }

@@ -11,32 +11,49 @@ import (
 )
 
 type mockUsuarioRolRepo struct {
-	errCrear    error
+	errCrear error
 }
 
-func (m *mockUsuarioRolRepo) Crear(ctx context.Context, uid, rid string) error { return m.errCrear }
+func (m *mockUsuarioRolRepo) Crear(ctx context.Context, uid, rid string) error    { return m.errCrear }
 func (m *mockUsuarioRolRepo) Eliminar(ctx context.Context, uid, rid string) error { return nil }
-func (m *mockUsuarioRolRepo) ListarRolesPorUsuario(ctx context.Context, uid string) ([]*rbac.RolDB, error) { return nil, nil }
-func (m *mockUsuarioRolRepo) TieneRol(ctx context.Context, uid, rol string) (bool, error) { return false, nil }
+func (m *mockUsuarioRolRepo) ListarRolesPorUsuario(ctx context.Context, uid string) ([]*rbac.RolDB, error) {
+	return nil, nil
+}
+func (m *mockUsuarioRolRepo) TieneRol(ctx context.Context, uid, rol string) (bool, error) {
+	return false, nil
+}
+func (m *mockUsuarioRolRepo) ObtenerUsuarioConRol(ctx context.Context, rolNombre string) (string, bool, error) {
+	return "", false, nil
+}
 
 type mockUTRR struct {
-	errCrear    error
+	errCrear error
 }
 
-func (m *mockUTRR) Crear(ctx context.Context, uid, tid, rid string) error { return m.errCrear }
+func (m *mockUTRR) Crear(ctx context.Context, uid, tid, rid string) error    { return m.errCrear }
 func (m *mockUTRR) Eliminar(ctx context.Context, uid, tid, rid string) error { return nil }
-func (m *mockUTRR) ListarRolesPorUsuarioEnTenant(ctx context.Context, uid, tid string) ([]*rbac.RolDB, error) { return nil, nil }
-func (m *mockUTRR) TieneRolEnTenant(ctx context.Context, uid, tid, rol string) (bool, error) { return false, nil }
+func (m *mockUTRR) ListarRolesPorUsuarioEnTenant(ctx context.Context, uid, tid string) ([]*rbac.RolDB, error) {
+	return nil, nil
+}
+func (m *mockUTRR) TieneRolEnTenant(ctx context.Context, uid, tid, rol string) (bool, error) {
+	return false, nil
+}
 
 type mockRolRepo struct {
 	rol        *rbac.RolDB
 	errObtener error
 }
 
-func (m *mockRolRepo) ObtenerPorNombre(ctx context.Context, nombre string) (*rbac.RolDB, error) { return nil, nil }
-func (m *mockRolRepo) ObtenerPorID(ctx context.Context, id string) (*rbac.RolDB, error) { return m.rol, m.errObtener }
-func (m *mockRolRepo) Listar(ctx context.Context, spec rbac.EspecificacionRol, pag shareddomain.Paginacion) ([]*rbac.RolDB, error) { return nil, nil }
-func (m *mockRolRepo) Crear(ctx context.Context, r *rbac.RolDB) error { return nil }
+func (m *mockRolRepo) ObtenerPorNombre(ctx context.Context, nombre string) (*rbac.RolDB, error) {
+	return nil, nil
+}
+func (m *mockRolRepo) ObtenerPorID(ctx context.Context, id string) (*rbac.RolDB, error) {
+	return m.rol, m.errObtener
+}
+func (m *mockRolRepo) Listar(ctx context.Context, spec rbac.EspecificacionRol, pag shareddomain.Paginacion) ([]*rbac.RolDB, error) {
+	return nil, nil
+}
+func (m *mockRolRepo) Crear(ctx context.Context, r *rbac.RolDB) error                   { return nil }
 func (m *mockRolRepo) ActualizarDescripcion(ctx context.Context, id, desc string) error { return nil }
 
 type mockAuthSvc struct {
@@ -58,8 +75,12 @@ func TestAsignarRolExitosoEnTenant(t *testing.T) {
 	resp, err := uc.Ejecutar(context.Background(), &assignrole.ComandoAsignarRol{
 		UsuarioID: "user-1", RolID: "r-1", TenantID: "t-1", EjecutorID: "admin-1",
 	})
-	if err != nil { t.Fatalf("error inesperado: %v", err) }
-	if resp.AsignadoEn == "" { t.Error("AsignadoEn vacío") }
+	if err != nil {
+		t.Fatalf("error inesperado: %v", err)
+	}
+	if resp.AsignadoEn == "" {
+		t.Error("AsignadoEn vacío")
+	}
 }
 
 func TestAsignarRolGlobalExitoso(t *testing.T) {
@@ -72,8 +93,12 @@ func TestAsignarRolGlobalExitoso(t *testing.T) {
 	resp, err := uc.Ejecutar(context.Background(), &assignrole.ComandoAsignarRol{
 		UsuarioID: "user-1", RolID: "r-1", TenantID: "", EjecutorID: "admin-1",
 	})
-	if err != nil { t.Fatalf("error inesperado: %v", err) }
-	if resp.AsignadoEn == "" { t.Error("AsignadoEn vacío") }
+	if err != nil {
+		t.Fatalf("error inesperado: %v", err)
+	}
+	if resp.AsignadoEn == "" {
+		t.Error("AsignadoEn vacío")
+	}
 }
 
 func TestAsignarRolSinPermiso(t *testing.T) {
@@ -107,7 +132,9 @@ func TestAsignarRolNoEncontrado(t *testing.T) {
 	_, err := uc.Ejecutar(context.Background(), &assignrole.ComandoAsignarRol{
 		UsuarioID: "u-1", RolID: "r-x", TenantID: "t-1", EjecutorID: "e-1",
 	})
-	if err == nil { t.Fatal("esperaba error por rol no encontrado") }
+	if err == nil {
+		t.Fatal("esperaba error por rol no encontrado")
+	}
 }
 
 func TestAsignarRolFalloAlCrear(t *testing.T) {
@@ -119,5 +146,7 @@ func TestAsignarRolFalloAlCrear(t *testing.T) {
 	_, err := uc.Ejecutar(context.Background(), &assignrole.ComandoAsignarRol{
 		UsuarioID: "u-1", RolID: "r-1", TenantID: "", EjecutorID: "e-1",
 	})
-	if err == nil { t.Fatal("esperaba error al crear rol global") }
+	if err == nil {
+		t.Fatal("esperaba error al crear rol global")
+	}
 }

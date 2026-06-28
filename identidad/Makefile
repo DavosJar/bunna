@@ -1,4 +1,4 @@
-.PHONY: docker-up docker-down docker-logs docker-shell docker-clean seed run
+.PHONY: docker-up docker-down docker-logs docker-shell docker-clean build-test test seed init-superuser run
 
 include .env
 export
@@ -21,6 +21,9 @@ docker-clean:
 
 seed:
 	go run ./cmd/seed
+
+init-superuser:
+	go run ./cmd/init_superuser
 
 run:
 	go run ./cmd

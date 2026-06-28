@@ -328,6 +328,30 @@ func (r *usuarioRolRepositorio) TieneRol(ctx context.Context, usuarioID, rolNomb
 	return count > 0, err
 }
 
+// ObtenerUsuarioConRol retorna el ID del primer usuario con el rol dado
+// (por nombre de rol). `encontrado=false` y `usuarioID=""` cuando no hay
+// ningún usuario con ese rol.
+func (r *usuarioRolRepositorio) ObtenerUsuarioConRol(ctx context.Context, rolNombre string) (string, bool, error) {
+	var usuarioID string
+	err := r.db.WithContext(ctx).
+		Model(&UsuarioRolModel{}).
+		Select("usuario_roles.usuario_id").
+		Joins("JOIN roles ON roles.id = usuario_roles.rol_id").
+		Where("roles.nombre = ?", rolNombre).
+		Limit(1).
+		Pluck("usuario_roles.usuario_id", &usuarioID).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+	if usuarioID == "" {
+		return "", false, nil
+	}
+	return usuarioID, true, nil
+}
+
 // --- UsuarioTenantRolRepositorio ---
 
 type usuarioTenantRolRepositorio struct{ db *gorm.DB }

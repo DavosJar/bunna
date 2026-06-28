@@ -102,6 +102,12 @@ func (s *SeedServicio) Ejecutar(ctx context.Context) error {
 			}
 		}
 
+		// Roles con permisos dinámicos (lista vacía) — el admin los gestiona
+		if len(rolInfo.Permisos) == 0 {
+			log.Printf("[Seed] Rol '%s' con permisos dinámicos, saltando sincronización", rolInfo.Nombre)
+			continue
+		}
+
 		// 3. Limpiar permisos que ya no corresponden al rol
 		permisosActuales, err := s.permisoRepo.ListarPorRol(ctx, rolID, rbac.TenantIDSistema)
 		if err != nil {

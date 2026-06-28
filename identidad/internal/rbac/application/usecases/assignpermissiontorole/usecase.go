@@ -46,7 +46,8 @@ func (uc *AsignarPermisoARolCasoDeUso) Ejecutar(ctx context.Context, cmd *Comand
 		return nil, fmt.Errorf("rol no encontrado: %w", err)
 	}
 
-	if rol.EsSistema {
+	// Only sys_admin and administrador are immutable for permission changes
+	if rol.Nombre == rbac.RolSysAdmin || rol.Nombre == rbac.RolAdministrador {
 		return nil, rbac.ErrRolInmutable
 	}
 
@@ -66,7 +67,7 @@ func (uc *AsignarPermisoARolCasoDeUso) Ejecutar(ctx context.Context, cmd *Comand
 		for _, p := range permisosDB {
 			codigos = append(codigos, p.Codigo)
 		}
-		_ = uc.publisher.PublicarRolActualizado(ctx, cmd.RolID, cmd.TenantID, codigos)
+		_ = uc.publisher.PublicarRolActualizado(ctx, rol.Nombre, cmd.TenantID, codigos)
 	}
 
 	return &RespuestaAsignarPermisoARol{

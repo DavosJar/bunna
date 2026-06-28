@@ -46,7 +46,8 @@ func (uc *RevocarPermisoDeRolCasoDeUso) Ejecutar(ctx context.Context, cmd *Coman
 		return nil, fmt.Errorf("rol no encontrado: %w", err)
 	}
 
-	if rol.EsSistema {
+	// Only sys_admin and administrador are immutable for permission revocation
+	if rol.Nombre == rbac.RolSysAdmin || rol.Nombre == rbac.RolAdministrador {
 		return nil, rbac.ErrRolInmutable
 	}
 
@@ -66,7 +67,7 @@ func (uc *RevocarPermisoDeRolCasoDeUso) Ejecutar(ctx context.Context, cmd *Coman
 		for _, p := range permisosDB {
 			codigos = append(codigos, p.Codigo)
 		}
-		_ = uc.publisher.PublicarRolActualizado(ctx, cmd.RolID, cmd.TenantID, codigos)
+		_ = uc.publisher.PublicarRolActualizado(ctx, rol.Nombre, cmd.TenantID, codigos)
 	}
 
 	return &RespuestaRevocarPermisoDeRol{

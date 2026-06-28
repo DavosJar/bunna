@@ -5,8 +5,8 @@ import (
 )
 
 func TestTodosLosPermisosExisten(t *testing.T) {
-	if len(TodosLosPermisos) != 21 {
-		t.Errorf("Expected 21 permisos, got %d", len(TodosLosPermisos))
+	if len(TodosLosPermisos) != 22 {
+		t.Errorf("Expected 22 permisos, got %d", len(TodosLosPermisos))
 	}
 }
 
@@ -28,6 +28,7 @@ func TestConstantesPermisos(t *testing.T) {
 		PermisoUsuarioConsultar,
 		PermisoUsuarioResetearPassword,
 		PermisoUsuarioExpulsar,
+		PermisoUsuarioInvitar,
 		PermisoCredencialesConsultar,
 		PermisoCredencialesDesbloquear,
 		PermisoRolAsignar,

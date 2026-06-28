@@ -72,16 +72,12 @@ var RolesDeSistema = []RolInfo{
 		Nombre:      RolAgronomo,
 		Descripcion: "Solo consulta de usuarios",
 		EsSistema:   true,
-		Permisos: []string{
-			PermisoUsuarioConsultar,
-		},
+		Permisos:    []string{},
 	},
 	{
 		Nombre:      RolCaficultor,
 		Descripcion: "Solo consulta de usuarios",
 		EsSistema:   true,
-		Permisos: []string{
-			PermisoUsuarioConsultar,
-		},
+		Permisos:    []string{},
 	},
 }

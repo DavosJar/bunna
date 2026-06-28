@@ -29,8 +29,10 @@ func permisosSistemaInit() {
 func TienePermisoEnRol(ctx context.Context, permisoRepo PermisoRepositorio, rol *RolDB, codigoPermiso string, tenantID string) bool {
 	if rol.EsSistema {
 		permisosSistemaInit()
-		perms, ok := permisosSistemaMap[rol.Nombre]
-		return ok && perms[codigoPermiso]
+		if perms, ok := permisosSistemaMap[rol.Nombre]; ok && len(perms) > 0 {
+			return perms[codigoPermiso]
+		}
+		// System roles with empty permissions = dynamic, fall through to DB
 	}
 
 	permisos, err := permisoRepo.ListarPorRol(ctx, rol.ID, tenantID)

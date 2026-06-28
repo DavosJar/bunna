@@ -563,7 +563,7 @@ function ModalPermisosRol({ rol, onClose }) {
   };
 
   const handleToggle = async (codigo) => {
-    if (rol.es_sistema) return;
+    if (rol.es_sistema && rol.nombre !== 'caficultor' && rol.nombre !== 'agronomo') return;
     setGuardando(codigo);
     try {
       if (permisosActivos.has(codigo)) {
@@ -600,7 +600,7 @@ function ModalPermisosRol({ rol, onClose }) {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-gray-900)' }}>{rol.nombre}</span>
-            {rol.es_sistema && (
+            {rol.es_sistema && rol.nombre !== 'caficultor' && rol.nombre !== 'agronomo' && (
               <span style={{ background: '#fef3c7', color: '#92400e', fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '9999px' }}>
                 Rol de sistema — solo lectura
               </span>
@@ -659,7 +659,7 @@ function ModalPermisosRol({ rol, onClose }) {
                           <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-gray-800)', fontFamily: 'monospace' }}>{p.codigo}</div>
                           <div style={{ fontSize: '0.78rem', color: 'var(--color-gray-500)', marginTop: '0.1rem' }}>{p.nombre}</div>
                         </div>
-                        {!rol.es_sistema ? (
+                        {!rol.es_sistema || rol.nombre === 'caficultor' || rol.nombre === 'agronomo' ? (
                           <button
                             onClick={() => handleToggle(p.codigo)}
                             disabled={cargando}

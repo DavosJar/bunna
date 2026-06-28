@@ -35,7 +35,7 @@ func TestSysAdminTieneTodosLosPermisos(t *testing.T) {
 	}
 }
 
-func TestCaficultorSoloPuedeConsultar(t *testing.T) {
+func TestCaficultorPermisosDinamicos(t *testing.T) {
 	var caficultor *RolInfo
 	for i, r := range RolesDeSistema {
 		if r.Nombre == RolCaficultor {
@@ -46,15 +46,12 @@ func TestCaficultorSoloPuedeConsultar(t *testing.T) {
 	if caficultor == nil {
 		t.Fatal("Rol caficultor no encontrado")
 	}
-	if len(caficultor.Permisos) != 1 {
-		t.Errorf("caficultor debe tener 1 permiso, got %d", len(caficultor.Permisos))
-	}
-	if caficultor.Permisos[0] != PermisoUsuarioConsultar {
-		t.Errorf("caficultor debe tener solo %s", PermisoUsuarioConsultar)
+	if len(caficultor.Permisos) != 0 {
+		t.Errorf("caficultor debe tener 0 permisos (dinámicos), got %d", len(caficultor.Permisos))
 	}
 }
 
-func TestAgronomoNoTienePermisosDeRol(t *testing.T) {
+func TestAgronomoPermisosDinamicos(t *testing.T) {
 	var agronomo *RolInfo
 	for i, r := range RolesDeSistema {
 		if r.Nombre == RolAgronomo {
@@ -65,10 +62,8 @@ func TestAgronomoNoTienePermisosDeRol(t *testing.T) {
 	if agronomo == nil {
 		t.Fatal("Rol agronomo no encontrado")
 	}
-	for _, p := range agronomo.Permisos {
-		if p == PermisoRolAsignar || p == PermisoRolRevocar {
-			t.Errorf("agronomo no debe tener permiso %s", p)
-		}
+	if len(agronomo.Permisos) != 0 {
+		t.Errorf("agronomo debe tener 0 permisos (dinámicos), got %d", len(agronomo.Permisos))
 	}
 }
 

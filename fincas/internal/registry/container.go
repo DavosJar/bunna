@@ -14,6 +14,8 @@ import (
 	diagnosticopostgres "github.com/davosjar/bunna/services/fincas/internal/diagnostico/infrastructure/persistence/postgres"
 	nodosdomain "github.com/davosjar/bunna/services/fincas/internal/nodos/domain"
 	nodospostgres "github.com/davosjar/bunna/services/fincas/internal/nodos/infrastructure/persistence/postgres"
+	iampostgres "github.com/davosjar/bunna/services/fincas/internal/infrastructure/security/iam/postgres"
+	iamconsumers "github.com/davosjar/bunna/services/fincas/internal/infrastructure/security/iam/consumers"
 	"github.com/davosjar/bunna/services/fincas/internal/application"
 	shared "github.com/davosjar/bunna/services/fincas/internal/shared/domain"
 	"github.com/davosjar/bunna/services/fincas/internal/shared/infrastructure/idgenerator"
@@ -68,6 +70,7 @@ type Registry struct {
 	diagnosticoRepo diagnosticodomain.DiagnosticoRepositorio
 	candidatoRepo   diagnosticodomain.CandidatoReentrenamientoRepositorio
 	nodoRepo        nodosdomain.NodoRepositorio
+	iamRepo         *iampostgres.IAMRepositorio
 
 	// Unit of Work (privados)
 	fincaUoW       *fincaspostgres.UnitOfWorkPostgres
@@ -123,6 +126,8 @@ type Registry struct {
 	TelemetryWriter  buffer.BufferWriter
 	TelemetryEnabled bool
 	telemetryCancel  context.CancelFunc
+
+	rolesConsumer *iamconsumers.RolesConsumer
 }
 
 // NewRegistry crea todas las dependencias, ejecuta auto-migrate y devuelve un Registry listo para usar.
@@ -205,6 +210,7 @@ func NewRegistry() *Registry {
 	diagnosticoRepo := diagnosticopostgres.NewDiagnosticoRepositorio(db)
 	candidatoRepo := diagnosticopostgres.NewCandidatoReentrenamientoRepositorio(db)
 	nodoRepo := nodospostgres.NewNodoRepositorio(db)
+	iamRepo := iampostgres.NewIAMRepositorio(db)
 
 	// Unit of Work
 	fincaUoW := fincaspostgres.NewUnitOfWorkPostgres(db, generador)
@@ -291,7 +297,7 @@ func NewRegistry() *Registry {
 		Issuer: cfg.jwtIssuer,
 	})
 
-	authMiddleware := fincasmiddleware.NewAuthMiddleware(tokenValidator)
+	authMiddleware := fincasmiddleware.NewAuthMiddleware(tokenValidator, iamRepo)
 
 	fincaHandler := handler.NewFincaHandler(fincasFacade)
 	loteHandler := handler.NewLoteHandler(lotesFacade)
@@ -320,6 +326,18 @@ func NewRegistry() *Registry {
 	// Publicar catálogo de permisos al iniciar
 	go publicarCatalogoPermisos(context.Background(), publisher, generador)
 
+	// Iniciar consumidor de roles
+	var rolesConsumer *iamconsumers.RolesConsumer
+	if kafkaBrokers != "" {
+		topicRoles := os.Getenv("KAFKA_TOPIC_ROLES")
+		if topicRoles == "" {
+			topicRoles = "dev.iam.roles"
+		}
+		brokers := strings.Split(kafkaBrokers, ",")
+		rolesConsumer = iamconsumers.NewRolesConsumer(brokers, topicRoles, iamRepo)
+		go rolesConsumer.Start(context.Background())
+	}
+
 	return &Registry{
 		db:             db,
 		generadorID:    generador,
@@ -331,6 +349,7 @@ func NewRegistry() *Registry {
 		diagnosticoRepo: diagnosticoRepo,
 		candidatoRepo:  candidatoRepo,
 		nodoRepo:       nodoRepo,
+		iamRepo:        iamRepo,
 		fincaUoW:       fincaUoW,
 		diagnosticoUoW: diagnosticoUoW,
 		fincaService:   fincaService,
@@ -367,6 +386,7 @@ func NewRegistry() *Registry {
 		TelemetryWriter:  telemetryWriter,
 		TelemetryEnabled: cfg.telemetryEnabled,
 		telemetryCancel:  telemetryCancel,
+		rolesConsumer:    rolesConsumer,
 	}
 }
 
@@ -422,6 +442,9 @@ func (r *Registry) ServerPort() string { return r.serverPort }
 func (r *Registry) Close() {
 	if r.telemetryCancel != nil {
 		r.telemetryCancel()
+	}
+	if r.rolesConsumer != nil {
+		r.rolesConsumer.Close()
 	}
 	sqlDB, err := r.db.DB()
 	if err == nil {

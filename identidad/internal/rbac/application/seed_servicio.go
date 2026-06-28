@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"log"
+	"strings"
 
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
@@ -114,10 +115,14 @@ func (s *SeedServicio) Ejecutar(ctx context.Context) error {
 
 		for _, p := range permisosActuales {
 			if !deseados[p.Codigo] {
-				if err := s.rolPermisoRepo.EliminarPermiso(ctx, rolID, p.ID, rbac.TenantIDSistema); err != nil {
-					return err
+				// Solo limpiamos permisos que pertenezcan al módulo de identidad.
+				// Los permisos de otros módulos (ej. fincas) se manejan vía Kafka y no deben ser eliminados por este seed.
+				if strings.HasPrefix(p.Codigo, "identidad:") {
+					if err := s.rolPermisoRepo.EliminarPermiso(ctx, rolID, p.ID, rbac.TenantIDSistema); err != nil {
+						return err
+					}
+					log.Printf("[Seed] Permiso eliminado del rol %s: %s", rolInfo.Nombre, p.Codigo)
 				}
-				log.Printf("[Seed] Permiso eliminado del rol %s: %s", rolInfo.Nombre, p.Codigo)
 			}
 		}
 

@@ -216,7 +216,7 @@ export default function FincasPage() {
                 origen: 'iot', // Debe ser 'iot' para que la UI muestre 📷 Cámara IoT
                 tieneClorosis: rm.tieneClorosis,
                 yolo: {
-                  image: rm.imageURL ? `${API_BASE}/${rm.imageURL}` : null
+                  image: rm.imageURL ? (rm.imageURL.startsWith('http') ? rm.imageURL : `${API_BASE}/${rm.imageURL}`) : null
                 }
               };
               if (idx >= 0) {
@@ -852,8 +852,8 @@ export default function FincasPage() {
           <form onSubmit={handleCrearNodo} style={{ display: 'grid', gap: '0.75rem', maxWidth: 480, marginBottom: '1rem' }}>
             <input className="form-input" placeholder="Nombre de la cámara" value={formNodo.nombre} onChange={(e) => setFormNodo((f) => ({ ...f, nombre: e.target.value }))} required />
             <input className="form-input" placeholder="Node Key (ej: cam-001)" value={formNodo.node_key} onChange={(e) => setFormNodo((f) => ({ ...f, node_key: e.target.value }))} required />
-            <select className="form-input" value={formNodo.lote_id} onChange={(e) => setFormNodo((f) => ({ ...f, lote_id: e.target.value }))}>
-              <option value="">-- Sin lote asignado --</option>
+            <select className="form-input" value={formNodo.lote_id} onChange={(e) => setFormNodo((f) => ({ ...f, lote_id: e.target.value }))} required>
+              <option value="">-- Selecciona un lote (Requerido) --</option>
               {lotes.filter((l) => l.estado === 'ACTIVO').map((l) => (
                 <option key={l.id} value={l.id}>{l.nombre}</option>
               ))}

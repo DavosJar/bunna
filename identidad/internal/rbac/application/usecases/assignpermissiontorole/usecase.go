@@ -13,6 +13,7 @@ type AsignarPermisoARolCasoDeUso struct {
 	permisoRepo    rbac.PermisoRepositorio
 	rolPermisoRepo rbac.RolPermisoRepositorio
 	authSvc        rbac.AuthorizationService
+	publisher      rbac.RolPublisher
 }
 
 func NewAsignarPermisoARolCasoDeUso(
@@ -20,12 +21,14 @@ func NewAsignarPermisoARolCasoDeUso(
 	permisoRepo rbac.PermisoRepositorio,
 	rolPermisoRepo rbac.RolPermisoRepositorio,
 	authSvc rbac.AuthorizationService,
+	publisher rbac.RolPublisher,
 ) *AsignarPermisoARolCasoDeUso {
 	return &AsignarPermisoARolCasoDeUso{
 		rolRepo:        rolRepo,
 		permisoRepo:    permisoRepo,
 		rolPermisoRepo: rolPermisoRepo,
 		authSvc:        authSvc,
+		publisher:      publisher,
 	}
 }
 
@@ -63,6 +66,16 @@ func (uc *AsignarPermisoARolCasoDeUso) Ejecutar(ctx context.Context, cmd *Comand
 
 	if err := uc.rolPermisoRepo.AsignarPermiso(ctx, cmd.RolID, permisoDB.ID, cmd.TenantID, cmd.AsignadoPor); err != nil {
 		return nil, fmt.Errorf("error al asignar permiso al rol: %w", err)
+	}
+
+	// Publish role update event
+	permisosDB, err := uc.rolPermisoRepo.ListarPorRolYTenant(ctx, cmd.RolID, cmd.TenantID)
+	if err == nil {
+		var codigos []string
+		for _, p := range permisosDB {
+			codigos = append(codigos, p.Codigo)
+		}
+		_ = uc.publisher.PublicarRolActualizado(ctx, cmd.RolID, cmd.TenantID, codigos)
 	}
 
 	return &RespuestaAsignarPermisoARol{

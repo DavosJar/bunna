@@ -23,6 +23,7 @@ services:
         /etc/confluent/docker/run &
         until kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1; do sleep 2; done;
         kafka-topics --create --if-not-exists --topic dev.permisos --partitions 1 --replication-factor 1 --bootstrap-server localhost:9092;
+        kafka-topics --create --if-not-exists --topic dev.iam.roles --partitions 1 --replication-factor 1 --bootstrap-server localhost:9092;
         wait
       '
     healthcheck:
@@ -112,6 +113,7 @@ services:
       - DB_NAME=fincas_db
       - DB_SSLMODE=disable
       - SERVER_PORT=8082
+      - JWT_SECRET=super-secret-key-for-dev-1234567890
       - KAFKA_BROKERS=kafka:9092
       - ENVIRONMENT=dev
       - KAFKA_TOPIC_PERMISOS=dev.permisos

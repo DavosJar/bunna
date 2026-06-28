@@ -2,13 +2,15 @@ package middleware
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/davosjar/bunna/services/fincas/internal/application"
-	"github.com/davosjar/bunna/services/fincas/internal/infrastructure/telemetry"
+	iampostgres "github.com/davosjar/bunna/services/fincas/internal/infrastructure/security/iam/postgres"
 	jwtvalidator "github.com/davosjar/bunna/services/fincas/internal/infrastructure/security/jwt"
+	"github.com/davosjar/bunna/services/fincas/internal/infrastructure/telemetry"
 )
 
 // Claves para el contexto Gin
@@ -20,11 +22,15 @@ const (
 // y construye el AuthContext para los casos de uso.
 type AuthMiddleware struct {
 	validator *jwtvalidator.TokenValidator
+	iamRepo   *iampostgres.IAMRepositorio
 }
 
 // NewAuthMiddleware crea una nueva instancia de AuthMiddleware.
-func NewAuthMiddleware(validator *jwtvalidator.TokenValidator) *AuthMiddleware {
-	return &AuthMiddleware{validator: validator}
+func NewAuthMiddleware(validator *jwtvalidator.TokenValidator, iamRepo *iampostgres.IAMRepositorio) *AuthMiddleware {
+	return &AuthMiddleware{
+		validator: validator,
+		iamRepo:   iamRepo,
+	}
 }
 
 // RequireAuth retorna un handler Gin que exige un token JWT válido.
@@ -50,14 +56,22 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 			return
 		}
 
-		_ = sesionID  // disponible para logging/auditoría
-		_ = issuer    // disponible para validación futura
-		_ = rol       // disponible para autorización futura
+		_ = sesionID // disponible para logging/auditoría
+		_ = issuer   // disponible para validación futura
+
+		log.Printf("[AuthMiddleware] JWT Claims -> UsuarioID: %s, TenantID: %s, Rol: %s", usuarioID, tenantID, rol)
+
+		// Obtener permisos locales desde la base de datos de Fincas para este rol y tenant
+		permisos, err := m.iamRepo.ObtenerPermisos(c.Request.Context(), rol, tenantID)
+		if err != nil {
+			// Si hay error (distinto a no encontrado) o no tiene permisos, dejamos la lista vacía o nil, pero registramos el error si es grave
+			permisos = []string{}
+		}
 
 		auth := &application.AuthContext{
 			UsuarioID: usuarioID,
 			TenantID:  tenantID,
-			Permisos:  nil,
+			Permisos:  permisos,
 		}
 
 		c.Set(ClaveAuthContext, auth)

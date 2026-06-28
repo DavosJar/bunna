@@ -36,7 +36,7 @@ func publicarCatalogoPermisos(ctx context.Context, publisher application.EventPu
 
 	espera := esperaInicial
 	for intento := 1; intento <= maxReintentos; intento++ {
-		if err := publisher.Publish(ctx, "fincas.permisos.catalogo", evento); err == nil {
+		if err := publisher.Publish(ctx, "dev.permisos", evento); err == nil {
 			log.Printf("[INFO] Catálogo de permisos publicado (%d permisos)", len(application.CatalogoFincas))
 			return
 		} else {

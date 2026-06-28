@@ -64,3 +64,7 @@ type PermisoDB struct {
 	Descripcion string
 	Modulo      string
 }
+
+type RolPublisher interface {
+	PublicarRolActualizado(ctx context.Context, rolID, tenantID string, permisos []string) error
+}

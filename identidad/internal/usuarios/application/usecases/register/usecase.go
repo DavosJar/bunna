@@ -23,8 +23,10 @@ type RegistrarUsuarioCasoDeUso struct {
 	idGen              shareddomain.GeneradorID
 	tenantRepo         tenant.TenantRepositorio
 	membresiaRepo      tenant.MembresiaRepositorio
-	rolRepo            rbac.RolRepositorio
+	rolRepo              rbac.RolRepositorio
 	usuarioTenantRolRepo rbac.UsuarioTenantRolRepositorio
+	rolPermisoRepo       rbac.RolPermisoRepositorio
+	rolPublisher         rbac.RolPublisher
 }
 
 func NewRegistrarUsuarioCasoDeUso(
@@ -36,6 +38,8 @@ func NewRegistrarUsuarioCasoDeUso(
 	membresiaRepo tenant.MembresiaRepositorio,
 	rolRepo rbac.RolRepositorio,
 	usuarioTenantRolRepo rbac.UsuarioTenantRolRepositorio,
+	rolPermisoRepo rbac.RolPermisoRepositorio,
+	rolPublisher rbac.RolPublisher,
 ) *RegistrarUsuarioCasoDeUso {
 	return &RegistrarUsuarioCasoDeUso{
 		userRepo:             userRepo,
@@ -46,6 +50,8 @@ func NewRegistrarUsuarioCasoDeUso(
 		membresiaRepo:        membresiaRepo,
 		rolRepo:              rolRepo,
 		usuarioTenantRolRepo: usuarioTenantRolRepo,
+		rolPermisoRepo:       rolPermisoRepo,
+		rolPublisher:         rolPublisher,
 	}
 }
 
@@ -116,6 +122,23 @@ func (uc *RegistrarUsuarioCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoR
 
 	if err := uc.usuarioTenantRolRepo.Crear(ctx, usuarioCreado.ID(), tenantCreado.ID(), rolAdmin.ID); err != nil {
 		return nil, fmt.Errorf("error al asignar rol administrador: %w", err)
+	}
+
+	// Extraer los permisos del rol administrador base (en el tenant de sistema)
+	permisosAdmin, err := uc.rolPermisoRepo.ListarPorRolYTenant(ctx, rolAdmin.ID, rbac.TenantIDSistema)
+	if err != nil {
+		return nil, fmt.Errorf("error al obtener permisos base del administrador: %w", err)
+	}
+
+	// Extraer solo los códigos de los permisos
+	var codigosPermisos []string
+	for _, p := range permisosAdmin {
+		codigosPermisos = append(codigosPermisos, p.Codigo)
+	}
+
+	// Publicar los permisos del administrador para este nuevo tenant a Kafka
+	if err := uc.rolPublisher.PublicarRolActualizado(ctx, rbac.RolAdministrador, tenantCreado.ID(), codigosPermisos); err != nil {
+		return nil, fmt.Errorf("error al publicar rol administrador para el nuevo tenant: %w", err)
 	}
 
 	return &RespuestaRegistrarUsuario{

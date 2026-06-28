@@ -24,3 +24,10 @@ seed:
 
 run:
 	go run ./cmd
+
+# ─── Targets para desarrollo local (BD dockerizada en puerto 5433) ───
+run-dev:
+	env $$(cat .env.develop | grep -v '^#' | xargs) go run ./cmd
+
+seed-dev:
+	env $$(cat .env.develop | grep -v '^#' | xargs) go run ./cmd/seed

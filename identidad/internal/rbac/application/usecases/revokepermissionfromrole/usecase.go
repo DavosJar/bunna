@@ -13,6 +13,7 @@ type RevocarPermisoDeRolCasoDeUso struct {
 	permisoRepo    rbac.PermisoRepositorio
 	rolPermisoRepo rbac.RolPermisoRepositorio
 	authSvc        rbac.AuthorizationService
+	publisher      rbac.RolPublisher
 }
 
 func NewRevocarPermisoDeRolCasoDeUso(
@@ -20,12 +21,14 @@ func NewRevocarPermisoDeRolCasoDeUso(
 	permisoRepo rbac.PermisoRepositorio,
 	rolPermisoRepo rbac.RolPermisoRepositorio,
 	authSvc rbac.AuthorizationService,
+	publisher rbac.RolPublisher,
 ) *RevocarPermisoDeRolCasoDeUso {
 	return &RevocarPermisoDeRolCasoDeUso{
 		rolRepo:        rolRepo,
 		permisoRepo:    permisoRepo,
 		rolPermisoRepo: rolPermisoRepo,
 		authSvc:        authSvc,
+		publisher:      publisher,
 	}
 }
 
@@ -63,6 +66,16 @@ func (uc *RevocarPermisoDeRolCasoDeUso) Ejecutar(ctx context.Context, cmd *Coman
 
 	if err := uc.rolPermisoRepo.EliminarPermiso(ctx, cmd.RolID, permisoDB.ID, cmd.TenantID); err != nil {
 		return nil, fmt.Errorf("error al revocar permiso del rol: %w", err)
+	}
+
+	// Publish role update event
+	permisosDB, err := uc.rolPermisoRepo.ListarPorRolYTenant(ctx, cmd.RolID, cmd.TenantID)
+	if err == nil {
+		var codigos []string
+		for _, p := range permisosDB {
+			codigos = append(codigos, p.Codigo)
+		}
+		_ = uc.publisher.PublicarRolActualizado(ctx, cmd.RolID, cmd.TenantID, codigos)
 	}
 
 	return &RespuestaRevocarPermisoDeRol{

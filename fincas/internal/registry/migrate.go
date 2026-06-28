@@ -4,6 +4,7 @@ import (
 	diagnosticopostgres "github.com/davosjar/bunna/services/fincas/internal/diagnostico/infrastructure/persistence/postgres"
 	fincaspostgres "github.com/davosjar/bunna/services/fincas/internal/fincas/infrastructure/persistence/postgres"
 	nodospostgres "github.com/davosjar/bunna/services/fincas/internal/nodos/infrastructure/persistence/postgres"
+	iampostgres "github.com/davosjar/bunna/services/fincas/internal/infrastructure/security/iam/postgres"
 	"gorm.io/gorm"
 )
 
@@ -16,5 +17,6 @@ func runAutoMigrate(db *gorm.DB) error {
 		&diagnosticopostgres.DiagnosticoModel{},
 		&diagnosticopostgres.CandidatoModel{},
 		&nodospostgres.NodoModel{},
+		&iampostgres.IamRolPermisosModel{},
 	)
 }

@@ -69,6 +69,7 @@ import (
 	verificacion_domain "github.com/davosjar/bunna/services/identidad/internal/verificacion/domain"
 	verificacion_postgres "github.com/davosjar/bunna/services/identidad/internal/verificacion/infrastructure/persistence/postgres"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/infrastructure/consumers"
+	"github.com/davosjar/bunna/services/identidad/internal/rbac/infrastructure/publishers"
 	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/buffer"
 	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/decorator"
 	"github.com/davosjar/bunna/services/identidad/internal/infrastructure/telemetry/gormplugin"
@@ -172,6 +173,7 @@ type Registry struct {
 	telemetryCancel  context.CancelFunc
 
 	permisosConsumer *consumers.PermisosConsumer
+	rolesPublisher   *publishers.RolesPublisher
 }
 
 func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
@@ -240,6 +242,10 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 
 	authSvc := checkpermission.NewVerificarPermisoCasoDeUso(usuarioRolRepo, usuarioTenantRolRepo, permisoRepo)
 
+	// Roles Publisher
+	rolesTopic := "dev.iam.roles" // Podría venir de config.KafkaTopicRoles
+	rolesPublisher := publishers.NewRolesPublisher(strings.Split(cfg.KafkaBrokers, ","), rolesTopic)
+
 	emailSvc := notificaciones_email.NewSMTPServicio(notificaciones_email.ConfigSMTP{
 		Host:     cfg.SMTPHost,
 		Port:     cfg.SMTPPort,
@@ -258,6 +264,8 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		membresiaRepo,
 		rolRepo,
 		usuarioTenantRolRepo,
+		rolPermisoRepo,
+		rolesPublisher,
 	)
 
 	listarMisPermisosCasoDeUso := uc_listarmispermisos.NewListarMisPermisosCasoDeUso(rolRepo, rolPermisoRepo)
@@ -358,8 +366,8 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 	eliminarRolUC := deleterole.NewEliminarRolCasoDeUso(rolRepo, authSvc)
 	asignarRolUC := assignrole.NewAsignarRolCasoDeUso(usuarioRolRepo, usuarioTenantRolRepo, rolRepo, authSvc)
 	revocarRolUC := revokerole.NewRevocarRolCasoDeUso(usuarioRolRepo, usuarioTenantRolRepo, authSvc)
-	asignarPermisoARolUC := assignpermissiontorole.NewAsignarPermisoARolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc)
-	revocarPermisoDeRolUC := revokepermissionfromrole.NewRevocarPermisoDeRolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc)
+	asignarPermisoARolUC := assignpermissiontorole.NewAsignarPermisoARolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc, rolesPublisher)
+	revocarPermisoDeRolUC := revokepermissionfromrole.NewRevocarPermisoDeRolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc, rolesPublisher)
 
 	// Casos de uso — invitaciones
 	crearInvitacionUC := uc_crearInvitacion.NewCrearInvitacionCasoDeUso(
@@ -523,6 +531,8 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		TelemetryWriter:  telemetryWriter,
 		TelemetryEnabled: cfg.TelemetryEnabled,
 		telemetryCancel:  telemetryCancel,
+
+		rolesPublisher: rolesPublisher,
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -597,7 +607,7 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 	// ─────────────────────────────────────────────────────────────────────────
 	topicPermisos := cfg.KafkaTopicPermisos
 	brokers := strings.Split(cfg.KafkaBrokers, ",")
-	permisosConsumer := consumers.NewPermisosConsumer(brokers, topicPermisos, permisoRepo, generadorID)
+	permisosConsumer := consumers.NewPermisosConsumer(brokers, topicPermisos, permisoRepo, rolRepo, rolPermisoRepo, rolesPublisher, tenantRepo, generadorID)
 	reg.permisosConsumer = permisosConsumer
 	go permisosConsumer.Start(context.Background())
 
@@ -634,5 +644,8 @@ func (r *Registry) Close() {
 	}
 	if r.permisosConsumer != nil {
 		r.permisosConsumer.Close()
+	}
+	if r.rolesPublisher != nil {
+		r.rolesPublisher.Close()
 	}
 }

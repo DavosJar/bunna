@@ -1,0 +1,16 @@
+services:
+  fincas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fincas-app-prod
+    ports:
+      - "${SERVER_PORT:-8082}:8082"
+    env_file:
+      - .env
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

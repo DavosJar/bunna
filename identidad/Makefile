@@ -1,4 +1,4 @@
-.PHONY: docker-up docker-down docker-logs docker-shell docker-clean build-test test seed init-superuser run
+.PHONY: docker-up docker-down docker-logs docker-shell docker-clean build-test test seed init-superuser run build-prod push-prod deploy-prod remove-prod ps-prod logs-prod
 
 include .env
 export
@@ -34,3 +34,23 @@ run-dev:
 
 seed-dev:
 	env $$(cat .env.develop | grep -v '^#' | xargs) go run ./cmd/seed
+
+# ─── Producción (Swarm) ───
+build-prod:
+	docker build -t identidad:release .
+
+push-prod:
+	docker tag identidad:release 172.31.36.189:5000/identidad:release
+	docker push 172.31.36.189:5000/identidad:release
+
+deploy-prod:
+	docker stack deploy -c compose.prod.yml bunna-prod
+
+remove-prod:
+	docker stack rm bunna-prod
+
+ps-prod:
+	docker stack ps bunna-prod
+
+logs-prod:
+	docker service logs --tail 50 -f bunna-prod_identidad

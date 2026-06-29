@@ -3,6 +3,7 @@ package registry
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
 	"github.com/davosjar/bunna/services/fincas/internal/application"
@@ -34,10 +35,19 @@ func publicarCatalogoPermisos(ctx context.Context, publisher application.EventPu
 		OcurredAt: time.Now(),
 	}
 
+	topic := os.Getenv("KAFKA_TOPIC_PERMISOS")
+	if topic == "" {
+		env := os.Getenv("ENVIRONMENT")
+		if env == "" {
+			env = "dev"
+		}
+		topic = env + ".permisos"
+	}
+
 	espera := esperaInicial
 	for intento := 1; intento <= maxReintentos; intento++ {
-		if err := publisher.Publish(ctx, "dev.permisos", evento); err == nil {
-			log.Printf("[INFO] Catálogo de permisos publicado (%d permisos)", len(application.CatalogoFincas))
+		if err := publisher.Publish(ctx, topic, evento); err == nil {
+			log.Printf("[INFO] Catálogo de permisos publicado en %s (%d permisos)", topic, len(application.CatalogoFincas))
 			return
 		} else {
 			log.Printf("[WARN] Intento %d/%d — Error publicando catálogo de permisos: %v", intento, maxReintentos, err)

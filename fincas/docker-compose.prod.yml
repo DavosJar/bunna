@@ -8,6 +8,8 @@ services:
       - "${SERVER_PORT:-8082}:8082"
     env_file:
       - .env
+    extra_hosts:
+      - "kafka:3.141.219.34"
     restart: always
     logging:
       driver: "json-file"

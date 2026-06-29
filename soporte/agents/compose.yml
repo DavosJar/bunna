@@ -1,0 +1,33 @@
+services:
+  hardware-monitor-agent:
+    image: 172.31.36.189:5000/hardware-monitor-agent:release
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+      - SAMPLE_INTERVAL_MS=5000
+      - CLOUD_PROVIDER=AWS
+      - NODE_ID={{.Node.Hostname}}
+    volumes:
+      - /etc/hostname:/etc/host_hostname:ro
+    deploy:
+      mode: global
+
+  servicio-monitoreo:
+    image: 172.31.36.189:5000/servicio-monitoreo:release
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_TOPIC_TELEMETRIA=telemetry
+      - KAFKA_TOPIC_HARDWARE_METRICAS=hardware.metrics
+      - KAFKA_TOPIC_HARDWARE_ALERTAS=hardware.alerts
+      - GRUPO_CONSUMIDOR=monitor-ingestor
+      - CLICKHOUSE_URL=http://clickhouse:8123
+      - CLICKHOUSE_USUARIO=monitoreo
+      - CLICKHOUSE_CONTRASENA=monitoreo_dev
+      - CLICKHOUSE_BD=bunna_monitoreo
+      - RUST_LOG=info
+    deploy:
+      replicas: 1
+
+networks:
+  default:
+    name: bunna-prod-net
+    external: true

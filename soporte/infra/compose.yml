@@ -1,36 +1,26 @@
 services:
-  zookeeper:
-    image: ${ZK_IMAGE:-confluentinc/cp-zookeeper:7.4.0}
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - ${PLACEMENT_CONSTRAINT:-node.role == worker}
-
   kafka:
     image: ${KAFKA_IMAGE:-confluentinc/cp-kafka:7.4.0}
-    hostname: kafka
-    depends_on:
-      - zookeeper
     ports:
       - target: 9092
         published: ${KAFKA_PORT:-9092}
-      - target: 19092
-        published: 19092
+      - target: 29092
+        published: ${KAFKA_PORT_EXT:-19093}
     environment:
-      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,EXTERNAL://0.0.0.0:19092'
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092,EXTERNAL://3.141.219.34:19092'
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_LISTENERS: 'INTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:29093,EXTERNAL://0.0.0.0:29092'
+      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka:9092,EXTERNAL://3.141.219.34:19093'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      CLUSTER_ID: ${CLUSTER_ID:-MkU3OEVBNTcwNTJENDM2Qk}
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_HEAP_OPTS: ${KAFKA_HEAP_OPTS:--Xms512M -Xmx1G}
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
     command: |
       bash -c '
         /etc/confluent/docker/run &

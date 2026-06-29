@@ -9,7 +9,7 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'https://i2u6hsbhf1.execute-api.us-east-2.amazonaws.com',
         changeOrigin: true,
       },
       '/yolo': {
@@ -18,7 +18,7 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/yolo/, ''),
       },
       '/fincas-api': {
-        target: 'http://localhost:8082',
+        target: 'http://3.23.193.162:8082',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/fincas-api/, ''),
       },

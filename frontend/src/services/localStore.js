@@ -65,11 +65,19 @@ export function loadDiagnosticoHistorial(userId) {
 
 export function saveDiagnosticoHistorial(userId, entry) {
   const list = loadDiagnosticoHistorial(userId);
-  list.unshift({ ...entry, id: entry.id || generateUUID(), fecha: entry.fecha || new Date().toISOString() });
+  
+  // Eliminamos originalPreview porque las fotos originales del celular pesan mucho (>5MB) 
+  // y revientan el localStorage al instante. Usaremos solo la imagen de YOLO.
+  const { originalPreview, ...safeEntry } = entry;
+  
+  list.unshift({ ...safeEntry, id: entry.id || generateUUID(), fecha: entry.fecha || new Date().toISOString() });
   
   // Para evitar QuotaExceededError en localStorage (límite de 5MB):
   // Solo guardamos la imagen base64 de los 2 más recientes. Los demás los guardamos sin imagen.
   const trimmed = list.slice(0, 15).map((item, idx) => {
+    // También limpiamos originalPreview de los viejos por si aca
+    delete item.originalPreview;
+    
     if (idx >= 2 && item.image) {
       const { image, ...rest } = item;
       return rest;
@@ -83,7 +91,13 @@ export function saveDiagnosticoHistorial(userId, entry) {
     // Si aún así se llena, vaciamos agresivamente y dejamos solo 1
     if (err.name === 'QuotaExceededError') {
       const ultraTrimmed = trimmed.slice(0, 1);
-      localStorage.setItem(key(userId, 'diagnostico_historial'), JSON.stringify(ultraTrimmed));
+      try {
+         localStorage.setItem(key(userId, 'diagnostico_historial'), JSON.stringify(ultraTrimmed));
+      } catch(e) {
+         // Si una sola foto supera los 5MB, guardamos sin imagen
+         delete ultraTrimmed[0].image;
+         localStorage.setItem(key(userId, 'diagnostico_historial'), JSON.stringify(ultraTrimmed));
+      }
       return ultraTrimmed;
     }
   }

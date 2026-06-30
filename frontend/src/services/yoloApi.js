@@ -13,8 +13,17 @@ const yoloClient = axios.create({
  * GET /health
  */
 export async function verificarSaludYOLO() {
-  const response = await yoloClient.get('/health');
-  return response.data;
+  try {
+    // Como el API Gateway no rutea /health a YOLO, le hacemos un GET a su ruta principal.
+    // YOLO espera un POST, así que devolverá 405 Method Not Allowed, lo que confirma que está vivo.
+    await yoloClient.get('/api/v1/diagnostico');
+    return { status: "ok" };
+  } catch (error) {
+    if (error.response && error.response.status === 405) {
+      return { status: "ok" }; // 405 significa que YOLO respondió
+    }
+    throw error;
+  }
 }
 
 /**

@@ -1,11 +1,11 @@
 services:
   kafka:
-    image: ${KAFKA_IMAGE:-confluentinc/cp-kafka:7.4.0}
+    image: confluentinc/cp-kafka:7.4.0
     ports:
       - target: 9092
-        published: ${KAFKA_PORT:-9092}
+        published: 9092
       - target: 29092
-        published: ${KAFKA_PORT_EXT:-19093}
+        published: 19093
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: 'broker,controller'
@@ -15,37 +15,39 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
       KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      CLUSTER_ID: ${CLUSTER_ID:-MkU3OEVBNTcwNTJENDM2Qk}
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_HEAP_OPTS: ${KAFKA_HEAP_OPTS:--Xms512M -Xmx1G}
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
-    command: |
-      bash -c '
-        /etc/confluent/docker/run &
-        until kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1; do sleep 2; done;
-        while IFS= read -r topic; do
-          [ -z "$$topic" ] && continue;
-          kafka-topics --create --if-not-exists --topic "$$topic" --partitions 1 --replication-factor 1 --bootstrap-server localhost:9092;
-        done < /etc/kafka/topics.txt;
-        wait
-      '
-    healthcheck:
-      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 30s
-    configs:
-      - source: topics_txt
-        target: /etc/kafka/topics.txt
     deploy:
       replicas: 1
       placement:
         constraints:
-          - ${PLACEMENT_CONSTRAINT:-node.role == worker}
+          - node.role == worker
 
+  kafka-init:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - kafka
+    command: |
+      bash -c '
+        echo "Esperando a Kafka...";
+        until kafka-topics --bootstrap-server kafka:9092 --list >/dev/null 2>&1; do
+          sleep 3;
+        done;
+        echo "Kafka listo. Creando topics...";
+        for topic in dev.permisos dev.iam.roles test.permisos test.iam.roles prod.permisos prod.iam.roles telemetry hardware.metrics hardware.alerts; do
+          kafka-topics --create --if-not-exists --topic "$$topic" --partitions 1 --replication-factor 1 --bootstrap-server kafka:9092;
+        done;
+        echo "Topics creados correctamente."
+      '
+    deploy:
+      restart_policy:
+        condition: none
+      placement:
+        constraints:
+          - node.role == worker
   clickhouse:
     image: ${CH_IMAGE:-clickhouse/clickhouse-server:latest}
     ports:

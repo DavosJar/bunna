@@ -10,22 +10,22 @@ const authClient = axios.create({
 
 /**
  * Registrar un nuevo usuario.
- * POST /api/v1/auth/register
+ * POST /api/v1/identidad/auth/register
  */
 export async function registrarUsuario({ nombre, apellido, correo, password, telefono }) {
   const body = { nombre, apellido, correo, password };
   if (telefono) body.telefono = telefono;
 
-  const response = await authClient.post('/api/v1/auth/register', body);
+  const response = await authClient.post('/api/v1/identidad/auth/register', body);
   return response.data;
 }
 
 /**
  * Iniciar sesión.
- * POST /api/v1/auth/login
+ * POST /api/v1/identidad/auth/login
  */
 export async function loginUsuario({ correo, password }) {
-  const response = await authClient.post('/api/v1/auth/login', { correo, password });
+  const response = await authClient.post('/api/v1/identidad/auth/login', { correo, password });
   return response.data;
 }
 
@@ -82,12 +82,12 @@ export function validateEmail(email) {
 
 /**
  * Cambiar de tenant activo.
- * POST /api/v1/auth/switch-tenant
+ * POST /api/v1/identidad/auth/switch-tenant
  */
 export async function switchTenantAPI(tenantId) {
   const token = localStorage.getItem('bunna_access_token');
   const response = await authClient.post(
-    '/api/v1/auth/switch-tenant',
+    '/api/v1/identidad/auth/switch-tenant',
     { tenant_id: tenantId },
     { headers: { Authorization: `Bearer ${token}` } }
   );
@@ -96,20 +96,20 @@ export async function switchTenantAPI(tenantId) {
 
 /**
  * Refrescar access token usando refresh token.
- * POST /api/v1/auth/refresh
+ * POST /api/v1/identidad/auth/refresh
  */
 export async function refreshTokenAPI(refreshToken) {
-  const response = await authClient.post('/api/v1/auth/refresh', { refresh_token: refreshToken });
+  const response = await authClient.post('/api/v1/identidad/auth/refresh', { refresh_token: refreshToken });
   return response.data;
 }
 
 /**
  * Cerrar sesión actual en el servidor.
- * POST /api/v1/auth/logout
+ * POST /api/v1/identidad/auth/logout
  */
 export async function logoutUsuario() {
   const token = localStorage.getItem('bunna_access_token');
-  const response = await authClient.post('/api/v1/auth/logout', {}, {
+  const response = await authClient.post('/api/v1/identidad/auth/logout', {}, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
@@ -117,11 +117,11 @@ export async function logoutUsuario() {
 
 /**
  * Cerrar todas las sesiones del usuario.
- * POST /api/v1/auth/logout/all
+ * POST /api/v1/identidad/auth/logout/all
  */
 export async function logoutAllSesiones() {
   const token = localStorage.getItem('bunna_access_token');
-  const response = await authClient.post('/api/v1/auth/logout/all', {}, {
+  const response = await authClient.post('/api/v1/identidad/auth/logout/all', {}, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;

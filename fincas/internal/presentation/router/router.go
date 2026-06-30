@@ -47,7 +47,7 @@ func New(cfg Config) *gin.Engine {
 	api := r.Group("/api/v1/fincas")
 
 	// Rutas protegidas — fincas
-	fincas := api.Group("")
+	fincas := api.Group("/fincas")
 	fincas.Use(auth)
 	{
 		fincas.POST("", cfg.FincaHandler.Registrar)

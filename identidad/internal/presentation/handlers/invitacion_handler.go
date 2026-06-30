@@ -31,7 +31,7 @@ func (h *ObtenerInvitacionHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "obtener-invitacion",
 		Method:      http.MethodGet,
-		Path:        "/api/v1/invitaciones/{token}",
+		Path:        "/api/v1/identidad/invitaciones/{token}",
 		Summary:     "Obtener información de invitación",
 		Description: "Endpoint público. Obtiene los datos de una invitación por su token, sin requerir autenticación.",
 		Tags:        []string{"Invitaciones"},
@@ -79,7 +79,7 @@ func (h *CrearInvitacionHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID:   "crear-invitacion",
 		Method:        http.MethodPost,
-		Path:          "/api/v1/invitaciones",
+		Path:          "/api/v1/identidad/invitaciones",
 		Summary:       "Crear invitación",
 		Description:   "Crea una invitación para que un usuario se una al tenant del ejecutor.",
 		Tags:          []string{"Invitaciones"},
@@ -134,7 +134,7 @@ func (h *AceptarInvitacionHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID:   "aceptar-invitacion",
 		Method:        http.MethodPost,
-		Path:          "/api/v1/invitaciones/{token}/aceptar",
+		Path:          "/api/v1/identidad/invitaciones/{token}/aceptar",
 		Summary:       "Aceptar invitación",
 		Description:   "Endpoint público. Acepta una invitación usando solo el token, sin requerir JWT.",
 		Tags:          []string{"Invitaciones"},
@@ -160,7 +160,7 @@ func (h *AceptarInvitacionHandler) handle(ctx context.Context, input *AceptarInv
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GET /api/v1/invitaciones (admin, con JWT) — Listar invitaciones del tenant
+// GET /api/v1/identidad/invitaciones (admin, con JWT) — Listar invitaciones del tenant
 // ─────────────────────────────────────────────────────────────────────────────
 
 type ListarInvitacionesInput struct {
@@ -185,7 +185,7 @@ func (h *ListarInvitacionesHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "listar-invitaciones",
 		Method:      http.MethodGet,
-		Path:        "/api/v1/invitaciones",
+		Path:        "/api/v1/identidad/invitaciones",
 		Summary:     "Listar invitaciones del tenant",
 		Description: "Lista las invitaciones enviadas desde el tenant activo, con filtro opcional por estado.",
 		Tags:        []string{"Invitaciones"},
@@ -244,7 +244,7 @@ func (h *ListarInvitacionesHandler) handle(ctx context.Context, input *ListarInv
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DELETE /api/v1/invitaciones/{id} (admin, con JWT) — Eliminar invitación
+// DELETE /api/v1/identidad/invitaciones/{id} (admin, con JWT) — Eliminar invitación
 // ─────────────────────────────────────────────────────────────────────────────
 
 type EliminarInvitacionInput struct {
@@ -267,7 +267,7 @@ func (h *EliminarInvitacionHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID:   "eliminar-invitacion",
 		Method:        http.MethodDelete,
-		Path:          "/api/v1/invitaciones/{id}",
+		Path:          "/api/v1/identidad/invitaciones/{id}",
 		Summary:       "Eliminar invitación",
 		Description:   "Elimina definitivamente una invitación pendiente. Solo para invitaciones del mismo tenant que no hayan sido aceptadas.",
 		Tags:          []string{"Invitaciones"},
@@ -302,7 +302,7 @@ func (h *EliminarInvitacionHandler) handle(ctx context.Context, input *EliminarI
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /api/v1/invitaciones/{id}/reenviar (admin, con JWT) — Reenviar invitación
+// POST /api/v1/identidad/invitaciones/{id}/reenviar (admin, con JWT) — Reenviar invitación
 // ─────────────────────────────────────────────────────────────────────────────
 
 type ReenviarInvitacionInput struct {
@@ -325,7 +325,7 @@ func (h *ReenviarInvitacionHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID:   "reenviar-invitacion",
 		Method:        http.MethodPost,
-		Path:          "/api/v1/invitaciones/{token}/reenviar",
+		Path:          "/api/v1/identidad/invitaciones/{token}/reenviar",
 		Summary:       "Reenviar invitación",
 		Description:   "Reenvía el email de invitación generando un nuevo token. Solo para invitaciones pendientes del mismo tenant.",
 		Tags:          []string{"Invitaciones"},

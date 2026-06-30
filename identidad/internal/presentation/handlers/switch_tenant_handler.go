@@ -11,12 +11,12 @@ import (
 	presentation "github.com/davosjar/bunna/services/identidad/internal/shared/presentation"
 )
 
-// SwitchTenantInput es el input del endpoint POST /api/v1/auth/switch-tenant.
+// SwitchTenantInput es el input del endpoint POST /api/v1/identidad/auth/switch-tenant.
 type SwitchTenantInput struct {
 	Body dto.SwitchTenantRequest
 }
 
-// SwitchTenantOutput es el output del endpoint POST /api/v1/auth/switch-tenant.
+// SwitchTenantOutput es el output del endpoint POST /api/v1/identidad/auth/switch-tenant.
 type SwitchTenantOutput struct {
 	Body presentation.ApiResponse[dto.SwitchTenantResponse]
 }
@@ -36,7 +36,7 @@ func (h *SwitchTenantHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "switch-tenant",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/auth/switch-tenant",
+		Path:        "/api/v1/identidad/auth/switch-tenant",
 		Summary:     "Cambiar de tenant",
 		Description: "Cambia el tenant activo del usuario autenticado y retorna nuevos tokens JWT con el tenant y rol actualizados.",
 		Tags:        []string{"Autenticación"},

@@ -66,8 +66,27 @@ export function loadDiagnosticoHistorial(userId) {
 export function saveDiagnosticoHistorial(userId, entry) {
   const list = loadDiagnosticoHistorial(userId);
   list.unshift({ ...entry, id: entry.id || generateUUID(), fecha: entry.fecha || new Date().toISOString() });
-  const trimmed = list.slice(0, 20);
-  localStorage.setItem(key(userId, 'diagnostico_historial'), JSON.stringify(trimmed));
+  
+  // Para evitar QuotaExceededError en localStorage (límite de 5MB):
+  // Solo guardamos la imagen base64 de los 2 más recientes. Los demás los guardamos sin imagen.
+  const trimmed = list.slice(0, 15).map((item, idx) => {
+    if (idx >= 2 && item.image) {
+      const { image, ...rest } = item;
+      return rest;
+    }
+    return item;
+  });
+
+  try {
+    localStorage.setItem(key(userId, 'diagnostico_historial'), JSON.stringify(trimmed));
+  } catch (err) {
+    // Si aún así se llena, vaciamos agresivamente y dejamos solo 1
+    if (err.name === 'QuotaExceededError') {
+      const ultraTrimmed = trimmed.slice(0, 1);
+      localStorage.setItem(key(userId, 'diagnostico_historial'), JSON.stringify(ultraTrimmed));
+      return ultraTrimmed;
+    }
+  }
   return trimmed;
 }
 

@@ -18,7 +18,7 @@ func RegisterHealthHandler(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "health-check",
 		Method:      "GET",
-		Path:        "/health",
+		Path:        "/api/v1/identidad/health",
 		Summary:     "Health check",
 		Description: "Verifica que el servicio está activo y respondiendo.",
 		Tags:        []string{"Sistema"},

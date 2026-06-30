@@ -35,7 +35,7 @@ func (h *ListarRolesHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "listar-roles",
 		Method:      http.MethodGet,
-		Path:        "/api/v1/roles",
+		Path:        "/api/v1/identidad/roles",
 		Summary:     "Listar roles",
 		Description: "Lista los roles del sistema con paginación.",
 		Tags:        []string{"Roles"},
@@ -105,7 +105,7 @@ func (h *CrearRolHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID:   "crear-rol",
 		Method:        http.MethodPost,
-		Path:          "/api/v1/roles",
+		Path:          "/api/v1/identidad/roles",
 		Summary:       "Crear rol",
 		Description:   "Crea un nuevo rol en el sistema con permisos opcionales.",
 		Tags:          []string{"Roles"},
@@ -163,7 +163,7 @@ func (h *ModificarRolHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "modificar-rol",
 		Method:      http.MethodPut,
-		Path:        "/api/v1/roles/{rolID}",
+		Path:        "/api/v1/identidad/roles/{rolID}",
 		Summary:     "Modificar rol",
 		Description: "Actualiza el nombre y descripción de un rol.",
 		Tags:        []string{"Roles"},
@@ -219,7 +219,7 @@ func (h *EliminarRolHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "eliminar-rol",
 		Method:      http.MethodDelete,
-		Path:        "/api/v1/roles/{rolID}",
+		Path:        "/api/v1/identidad/roles/{rolID}",
 		Summary:     "Eliminar rol",
 		Description: "Elimina un rol del sistema (no se pueden eliminar roles de sistema).",
 		Tags:        []string{"Roles"},
@@ -273,7 +273,7 @@ func (h *AsignarRolHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID:   "asignar-rol",
 		Method:        http.MethodPost,
-		Path:          "/api/v1/usuarios/{usuarioID}/roles",
+		Path:          "/api/v1/identidad/usuarios/{usuarioID}/roles",
 		Summary:       "Asignar rol a usuario",
 		Description:   "Asigna un rol a un usuario, opcionalmente en un tenant específico.",
 		Tags:          []string{"Roles"},
@@ -328,7 +328,7 @@ func (h *RevocarRolHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "revocar-rol",
 		Method:      http.MethodDelete,
-		Path:        "/api/v1/usuarios/{usuarioID}/roles/{rolID}",
+		Path:        "/api/v1/identidad/usuarios/{usuarioID}/roles/{rolID}",
 		Summary:     "Revocar rol de usuario",
 		Description: "Revoca un rol asignado a un usuario.",
 		Tags:        []string{"Roles"},
@@ -384,7 +384,7 @@ func (h *AsignarPermisoARolHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID:   "asignar-permiso-a-rol",
 		Method:        http.MethodPost,
-		Path:          "/api/v1/roles/{rolID}/permisos",
+		Path:          "/api/v1/identidad/roles/{rolID}/permisos",
 		Summary:       "Asignar permiso a rol",
 		Description:   "Asigna un permiso a un rol específico.",
 		Tags:          []string{"Roles"},
@@ -442,7 +442,7 @@ func (h *RevocarPermisoDeRolHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "revocar-permiso-de-rol",
 		Method:      http.MethodDelete,
-		Path:        "/api/v1/roles/{rolID}/permisos/{codigo}",
+		Path:        "/api/v1/identidad/roles/{rolID}/permisos/{codigo}",
 		Summary:     "Revocar permiso de rol",
 		Description: "Revoca un permiso previamente asignado a un rol.",
 		Tags:        []string{"Roles"},
@@ -492,7 +492,7 @@ func (h *ListarPermisosHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "listar-permisos",
 		Method:      http.MethodGet,
-		Path:        "/api/v1/permisos",
+		Path:        "/api/v1/identidad/permisos",
 		Summary:     "Listar permisos",
 		Description: "Lista los permisos del usuario autenticado según su rol en el tenant activo.",
 		Tags:        []string{"Roles"},
@@ -516,7 +516,7 @@ func (h *ListarRolesDeUsuarioHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "listar-roles-usuario",
 		Method:      http.MethodGet,
-		Path:        "/api/v1/usuarios/{usuarioID}/roles",
+		Path:        "/api/v1/identidad/usuarios/{usuarioID}/roles",
 		Summary:     "Listar roles de un usuario en el tenant activo",
 		Tags:        []string{"Usuarios"},
 	}, h.handle)

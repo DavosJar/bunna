@@ -33,7 +33,7 @@ func (h *SolicitarRecuperacionHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "solicitar-recuperacion",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/recuperacion/solicitar",
+		Path:        "/api/v1/identidad/recuperacion/solicitar",
 		Summary:     "Solicitar recuperación de contraseña",
 		Description: "Envía un enlace de recuperación al correo electrónico proporcionado.",
 		Tags:        []string{"Recuperación"},
@@ -76,7 +76,7 @@ func (h *ValidarTokenRecuperacionHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "validar-token-recuperacion",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/recuperacion/validar",
+		Path:        "/api/v1/identidad/recuperacion/validar",
 		Summary:     "Validar token de recuperación",
 		Description: "Valida si un token de recuperación es válido y devuelve el ID del usuario asociado.",
 		Tags:        []string{"Recuperación"},
@@ -121,7 +121,7 @@ func (h *ConfirmarRecuperacionHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "confirmar-recuperacion",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/recuperacion/confirmar",
+		Path:        "/api/v1/identidad/recuperacion/confirmar",
 		Summary:     "Confirmar restablecimiento de contraseña",
 		Description: "Restablece la contraseña usando el token de recuperación.",
 		Tags:        []string{"Recuperación"},

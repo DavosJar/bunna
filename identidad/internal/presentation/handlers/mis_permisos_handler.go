@@ -38,7 +38,7 @@ func (h *ListarMisPermisosHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "listar-mis-permisos",
 		Method:      http.MethodGet,
-		Path:        "/api/v1/mis-permisos",
+		Path:        "/api/v1/identidad/mis-permisos",
 		Summary:     "Listar mis permisos",
 		Description: "Retorna los códigos de permiso del usuario autenticado según su rol en el tenant activo.",
 		Tags:        []string{"Permisos"},

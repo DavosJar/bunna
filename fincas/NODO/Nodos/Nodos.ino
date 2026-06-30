@@ -6,9 +6,9 @@
 // ==========================================
 // PARÁMETROS CONFIGURABLES — solo tocar aquí
 // ==========================================
-const char* WIFI_SSID        = "iPhone de Santiago";
-const char* WIFI_PASSWORD    = "12345687";
-const char* API_ENDPOINT = "https://bunna-yolo.duckdns.org/api/v1/diagnostico";
+const char* WIFI_SSID        = "CELERITY_GUICE";
+const char* WIFI_PASSWORD    = "CECI.@1954m";
+const char* API_ENDPOINT = "https://i2u6hsbhf1.execute-api.us-east-2.amazonaws.com";
 const char* NODE_API_KEY     = "bunna-fincaPrueba";
 const int   CAPTURE_INTERVAL = 10000;  // ms — 10s para pruebas
 

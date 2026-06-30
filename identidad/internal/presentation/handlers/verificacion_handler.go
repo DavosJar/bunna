@@ -29,7 +29,7 @@ func (h *SolicitarVerificacionHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "solicitar-verificacion",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/verificacion/solicitar",
+		Path:        "/api/v1/identidad/verificacion/solicitar",
 		Summary:     "Solicitar verificación de correo",
 		Description: "Envía un enlace de verificación al correo del usuario autenticado.",
 		Tags:        []string{"Verificación"},
@@ -76,7 +76,7 @@ func (h *ConfirmarVerificacionHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "confirmar-verificacion",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/verificacion/confirmar",
+		Path:        "/api/v1/identidad/verificacion/confirmar",
 		Summary:     "Confirmar verificación de correo",
 		Description: "Confirma la verificación del correo electrónico usando el token recibido.",
 		Tags:        []string{"Verificación"},
@@ -114,7 +114,7 @@ func (h *ReenviarVerificacionHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "reenviar-verificacion",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/verificacion/reenviar",
+		Path:        "/api/v1/identidad/verificacion/reenviar",
 		Summary:     "Reenviar verificación de correo",
 		Description: "Reenvía el enlace de verificación al correo del usuario autenticado.",
 		Tags:        []string{"Verificación"},

@@ -31,7 +31,7 @@ func (h *RefreshHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "refresh-sesion",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/auth/refresh",
+		Path:        "/api/v1/identidad/auth/refresh",
 		Summary:     "Renovar sesión",
 		Description: "Renueva el access token usando el refresh token. Aplica rotación de tokens.",
 		Tags:        []string{"Autenticación"},
@@ -77,7 +77,7 @@ func (h *LogoutHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "cerrar-sesion",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/auth/logout",
+		Path:        "/api/v1/identidad/auth/logout",
 		Summary:     "Cerrar sesión",
 		Description: "Cierra la sesión actual del usuario autenticado.",
 		Tags:        []string{"Autenticación"},
@@ -124,7 +124,7 @@ func (h *LogoutAllHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "cerrar-todas-sesiones",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/auth/logout/all",
+		Path:        "/api/v1/identidad/auth/logout/all",
 		Summary:     "Cerrar todas las sesiones",
 		Description: "Cierra todas las sesiones activas del usuario autenticado.",
 		Tags:        []string{"Autenticación"},

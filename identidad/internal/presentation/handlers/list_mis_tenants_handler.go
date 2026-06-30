@@ -11,7 +11,7 @@ import (
 	presentation "github.com/davosjar/bunna/services/identidad/internal/shared/presentation"
 )
 
-// ListarMisTenantsOutput es el output del endpoint GET /api/v1/tenants/mis-tenants.
+// ListarMisTenantsOutput es el output del endpoint GET /api/v1/identidad/tenants/mis-tenants.
 type ListarMisTenantsOutput struct {
 	Body presentation.ApiResponse[dto.ListarMisTenantsResponse]
 }
@@ -31,7 +31,7 @@ func (h *ListarMisTenantsHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "listar-mis-tenants",
 		Method:      http.MethodGet,
-		Path:        "/api/v1/tenants/mis-tenants",
+		Path:        "/api/v1/identidad/tenants/mis-tenants",
 		Summary:     "Listar mis tenants",
 		Description: "Retorna la lista de tenants a los que pertenece el usuario autenticado, con su rol en cada uno.",
 		Tags:        []string{"Tenants"},

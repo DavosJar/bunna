@@ -10,13 +10,13 @@ import (
 	presentation "github.com/davosjar/bunna/services/identidad/internal/shared/presentation"
 )
 
-// LoginInput es el input del endpoint POST /api/v1/auth/login.
+// LoginInput es el input del endpoint POST /api/v1/identidad/auth/login.
 type LoginInput struct {
 	RealIP string `header:"X-Real-IP"`
 	Body   dto.LoginRequest
 }
 
-// LoginOutput es el output del endpoint POST /api/v1/auth/login.
+// LoginOutput es el output del endpoint POST /api/v1/identidad/auth/login.
 type LoginOutput struct {
 	Body presentation.ApiResponse[dto.LoginResponse]
 }
@@ -37,7 +37,7 @@ func (h *LoginHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "login-usuario",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/auth/login",
+		Path:        "/api/v1/identidad/auth/login",
 		Summary:     "Inicio de sesión",
 		Description: "Autentica al usuario y devuelve tokens JWT de acceso y refresco.",
 		Tags:        []string{"Autenticación"},
@@ -57,11 +57,11 @@ func (h *LoginHandler) handle(ctx context.Context, input *LoginInput) (*LoginOut
 	// CON-PRES-005: links HATEOAS los construye el handler
 	links := map[string]presentation.Link{
 		"self": {
-			Href:   "/api/v1/usuarios/" + resp.UsuarioID,
+			Href:   "/api/v1/identidad/usuarios/" + resp.UsuarioID,
 			Method: http.MethodGet,
 		},
 		"refresh": {
-			Href:   "/api/v1/auth/refresh",
+			Href:   "/api/v1/identidad/auth/refresh",
 			Method: http.MethodPost,
 		},
 	}

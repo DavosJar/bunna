@@ -1,6 +1,6 @@
 package dto
 
-// RegisterRequest es el body del request POST /api/v1/auth/register.
+// RegisterRequest es el body del request POST /api/v1/identidad/auth/register.
 type RegisterRequest struct {
 	Nombre   string  `json:"nombre"             doc:"Nombre del usuario"                example:"Juan"`
 	Apellido string  `json:"apellido"           doc:"Apellido del usuario"              example:"Pérez"`

@@ -1,6 +1,6 @@
 package dto
 
-// LoginRequest es el body del request POST /api/v1/auth/login.
+// LoginRequest es el body del request POST /api/v1/identidad/auth/login.
 type LoginRequest struct {
 	Correo   string `json:"correo"   doc:"Correo electrónico del usuario" example:"juan@correo.com"`
 	Password string `json:"password" doc:"Contraseña del usuario"         example:"secreto123"`
@@ -17,7 +17,7 @@ type LoginResponse struct {
 	Rol          string `json:"rol"           doc:"Rol del usuario en el tenant"         example:"administrador"`
 }
 
-// SwitchTenantRequest es el body del request POST /api/v1/auth/switch-tenant.
+// SwitchTenantRequest es el body del request POST /api/v1/identidad/auth/switch-tenant.
 type SwitchTenantRequest struct {
 	TenantID string `json:"tenant_id" doc:"ID del tenant al que se desea cambiar"`
 }

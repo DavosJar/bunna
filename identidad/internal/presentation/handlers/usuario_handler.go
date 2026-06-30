@@ -34,7 +34,7 @@ func (h *CrearUsuarioHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID:   "crear-usuario",
 		Method:        http.MethodPost,
-		Path:          "/api/v1/usuarios",
+		Path:          "/api/v1/identidad/usuarios",
 		Summary:       "Crear usuario",
 		Description:   "Crea un nuevo usuario en el sistema (requiere permisos de administración).",
 		Tags:          []string{"Usuarios"},
@@ -96,7 +96,7 @@ func (h *ListarUsuariosHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "listar-usuarios",
 		Method:      http.MethodGet,
-		Path:        "/api/v1/usuarios",
+		Path:        "/api/v1/identidad/usuarios",
 		Summary:     "Listar usuarios",
 		Description: "Lista usuarios del sistema con filtros y paginación.",
 		Tags:        []string{"Usuarios"},
@@ -177,7 +177,7 @@ func (h *ModificarUsuarioHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "modificar-usuario",
 		Method:      http.MethodPut,
-		Path:        "/api/v1/usuarios/{usuarioID}",
+		Path:        "/api/v1/identidad/usuarios/{usuarioID}",
 		Summary:     "Modificar usuario",
 		Description: "Modifica los datos de un usuario existente.",
 		Tags:        []string{"Usuarios"},
@@ -232,7 +232,7 @@ func (h *DarDeBajaUsuarioHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "dar-de-baja-usuario",
 		Method:      http.MethodDelete,
-		Path:        "/api/v1/usuarios/{usuarioID}",
+		Path:        "/api/v1/identidad/usuarios/{usuarioID}",
 		Summary:     "Dar de baja usuario",
 		Description: "Desactiva un usuario del sistema (baja lógica).",
 		Tags:        []string{"Usuarios"},
@@ -290,7 +290,7 @@ func (h *ExpulsarUsuarioHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "expulsar-usuario",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/usuarios/{usuarioID}/expulsar",
+		Path:        "/api/v1/identidad/usuarios/{usuarioID}/expulsar",
 		Summary:     "Expulsar usuario",
 		Description: "Expulsa a un usuario del sistema, desactivándolo e invalidando todas sus sesiones.",
 		Tags:        []string{"Usuarios"},
@@ -342,7 +342,7 @@ func (h *VerMiPerfilHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "ver-mi-perfil",
 		Method:      http.MethodGet,
-		Path:        "/api/v1/mi-perfil",
+		Path:        "/api/v1/identidad/mi-perfil",
 		Summary:     "Ver mi perfil",
 		Description: "Obtiene los datos del perfil del usuario autenticado.",
 		Tags:        []string{"Mi Perfil"},
@@ -393,7 +393,7 @@ func (h *ModificarMiPerfilHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "modificar-mi-perfil",
 		Method:      http.MethodPut,
-		Path:        "/api/v1/mi-perfil",
+		Path:        "/api/v1/identidad/mi-perfil",
 		Summary:     "Modificar mi perfil",
 		Description: "Actualiza los datos del perfil del usuario autenticado.",
 		Tags:        []string{"Mi Perfil"},

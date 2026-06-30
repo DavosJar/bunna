@@ -34,20 +34,20 @@ type Config struct {
 func jwtIfRequired(tokenSvc sesiones_domain.TokenServicio) gin.HandlerFunc {
 	jwtMid := middleware.JWTMiddleware(tokenSvc)
 	publicPaths := []string{
-		"/health",
-		"/api/v1/auth/login",
-		"/api/v1/auth/register",
-		"/api/v1/auth/refresh",
-		"/api/v1/recuperacion/solicitar",
-		"/api/v1/recuperacion/validar",
-		"/api/v1/recuperacion/confirmar",
-		"/api/v1/verificacion/confirmar",
+		"/api/v1/identidad/health",
+		"/api/v1/identidad/auth/login",
+		"/api/v1/identidad/auth/register",
+		"/api/v1/identidad/auth/refresh",
+		"/api/v1/identidad/recuperacion/solicitar",
+		"/api/v1/identidad/recuperacion/validar",
+		"/api/v1/identidad/recuperacion/confirmar",
+		"/api/v1/identidad/verificacion/confirmar",
 	}
 
-	// rutas de invitación cuyo path empieza con /api/v1/invitaciones/{token}… (públicas)
-	// NOTA: GET /api/v1/invitaciones exacto NO es público (lista admin),
-	// pero GET /api/v1/invitaciones/{token} y POST /api/v1/invitaciones/{token}/aceptar sí lo son.
-	publicPrefixInvitaciones := "/api/v1/invitaciones/"
+	// rutas de invitación cuyo path empieza con /api/v1/identidad/invitaciones/{token}… (públicas)
+	// NOTA: GET /api/v1/identidad/invitaciones exacto NO es público (lista admin),
+	// pero GET /api/v1/identidad/invitaciones/{token} y POST /api/v1/identidad/invitaciones/{token}/aceptar sí lo son.
+	publicPrefixInvitaciones := "/api/v1/identidad/invitaciones/"
 
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path

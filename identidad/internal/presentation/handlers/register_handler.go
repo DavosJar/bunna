@@ -10,12 +10,12 @@ import (
 	presentation "github.com/davosjar/bunna/services/identidad/internal/shared/presentation"
 )
 
-// RegisterInput es el input del endpoint POST /api/v1/auth/register.
+// RegisterInput es el input del endpoint POST /api/v1/identidad/auth/register.
 type RegisterInput struct {
 	Body dto.RegisterRequest
 }
 
-// RegisterOutput es el output del endpoint POST /api/v1/auth/register.
+// RegisterOutput es el output del endpoint POST /api/v1/identidad/auth/register.
 type RegisterOutput struct {
 	Body presentation.ApiResponse[dto.RegisterResponse]
 }
@@ -35,7 +35,7 @@ func (h *RegisterHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID:   "register-usuario",
 		Method:        http.MethodPost,
-		Path:          "/api/v1/auth/register",
+		Path:          "/api/v1/identidad/auth/register",
 		Summary:       "Registro de usuario",
 		Description:   "Crea un nuevo usuario con sus credenciales. Devuelve el ID y estado inicial.",
 		Tags:          []string{"Autenticación"},
@@ -63,7 +63,7 @@ func (h *RegisterHandler) handle(ctx context.Context, input *RegisterInput) (*Re
 	// CON-PRES-005: links HATEOAS los construye el handler
 	links := map[string]presentation.Link{
 		"self": {
-			Href:   "/api/v1/usuarios/" + resp.UsuarioID,
+			Href:   "/api/v1/identidad/usuarios/" + resp.UsuarioID,
 			Method: http.MethodGet,
 		},
 	}

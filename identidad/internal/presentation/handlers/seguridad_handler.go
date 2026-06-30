@@ -34,7 +34,7 @@ func (h *CambiarMiPasswordHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "cambiar-mi-password",
 		Method:      http.MethodPut,
-		Path:        "/api/v1/mi-password",
+		Path:        "/api/v1/identidad/mi-password",
 		Summary:     "Cambiar mi contraseña",
 		Description: "Cambia la contraseña del usuario autenticado.",
 		Tags:        []string{"Mi Perfil"},
@@ -86,7 +86,7 @@ func (h *ResetearPasswordHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "resetear-password",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/usuarios/{usuarioID}/reset-password",
+		Path:        "/api/v1/identidad/usuarios/{usuarioID}/reset-password",
 		Summary:     "Resetear contraseña",
 		Description: "Resetea la contraseña de un usuario (requiere permisos administrativos).",
 		Tags:        []string{"Seguridad"},
@@ -138,7 +138,7 @@ func (h *DesbloquearCuentaHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "desbloquear-cuenta",
 		Method:      http.MethodPost,
-		Path:        "/api/v1/usuarios/{usuarioID}/unlock",
+		Path:        "/api/v1/identidad/usuarios/{usuarioID}/unlock",
 		Summary:     "Desbloquear cuenta",
 		Description: "Desbloquea la cuenta de un usuario bloqueada por intentos fallidos.",
 		Tags:        []string{"Seguridad"},
@@ -190,7 +190,7 @@ func (h *ListarIPsBloqueadasHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "listar-ips-bloqueadas",
 		Method:      http.MethodGet,
-		Path:        "/api/v1/ips-bloqueadas",
+		Path:        "/api/v1/identidad/ips-bloqueadas",
 		Summary:     "Listar IPs bloqueadas",
 		Description: "Lista las direcciones IP bloqueadas temporalmente por exceso de intentos.",
 		Tags:        []string{"Seguridad"},
@@ -257,7 +257,7 @@ func (h *DesbloquearIPHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "desbloquear-ip",
 		Method:      http.MethodDelete,
-		Path:        "/api/v1/ips-bloqueadas/{ip}",
+		Path:        "/api/v1/identidad/ips-bloqueadas/{ip}",
 		Summary:     "Desbloquear IP",
 		Description: "Elimina el bloqueo de una dirección IP.",
 		Tags:        []string{"Seguridad"},
@@ -307,7 +307,7 @@ func (h *ConsultarCredencialesHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "consultar-credenciales",
 		Method:      http.MethodGet,
-		Path:        "/api/v1/credenciales/{usuarioID}",
+		Path:        "/api/v1/identidad/credenciales/{usuarioID}",
 		Summary:     "Consultar credenciales",
 		Description: "Obtiene el estado de las credenciales de un usuario (bloqueo, intentos, verificación).",
 		Tags:        []string{"Seguridad"},

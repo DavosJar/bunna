@@ -36,7 +36,7 @@ func (h *ListarSesionesHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "listar-sesiones",
 		Method:      http.MethodGet,
-		Path:        "/api/v1/sesiones",
+		Path:        "/api/v1/identidad/sesiones",
 		Summary:     "Listar sesiones",
 		Description: "Lista las sesiones activas del sistema con paginación.",
 		Tags:        []string{"Sesiones"},
@@ -103,7 +103,7 @@ func (h *ForzarCierreSesionHandler) Register(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "forzar-cierre-sesion",
 		Method:      http.MethodDelete,
-		Path:        "/api/v1/sesiones/{sesionID}",
+		Path:        "/api/v1/identidad/sesiones/{sesionID}",
 		Summary:     "Forzar cierre de sesión",
 		Description: " fuerza el cierre de una sesión específica (requiere permisos administrativos).",
 		Tags:        []string{"Sesiones"},

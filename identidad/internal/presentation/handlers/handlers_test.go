@@ -77,7 +77,7 @@ func doRequest(router *gin.Engine, method, path, body string) *httptest.Response
 // AC-PRES-008 (health): GET /health responde 200
 func TestHealthHandler_Responde200(t *testing.T) {
 	router, _ := setupRouter(&mockAuthFacade{})
-	w := doRequest(router, http.MethodGet, "/health", "")
+	w := doRequest(router, http.MethodGet, "/api/v1/identidad/health", "")
 	if w.Code != http.StatusOK {
 		t.Errorf("esperaba 200, got %d", w.Code)
 	}
@@ -85,7 +85,7 @@ func TestHealthHandler_Responde200(t *testing.T) {
 
 func TestHealthHandler_CuerpoContieneStatusOk(t *testing.T) {
 	router, _ := setupRouter(&mockAuthFacade{})
-	w := doRequest(router, http.MethodGet, "/health", "")
+	w := doRequest(router, http.MethodGet, "/api/v1/identidad/health", "")
 	if !strings.Contains(w.Body.String(), "ok") {
 		t.Errorf("esperaba 'ok' en body, got %s", w.Body.String())
 	}
@@ -105,7 +105,7 @@ func TestRegisterHandler_Exitoso(t *testing.T) {
 	router, _ := setupRouter(facade)
 
 	body := `{"nombre":"Juan","apellido":"Pérez","correo":"juan@correo.com","password":"secreto123"}`
-	w := doRequest(router, http.MethodPost, "/api/v1/auth/register", body)
+	w := doRequest(router, http.MethodPost, "/api/v1/identidad/auth/register", body)
 
 	if w.Code != http.StatusCreated {
 		t.Errorf("esperaba 201, got %d — body: %s", w.Code, w.Body.String())
@@ -136,7 +136,7 @@ func TestRegisterHandler_IncluyeLinks(t *testing.T) {
 	router, _ := setupRouter(facade)
 
 	body := `{"nombre":"Juan","apellido":"Pérez","correo":"juan@correo.com","password":"secreto123"}`
-	w := doRequest(router, http.MethodPost, "/api/v1/auth/register", body)
+	w := doRequest(router, http.MethodPost, "/api/v1/identidad/auth/register", body)
 
 	var resp map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
@@ -154,7 +154,7 @@ func TestRegisterHandler_ErrorFacade_Retorna400(t *testing.T) {
 	router, _ := setupRouter(facade)
 
 	body := `{"nombre":"Juan","apellido":"Pérez","correo":"juan@correo.com","password":"secreto123"}`
-	w := doRequest(router, http.MethodPost, "/api/v1/auth/register", body)
+	w := doRequest(router, http.MethodPost, "/api/v1/identidad/auth/register", body)
 
 	if w.Code != http.StatusUnprocessableEntity {
 		t.Errorf("esperaba 400, got %d", w.Code)
@@ -178,7 +178,7 @@ func TestLoginHandler_Exitoso(t *testing.T) {
 	router, _ := setupRouter(facade)
 
 	body := `{"correo":"juan@correo.com","password":"secreto123"}`
-	w := doRequest(router, http.MethodPost, "/api/v1/auth/login", body)
+	w := doRequest(router, http.MethodPost, "/api/v1/identidad/auth/login", body)
 
 	if w.Code != http.StatusOK {
 		t.Errorf("esperaba 200, got %d — body: %s", w.Code, w.Body.String())
@@ -214,7 +214,7 @@ func TestLoginHandler_IncluyeLinks(t *testing.T) {
 	router, _ := setupRouter(facade)
 
 	body := `{"correo":"juan@correo.com","password":"secreto123"}`
-	w := doRequest(router, http.MethodPost, "/api/v1/auth/login", body)
+	w := doRequest(router, http.MethodPost, "/api/v1/identidad/auth/login", body)
 
 	var resp map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
@@ -236,7 +236,7 @@ func TestLoginHandler_ErrorFacade_Retorna401(t *testing.T) {
 	router, _ := setupRouter(facade)
 
 	body := `{"correo":"juan@correo.com","password":"incorrecta"}`
-	w := doRequest(router, http.MethodPost, "/api/v1/auth/login", body)
+	w := doRequest(router, http.MethodPost, "/api/v1/identidad/auth/login", body)
 
 	if w.Code != http.StatusUnauthorized {
 		t.Errorf("esperaba 401, got %d", w.Code)
@@ -301,14 +301,14 @@ func TestOpenAPI_ContieneEndpoints(t *testing.T) {
 	if !ok {
 		t.Fatal("esperaba campo 'paths' como objeto")
 	}
-	if paths["/health"] == nil {
+	if paths["/api/v1/identidad/health"] == nil {
 		t.Error("esperaba path /health en openapi.json")
 	}
-	if paths["/api/v1/auth/register"] == nil {
-		t.Error("esperaba path /api/v1/auth/register en openapi.json")
+	if paths["/api/v1/identidad/auth/register"] == nil {
+		t.Error("esperaba path /api/v1/identidad/auth/register en openapi.json")
 	}
-	if paths["/api/v1/auth/login"] == nil {
-		t.Error("esperaba path /api/v1/auth/login en openapi.json")
+	if paths["/api/v1/identidad/auth/login"] == nil {
+		t.Error("esperaba path /api/v1/identidad/auth/login en openapi.json")
 	}
 }
 

@@ -1,15 +1,16 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 
 // ==========================================
 // PARÁMETROS CONFIGURABLES — solo tocar aquí
 // ==========================================
-const char* WIFI_SSID        = "PISO2";
-const char* WIFI_PASSWORD    = "1100591583";
+const char* WIFI_SSID        = "iPhone de Santiago";
+const char* WIFI_PASSWORD    = "12345687";
 const char* API_ENDPOINT = "https://bunna-yolo.duckdns.org/api/v1/diagnostico";
 const char* NODE_API_KEY     = "bunna-fincaPrueba";
-const int   CAPTURE_INTERVAL = 10000;  // ms — 10s para pruebas, sube a 300000 para producción (5 min)
+const int   CAPTURE_INTERVAL = 10000;  // ms — 10s para pruebas
 
 // ==========================================
 // PINES AI-THINKER — no tocar
@@ -100,17 +101,21 @@ void captureAndSend() {
 
   int totalLen = bodyStart.length() + fb->len + bodyEnd.length();
 
-  // 4. Enviar HTTP POST
+  // 4. Configurar el Cliente Seguro (Vital para HTTPS)
+  WiFiClientSecure client;
+  client.setInsecure(); // <-- Ignora la validación estricta del certificado de DuckDNS
+
+  // 5. Enviar HTTP POST
   HTTPClient http;
-  http.begin(API_ENDPOINT);
+  http.begin(client, API_ENDPOINT); // <-- Usamos el cliente seguro
   http.addHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
   http.addHeader("X-Node-Key", NODE_API_KEY);
   http.setTimeout(30000);
 
-  // Construir buffer completo
-  uint8_t* payload = (uint8_t*)malloc(totalLen);
+  // 6. Usar PSRAM para no ahogar la RAM interna del ESP32
+  uint8_t* payload = (uint8_t*)ps_malloc(totalLen);
   if (!payload) {
-    Serial.println("[HTTP] Error al reservar memoria para payload");
+    Serial.println("[HTTP] Error al reservar memoria PSRAM para payload");
     esp_camera_fb_return(fb);
     return;
   }
@@ -121,23 +126,19 @@ void captureAndSend() {
 
   esp_camera_fb_return(fb);  // liberar buffer de cámara antes de enviar
 
-  // 5. POST
+  // 7. POST
   Serial.println("[HTTP] Enviando imagen...");
   int httpCode = http.POST(payload, totalLen);
   free(payload);
 
   if (httpCode == 200) {
     Serial.println("[HTTP] Diagnóstico recibido correctamente");
-    // Si quieres ver la respuesta JSON completa:
-    // Serial.println(http.getString());
   } else {
     Serial.printf("[HTTP] Error — código: %d\n", httpCode);
-    Serial.println(http.getString());
   }
 
   http.end();
 }
-
 void setup() {
   Serial.begin(115200);
   initCamera();

@@ -18,7 +18,7 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/yolo/, ''),
       },
       '/fincas-api': {
-        target: 'http://3.23.193.162:8082',
+        target: 'http://localhost:8082',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/fincas-api/, ''),
       },

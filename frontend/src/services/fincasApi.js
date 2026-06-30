@@ -50,6 +50,11 @@ export async function registrarFinca({ nombre, ubicacion, descripcion }) {
   return res.data.data;
 }
 
+export async function listarFincas() {
+  const res = await client.get('/fincas');
+  return res.data.data || [];
+}
+
 export async function desactivarFinca(fincaID, { confirmar = true } = {}) {
   const res = await client.post(`/fincas/${fincaID}/desactivar`, { confirmar });
   return res.data.data;
@@ -59,6 +64,11 @@ export async function desactivarFinca(fincaID, { confirmar = true } = {}) {
 export async function agregarLote(fincaID, { nombre, area, descripcion }) {
   const res = await client.post(`/fincas/${fincaID}/lotes`, { nombre, area, descripcion });
   return res.data.data;
+}
+
+export async function listarLotes(fincaID) {
+  const res = await client.get(`/fincas/${fincaID}/lotes`);
+  return res.data.data || [];
 }
 
 export async function eliminarLote(loteID) {
@@ -82,6 +92,11 @@ export async function listarMuestras(fincaID, loteID) {
 // ── Diagnósticos ───────────────────────────────────────────
 export async function solicitarDiagnosticoManual(muestraID, { imageURL }) {
   const res = await client.post(`/muestras/${muestraID}/diagnosticos/manual`, { imageURL });
+  return res.data.data;
+}
+
+export async function guardarResultadoManual(muestraID, payload) {
+  const res = await client.post(`/muestras/${muestraID}/diagnosticos/manual/resultado`, payload);
   return res.data.data;
 }
 
@@ -110,11 +125,9 @@ export async function registrarNodo(fincaID, { node_key, nombre, lote_id }) {
 }
 
 export async function listarNodos(fincaID) {
-  // En el backend, podríamos pasar el finca_id como query param o manejarlo internamente.
-  // Pero el endpoint actual `GET /nodos` lista los nodos del tenant.
+  // El endpoint GET /nodos es paginado y devuelve un objeto { data, total, ... } en res.data.data
   const res = await client.get(`/nodos`);
-  // Filtramos localmente si es necesario (el tenant ID ya los aísla, pero filtramos por finca)
-  const data = res.data.data || [];
+  const data = res.data?.data?.data || [];
   return data.filter((n) => n.finca_id === fincaID);
 }
 

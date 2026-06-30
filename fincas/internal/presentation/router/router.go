@@ -47,6 +47,7 @@ func New(cfg Config) *gin.Engine {
 	fincas.Use(auth)
 	{
 		fincas.POST("", cfg.FincaHandler.Registrar)
+		fincas.GET("", cfg.FincaHandler.Listar)
 		fincas.POST("/:id/desactivar", cfg.FincaHandler.Desactivar)
 	}
 
@@ -59,6 +60,7 @@ func New(cfg Config) *gin.Engine {
 
 	// Lotes anidados en finca (requieren auth)
 	fincas.POST("/:id/lotes", auth, cfg.LoteHandler.Agregar)
+	fincas.GET("/:id/lotes", auth, cfg.LoteHandler.Listar)
 	fincas.GET("/:id/lotes/:loteID/muestras", auth, cfg.MuestraHandler.ListarPorLote)
 	fincas.POST("/:id/lotes/:loteID/muestras", auth, cfg.MuestraHandler.Tomar)
 	fincas.GET("/:id/lotes/:loteID/reporte", auth, cfg.ReporteHandler.GenerarPorLote)
@@ -75,6 +77,7 @@ func New(cfg Config) *gin.Engine {
 
 	// Diagnóstico manual anidado en muestra
 	r.POST("/muestras/:muestraID/diagnosticos/manual", auth, cfg.DiagnosticoHandler.SolicitarManual)
+	r.POST("/muestras/:muestraID/diagnosticos/manual/resultado", auth, cfg.DiagnosticoHandler.GuardarResultadoManual)
 
 	// Rutas legacy de lotes (por ID directo)
 	lotes.GET("/:id/muestras", auth, cfg.MuestraHandler.ListarPorLote)

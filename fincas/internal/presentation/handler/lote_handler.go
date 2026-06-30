@@ -66,3 +66,20 @@ func (h *LoteHandler) Eliminar(c *gin.Context) {
 	})
 	c.JSON(http.StatusOK, response)
 }
+
+func (h *LoteHandler) Listar(c *gin.Context) {
+	fincaID := c.Param("id")
+
+	auth := middleware.GetAuthContext(c)
+	if auth == nil {
+		auth = &application.AuthContext{}
+	}
+
+	resp, err := h.facade.Listar(c.Request.Context(), auth, fincaID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": resp})
+}

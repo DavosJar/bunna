@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { diagnosticar } from '../../services/yoloApi';
-import { tomarMuestra, isServicioFincasNoDisponible } from '../../services/fincasApi';
+import { tomarMuestra, guardarResultadoManual, isServicioFincasNoDisponible } from '../../services/fincasApi';
 import { saveMuestraLocal, saveDiagnosticoLocal } from '../../services/localStore';
 import { tieneClorosisFromYolo } from '../../utils/yoloDiagnostico';
 import { generateUUID } from '../../utils/uuid';
@@ -94,7 +94,7 @@ export default function AnalizarMuestraEnFinca({
       throw new Error(yolo.feedback.recommendation || 'Error al analizar la imagen.');
     }
 
-    const diagnostico = {
+    let diagnostico = {
       id: generateUUID(),
       muestraID: muestra.id,
       estado: 'PENDIENTE',
@@ -110,6 +110,27 @@ export default function AnalizarMuestraEnFinca({
       createdAt: new Date().toISOString(),
       _offline: true,
     };
+
+    if (apiOnline === true && !muestra._offline) {
+      try {
+        const payload = {
+          imageURL: yolo.image || '',
+          tieneClorosis: diagnostico.tieneClorosis || false,
+          confianza: yolo.avg_confidence || 0,
+          procesadoAt: diagnostico.createdAt
+        };
+        const apiD = await guardarResultadoManual(muestra.id, payload);
+        diagnostico = { 
+          ...diagnostico,
+          id: apiD.id,
+          diagnosticoID: apiD.id,
+          nombre: apiD.nombre,
+          _offline: false 
+        };
+      } catch (err) {
+        if (!isServicioFincasNoDisponible(err)) console.error('Error al guardar diagnóstico manual:', err);
+      }
+    }
 
     saveMuestraLocal(userId, fincaId, loteId, muestra);
     saveDiagnosticoLocal(userId, fincaId, loteId, diagnostico);

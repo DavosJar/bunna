@@ -27,11 +27,13 @@ import (
 	telemetrymiddleware "github.com/davosjar/bunna/services/fincas/internal/infrastructure/telemetry/middleware"
 
 	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/registrarfinca"
-	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/desactivarfinca"
 	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/agregarlote"
+	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/desactivarfinca"
 	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/eliminarlote"
-	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/tomarmuestra"
+	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/listarfincas"
+	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/listarlotes"
 	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/listarmuestrasporlote"
+	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/tomarmuestra"
 	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/solicitardiagnosticomanual"
 	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/registrarinferencia"
 	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/aceptardiagnostico"
@@ -82,10 +84,12 @@ type Registry struct {
 	// Casos de uso — fincas (públicos, ya decorados si telemetría activa)
 	RegistrarFinca  facades.RegistrarFincaUseCase
 	DesactivarFinca facades.DesactivarFincaUseCase
+	ListarFincas    facades.ListarFincasUseCase
 
 	// Casos de uso — lotes (públicos)
 	AgregarLote  facades.AgregarLoteUseCase
 	EliminarLote facades.EliminarLoteUseCase
+	ListarLotes  facades.ListarLotesUseCase
 
 	// Casos de uso — muestras (públicos)
 	TomarMuestra          facades.TomarMuestraUseCase
@@ -222,8 +226,10 @@ func NewRegistry() *Registry {
 	// Casos de uso — instancia única por UC
 	registrarFincaInner := registrarfinca.NewUseCase(fincaRepo, generador, publisher)
 	desactivarFincaInner := desactivarfinca.NewUseCase(fincaRepo, fincaService, generador, publisher)
+	listarFincasInner := listarfincas.NewUseCase(fincaRepo)
 	agregarLoteInner := agregarlote.NewUseCase(fincaRepo, loteRepo, generador, publisher)
 	eliminarLoteInner := eliminarlote.NewUseCase(loteRepo, generador, publisher)
+	listarLotesInner := listarlotes.NewUseCase(loteRepo)
 	tomarMuestraInner := tomarmuestra.NewUseCase(loteRepo, muestraRepo, generador, publisher)
 	listarMuestrasInner := listarmuestrasporlote.NewUseCase(loteRepo, muestraRepo)
 	solicitarDiagnosticoInner := solicitardiagnosticomanual.NewUseCase(muestraRepo, generador, publisher)
@@ -243,8 +249,10 @@ func NewRegistry() *Registry {
 
 	var registrarFincaUC facades.RegistrarFincaUseCase = registrarFincaInner
 	var desactivarFincaUC facades.DesactivarFincaUseCase = desactivarFincaInner
+	var listarFincasUC facades.ListarFincasUseCase = listarFincasInner
 	var agregarLoteUC facades.AgregarLoteUseCase = agregarLoteInner
 	var eliminarLoteUC facades.EliminarLoteUseCase = eliminarLoteInner
+	var listarLotesUC facades.ListarLotesUseCase = listarLotesInner
 	var tomarMuestraUC facades.TomarMuestraUseCase = tomarMuestraInner
 	var listarMuestrasUC facades.ListarMuestrasPorLoteUseCase = listarMuestrasInner
 	var solicitarDiagnosticoUC facades.SolicitarDiagnosticoManualUseCase = solicitarDiagnosticoInner
@@ -266,8 +274,10 @@ func NewRegistry() *Registry {
 	if cfg.telemetryEnabled {
 		registrarFincaUC = decorator.WrapAuth("RegistrarFinca", telemetryWriter, serviceInfo, registrarFincaInner)
 		desactivarFincaUC = decorator.WrapAuth("DesactivarFinca", telemetryWriter, serviceInfo, desactivarFincaInner)
+		listarFincasUC = decorator.WrapAuth("ListarFincas", telemetryWriter, serviceInfo, listarFincasInner)
 		agregarLoteUC = decorator.WrapAuth("AgregarLote", telemetryWriter, serviceInfo, agregarLoteInner)
 		eliminarLoteUC = decorator.WrapAuth("EliminarLote", telemetryWriter, serviceInfo, eliminarLoteInner)
+		listarLotesUC = decorator.WrapAuth("ListarLotes", telemetryWriter, serviceInfo, listarLotesInner)
 		tomarMuestraUC = decorator.WrapAuth("TomarMuestra", telemetryWriter, serviceInfo, tomarMuestraInner)
 		listarMuestrasUC = decorator.WrapAuth("ListarMuestrasPorLote", telemetryWriter, serviceInfo, listarMuestrasInner)
 		solicitarDiagnosticoUC = decorator.WrapAuth("SolicitarDiagnosticoManual", telemetryWriter, serviceInfo, solicitarDiagnosticoInner)
@@ -284,10 +294,10 @@ func NewRegistry() *Registry {
 	}
 
 	// Facades (reciben los mismos UC decorados)
-	fincasFacade := facades.NewFincasFacade(registrarFincaUC, desactivarFincaUC)
-	lotesFacade := facades.NewLotesFacade(agregarLoteUC, eliminarLoteUC)
+	fincasFacade := facades.NewFincasFacade(registrarFincaUC, desactivarFincaUC, listarFincasUC)
+	lotesFacade := facades.NewLotesFacade(agregarLoteUC, eliminarLoteUC, listarLotesUC)
 	muestrasFacade := facades.NewMuestrasFacade(tomarMuestraUC, listarMuestrasUC)
-	diagnosticosFacade := facades.NewDiagnosticosFacade(solicitarDiagnosticoUC, aceptarDiagnosticoUC, rechazarDiagnosticoUC)
+	diagnosticosFacade := facades.NewDiagnosticosFacade(solicitarDiagnosticoUC, aceptarDiagnosticoUC, rechazarDiagnosticoUC, registrarInferenciaUC)
 	reportesFacade := facades.NewReportesFacade(generarReporteUC)
 	nodosFacade := facades.NewNodosFacade(registrarNodoUC, listarNodosUC, obtenerNodoUC, editarNodoUC, desactivarNodoUC, validarNodoUC, inferenciaNodoUC)
 
@@ -360,8 +370,10 @@ func NewRegistry() *Registry {
 
 		RegistrarFinca:             registrarFincaUC,
 		DesactivarFinca:            desactivarFincaUC,
+		ListarFincas:               listarFincasUC,
 		AgregarLote:                agregarLoteUC,
 		EliminarLote:               eliminarLoteUC,
+		ListarLotes:                listarLotesUC,
 		TomarMuestra:               tomarMuestraUC,
 		ListarMuestrasPorLote:      listarMuestrasUC,
 		SolicitarDiagnosticoManual: solicitarDiagnosticoUC,

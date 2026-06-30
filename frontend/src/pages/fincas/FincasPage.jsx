@@ -11,6 +11,7 @@ import {
   aceptarDiagnostico, rechazarDiagnostico,
   fincasApiDisponible, isServicioFincasNoDisponible, parseErrorFincas,
   registrarNodo, listarNodos, desactivarNodo,
+  listarFincas, listarLotes
 } from '../../services/fincasApi';
 import {
   loadFincasLocal, saveFincaLocal, updateFincaLocal,
@@ -121,6 +122,84 @@ export default function FincasPage() {
 
   useEffect(() => { cargarLocal(); }, [cargarLocal]);
 
+  // Sincronizar Fincas desde backend
+  useEffect(() => {
+    if (!user?.id || apiOnline === false) return;
+    listarFincas().then(apiFincas => {
+      apiFincas.forEach(f => saveFincaLocal(user.id, f));
+      setFincas(loadFincasLocal(user.id).filter((x) => x.estado !== 'PENDIENTE_ELIMINACION'));
+    }).catch(console.error);
+  }, [user?.id, apiOnline]);
+
+  // Sincronizar Lotes desde backend
+  useEffect(() => {
+    if (!user?.id || !fincaSel || apiOnline === false) return;
+    listarLotes(fincaSel).then(apiLotes => {
+      apiLotes.forEach(l => saveLoteLocal(user.id, fincaSel, l));
+      setLotes(loadLotesLocal(user.id, fincaSel).filter((l) => l.estado !== 'ELIMINADO'));
+    }).catch(console.error);
+  }, [user?.id, fincaSel, apiOnline]);
+
+  // Sincronizar Nodos (Cámaras) desde backend
+  useEffect(() => {
+    if (!user?.id || !fincaSel || apiOnline === false) return;
+    listarNodos(fincaSel).then(apiNodos => {
+      apiNodos.forEach(n => saveNodoLocal(user.id, fincaSel, n));
+      setNodos(loadNodosLocal(user.id, fincaSel).filter((n) => n.estado !== 'INACTIVO'));
+    }).catch(console.error);
+  }, [user?.id, fincaSel, apiOnline]);
+
+  // Sincronizar Muestras y Diagnósticos de todos los lotes de la finca (para Dashboard)
+  useEffect(() => {
+    if (!user?.id || !fincaSel || apiOnline === false) return;
+    const syncAllLotes = async () => {
+      try {
+        const lotesDeFinca = loadLotesLocal(user.id, fincaSel).filter((l) => l.estado !== 'ELIMINADO');
+        // Sincronizar muestras globales de la finca
+        const apiM = await listarMuestras(fincaSel, '').catch(() => []);
+        apiM.forEach(m => saveMuestraLocal(user.id, fincaSel, m.loteID || '', m));
+        
+        // Sincronizar diagnósticos por lote
+        await Promise.all(lotesDeFinca.map(async (lote) => {
+          const reporte = await generarReporteLote(fincaSel, lote.id).catch(() => null);
+          if (reporte && reporte.muestras) {
+            reporte.muestras.forEach((rm) => {
+              if (rm.diagnosticoID) {
+                const API_BASE = import.meta.env.VITE_YOLO_API_URL || (import.meta.env.PROD ? 'https://i2u6hsbhf1.execute-api.us-east-2.amazonaws.com' : '/yolo');
+                const listD = loadDiagnosticosLocal(user.id, fincaSel, lote.id);
+                const dxBase = listD.find(d => d.muestraID === rm.id);
+                const dx = {
+                  id: rm.diagnosticoID,
+                  diagnosticoID: rm.diagnosticoID,
+                  muestraID: rm.id,
+                  estado: rm.estadoDiagnostico,
+                  origen: dxBase?.origen || (rm.diagnosticoID.startsWith('NOD') ? 'iot' : 'manual'),
+                  tieneClorosis: rm.tieneClorosis,
+                  yolo: {
+                    ...dxBase?.yolo,
+                    image: rm.imageURL ? (rm.imageURL.startsWith('http') || rm.imageURL.startsWith('data:image/') ? rm.imageURL : `${API_BASE}/${rm.imageURL}`) : dxBase?.yolo?.image
+                  },
+                  _offline: false,
+                };
+                saveDiagnosticoLocal(user.id, fincaSel, lote.id, { ...dxBase, ...dx });
+              }
+            });
+          }
+        }));
+        
+        // Actualizar estados locales de la vista actual
+        setMuestras(loadMuestrasLocal(user.id, fincaSel, loteSel || ''));
+        setDiagnosticos(loadDiagnosticosLocal(user.id, fincaSel, loteSel || ''));
+      } catch (err) {
+        console.error("Error sincronizando muestras globales:", err);
+      }
+    };
+    
+    syncAllLotes();
+    const interval = setInterval(syncAllLotes, 10000); // Polling cada 10s para toda la finca
+    return () => clearInterval(interval);
+  }, [user?.id, fincaSel, apiOnline, loteSel]);
+
   // Restaurar finca/lote/tab guardados al volver a la página
   useEffect(() => {
     if (!user?.id || workflowRestored) return;
@@ -208,17 +287,20 @@ export default function FincasPage() {
           reporte.muestras.forEach((rm) => {
             if (rm.diagnosticoID) {
               const idx = syncD.findIndex(d => d.muestraID === rm.id);
+              const dxBase = idx >= 0 ? syncD[idx] : null;
               const API_BASE = import.meta.env.VITE_YOLO_API_URL || (import.meta.env.PROD ? 'https://i2u6hsbhf1.execute-api.us-east-2.amazonaws.com' : '/yolo');
               const newD = {
                 id: rm.diagnosticoID,
                 diagnosticoID: rm.diagnosticoID,
                 muestraID: rm.id,
                 estado: rm.estadoDiagnostico,
-                origen: 'iot', // Debe ser 'iot' para que la UI muestre 📷 Cámara IoT
+                origen: dxBase?.origen || (rm.diagnosticoID.startsWith('NOD') ? 'iot' : 'manual'),
                 tieneClorosis: rm.tieneClorosis,
                 yolo: {
-                  image: rm.imageURL ? (rm.imageURL.startsWith('http') ? rm.imageURL : `${API_BASE}/${rm.imageURL}`) : null
-                }
+                  ...dxBase?.yolo,
+                  image: rm.imageURL ? (rm.imageURL.startsWith('http') || rm.imageURL.startsWith('data:image/') ? rm.imageURL : `${API_BASE}/${rm.imageURL}`) : dxBase?.yolo?.image
+                },
+                _offline: false,
               };
               if (idx >= 0) {
                 syncD[idx] = { ...syncD[idx], ...newD };
@@ -237,10 +319,6 @@ export default function FincasPage() {
     };
     
     fetchBackend();
-    
-    // Auto-polling para ver nuevas muestras (webhook de YOLO)
-    const interval = setInterval(fetchBackend, 5000);
-    return () => clearInterval(interval);
   }, [user?.id, fincaSel, loteSel, apiOnline]);
 
   const showMsg = (texto, tipo = 'exito') => {

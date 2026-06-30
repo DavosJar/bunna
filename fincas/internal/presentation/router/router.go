@@ -89,8 +89,8 @@ func New(cfg Config) *gin.Engine {
 	lotes.GET("/:id/reporte", auth, cfg.ReporteHandler.GenerarPorLote)
 
 	// Rutas internas — nodos (SIN JWT, para YOLO API)
-	api.GET("/nodos/validar", cfg.NodoHandler.Validar)
-	api.POST("/diagnosticos/inferencia", cfg.NodoHandler.RegistrarInferencia)
+	r.GET("/api/v1/nodos/validar", cfg.NodoHandler.Validar)
+	r.POST("/api/v1/diagnosticos/inferencia", cfg.NodoHandler.RegistrarInferencia)
 
 	// Rutas protegidas — nodos
 	nodos := api.Group("/nodos")

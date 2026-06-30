@@ -3,11 +3,11 @@ package router
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/davosjar/bunna/services/fincas/internal/infrastructure/telemetry/buffer"
 	telemetrymiddleware "github.com/davosjar/bunna/services/fincas/internal/infrastructure/telemetry/middleware"
 	"github.com/davosjar/bunna/services/fincas/internal/presentation/handler"
 	"github.com/davosjar/bunna/services/fincas/internal/presentation/middleware"
+	"github.com/gin-gonic/gin"
 )
 
 // Config contiene la configuración del router.
@@ -16,13 +16,13 @@ type Config struct {
 	TelemetryWriter  buffer.BufferWriter
 	TelemetryCfg     telemetrymiddleware.Config
 
-	AuthMiddleware      *middleware.AuthMiddleware
-	FincaHandler        *handler.FincaHandler
-	LoteHandler         *handler.LoteHandler
-	MuestraHandler      *handler.MuestraHandler
-	DiagnosticoHandler  *handler.DiagnosticoHandler
-	ReporteHandler      *handler.ReporteHandler
-	NodoHandler         *handler.NodoHandler
+	AuthMiddleware     *middleware.AuthMiddleware
+	FincaHandler       *handler.FincaHandler
+	LoteHandler        *handler.LoteHandler
+	MuestraHandler     *handler.MuestraHandler
+	DiagnosticoHandler *handler.DiagnosticoHandler
+	ReporteHandler     *handler.ReporteHandler
+	NodoHandler        *handler.NodoHandler
 }
 
 // New crea un nuevo engine Gin con todas las rutas registradas.
@@ -35,15 +35,19 @@ func New(cfg Config) *gin.Engine {
 	}
 
 	// Health check (público)
-	r.GET("/health", func(c *gin.Context) {
+	healthHandler := func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	}
+	r.GET("/health", healthHandler) // Mantenemos este por retrocompatibilidad
+	r.GET("/api/v1/fincas/health", healthHandler) // Nueva ruta trazable solicitada
 
 	// Middleware de autenticación
 	auth := cfg.AuthMiddleware.RequireAuth()
 
+	api := r.Group("/api/v1/fincas")
+
 	// Rutas protegidas — fincas
-	fincas := r.Group("/fincas")
+	fincas := api.Group("/fincas")
 	fincas.Use(auth)
 	{
 		fincas.POST("", cfg.FincaHandler.Registrar)
@@ -52,7 +56,7 @@ func New(cfg Config) *gin.Engine {
 	}
 
 	// Rutas protegidas — lotes
-	lotes := r.Group("/lotes")
+	lotes := api.Group("/lotes")
 	lotes.Use(auth)
 	{
 		lotes.POST("/:id/eliminar", cfg.LoteHandler.Eliminar)
@@ -68,7 +72,7 @@ func New(cfg Config) *gin.Engine {
 	fincas.POST("/:id/muestras", auth, cfg.MuestraHandler.Tomar)
 
 	// Rutas protegidas — diagnósticos
-	diagnosticos := r.Group("/diagnosticos")
+	diagnosticos := api.Group("/diagnosticos")
 	diagnosticos.Use(auth)
 	{
 		diagnosticos.POST("/:id/aceptar", cfg.DiagnosticoHandler.Aceptar)
@@ -76,8 +80,8 @@ func New(cfg Config) *gin.Engine {
 	}
 
 	// Diagnóstico manual anidado en muestra
-	r.POST("/muestras/:muestraID/diagnosticos/manual", auth, cfg.DiagnosticoHandler.SolicitarManual)
-	r.POST("/muestras/:muestraID/diagnosticos/manual/resultado", auth, cfg.DiagnosticoHandler.GuardarResultadoManual)
+	api.POST("/muestras/:muestraID/diagnosticos/manual", auth, cfg.DiagnosticoHandler.SolicitarManual)
+	api.POST("/muestras/:muestraID/diagnosticos/manual/resultado", auth, cfg.DiagnosticoHandler.GuardarResultadoManual)
 
 	// Rutas legacy de lotes (por ID directo)
 	lotes.GET("/:id/muestras", auth, cfg.MuestraHandler.ListarPorLote)
@@ -85,11 +89,11 @@ func New(cfg Config) *gin.Engine {
 	lotes.GET("/:id/reporte", auth, cfg.ReporteHandler.GenerarPorLote)
 
 	// Rutas internas — nodos (SIN JWT, para YOLO API)
-	r.GET("/api/v1/nodos/validar", cfg.NodoHandler.Validar)
-	r.POST("/api/v1/diagnosticos/inferencia", cfg.NodoHandler.RegistrarInferencia)
+	api.GET("/nodos/validar", cfg.NodoHandler.Validar)
+	api.POST("/diagnosticos/inferencia", cfg.NodoHandler.RegistrarInferencia)
 
 	// Rutas protegidas — nodos
-	nodos := r.Group("/nodos")
+	nodos := api.Group("/nodos")
 	nodos.Use(auth)
 	{
 		nodos.POST("", cfg.NodoHandler.Registrar)

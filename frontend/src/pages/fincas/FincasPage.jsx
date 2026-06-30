@@ -196,8 +196,8 @@ export default function FincasPage() {
     };
     
     syncAllLotes();
-    const interval = setInterval(syncAllLotes, 10000); // Polling cada 10s para toda la finca
-    return () => clearInterval(interval);
+    // Eliminado polling automático, solo sincronización inicial
+    return () => {};
   }, [user?.id, fincaSel, apiOnline, loteSel]);
 
   // Restaurar finca/lote/tab guardados al volver a la página

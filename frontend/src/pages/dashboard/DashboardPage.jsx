@@ -134,10 +134,9 @@ export default function DashboardPage() {
     };
     
     syncEverything();
-    const interval = setInterval(syncEverything, 15000); // Polling cada 15s globalmente
+    // Eliminado polling automático, solo sincronización inicial
     return () => {
       isMounted = false;
-      clearInterval(interval);
     };
   }, [user?.id]);
 

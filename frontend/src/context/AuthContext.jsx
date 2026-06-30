@@ -67,6 +67,7 @@ export function AuthProvider({ children }) {
   const [availableTenants, setAvailableTenants] = useState([]);
   const [ownTenantId, setOwnTenantId] = useState(null);
   const [permisos, setPermisos] = useState([]);
+  const [degraded, setDegraded] = useState(false);
 
   const currentTenant = useMemo(
     () => availableTenants?.find(t => t.id === user?.tenantID) || null,
@@ -83,6 +84,7 @@ export function AuthProvider({ children }) {
   const fetchMisTenants = useCallback(async () => {
     try {
       const data = await getMisTenants();
+      setDegraded(false);
       setAvailableTenants(data.tenants || []);
       const propioId = data.propio_id || null;
       setOwnTenantId(propioId);
@@ -90,17 +92,19 @@ export function AuthProvider({ children }) {
         setUser((prev) => (prev && prev.ownTenantID !== propioId ? { ...prev, ownTenantID: propioId } : prev));
       }
     } catch {
-      setAvailableTenants([]);
-      setOwnTenantId(null);
+      setDegraded(true);
+      // No vaciar availableTenants — getMisTenants() ya intentó cache
     }
   }, []);
 
   const fetchMisPermisos = useCallback(async () => {
     try {
       const data = await getMisPermisos();
+      setDegraded(false);
       setPermisos(data.map(p => p.codigo));
     } catch {
-      setPermisos([]);
+      setDegraded(true);
+      // No vaciar permisos — getMisPermisos() ya intentó cache
     }
   }, []);
 
@@ -194,6 +198,7 @@ export function AuthProvider({ children }) {
     setError(null);
     setAvailableTenants([]);
     setPermisos([]);
+    setDegraded(false);
   }, [user]);
 
   const getAccessToken = useCallback(() => {
@@ -210,7 +215,7 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{
       user, permisos, loading, error, login, register, logout, getAccessToken,
       setError, availableTenants, ownTenantId, currentTenant, switchTenant,
-      fetchMisTenants, fetchMisPermisos,
+      fetchMisTenants, fetchMisPermisos, degraded,
     }}>
       {children}
     </AuthContext.Provider>

@@ -6,7 +6,7 @@ import './ServiceStatusBar.css';
 
 async function pingIdentidad() {
   const base = import.meta.env.VITE_API_URL || '/api';
-  const res = await fetch(`${base}/health`, { signal: AbortSignal.timeout(5000) });
+  const res = await fetch(`${base}/api/v1/identidad/health`, { signal: AbortSignal.timeout(5000) });
   if (!res.ok) throw new Error('No responde');
   return res.json();
 }
@@ -25,7 +25,11 @@ export default function ServiceStatusBar({ compact = false }) {
     setLoading(false);
   };
 
-  useEffect(() => { check(); }, []);
+  useEffect(() => {
+    check();
+    const interval = setInterval(check, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const items = [
     { key: 'identidad', label: 'Identidad', port: ':8080' },

@@ -6,7 +6,7 @@ import {
   loadFincasLocal, loadLotesLocal, saveMuestraLocal, saveDiagnosticoLocal,
 } from '../../services/localStore';
 import {
-  tomarMuestra, fincasApiDisponible,
+  tomarMuestra, fincasApiDisponible, guardarResultadoManual,
   isServicioFincasNoDisponible,
 } from '../../services/fincasApi';
 import { tieneClorosisFromYolo } from '../../utils/yoloDiagnostico';
@@ -100,10 +100,19 @@ export default function VincularDiagnosticoPanel({ yoloResults, historialId, onV
       if (!offline) {
         const muestraApi = await tomarMuestra(fincaId, loteId, coords);
         muestra = { ...muestra, ...muestraApi, _offline: false };
+        
+        const payload = {
+          imageURL: yoloResults.image || '',
+          tieneClorosis: diagnostico.tieneClorosis || false,
+          confianza: yoloResults.avg_confidence || 0,
+          procesadoAt: diagnostico.createdAt
+        };
+        const apiD = await guardarResultadoManual(muestra.id, payload);
+        
+        diagnostico.id = apiD.id;
+        diagnostico.diagnosticoID = apiD.id;
         diagnostico.muestraID = muestra.id;
         diagnostico._offline = false;
-        // El diagnóstico YOLO se persiste localmente; solicitarDiagnosticoManual
-        // requiere imageURL HTTPS (pipeline backend) — no disponible desde base64 YOLO.
       }
 
       saveMuestraLocal(user.id, fincaId, loteId, muestra);

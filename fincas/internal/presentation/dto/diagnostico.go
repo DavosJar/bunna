@@ -7,6 +7,14 @@ type SolicitarDiagnosticoManualRequest struct {
 	ImageURL string `json:"imageURL"`
 }
 
+// GuardarResultadoManualRequest es el body para registrar el resultado de YOLO manualmente.
+type GuardarResultadoManualRequest struct {
+	ImageURL      string    `json:"imageURL"`
+	TieneClorosis bool      `json:"tieneClorosis"`
+	Confianza     float64   `json:"confianza"`
+	ProcesadoAt   time.Time `json:"procesadoAt"`
+}
+
 // RechazarDiagnosticoRequest es el body para rechazar un diagnóstico.
 type RechazarDiagnosticoRequest struct {
 	Motivo string `json:"motivo"`

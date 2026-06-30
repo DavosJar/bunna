@@ -92,3 +92,26 @@ func (h *DiagnosticoHandler) Rechazar(c *gin.Context) {
 	})
 	c.JSON(http.StatusOK, response)
 }
+
+func (h *DiagnosticoHandler) GuardarResultadoManual(c *gin.Context) {
+	muestraID := c.Param("muestraID")
+
+	var req dto.GuardarResultadoManualRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cuerpo inválido", "detalle": err.Error()})
+		return
+	}
+
+	auth := middleware.GetAuthContext(c)
+	if auth == nil {
+		auth = &application.AuthContext{}
+	}
+
+	resp, err := h.facade.GuardarResultadoManual(c.Request.Context(), auth, muestraID, req)
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, resp)
+}

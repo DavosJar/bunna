@@ -20,7 +20,7 @@ export default defineConfig({
       '/fincas-api': {
         target: 'http://3.23.193.162:8082',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/fincas-api/, ''),
+        rewrite: (path) => path.replace(/^\/fincas-api/, '/api/v1/fincas'),
       },
     },
   },

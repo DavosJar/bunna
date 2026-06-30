@@ -3,6 +3,7 @@ package mapper
 import (
 	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/agregarlote"
 	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/eliminarlote"
+	"github.com/davosjar/bunna/services/fincas/internal/application/usecases/listarlotes"
 	"github.com/davosjar/bunna/services/fincas/internal/presentation/dto"
 )
 
@@ -27,4 +28,20 @@ func (LoteMapper) EliminarSalidaToEstadoCambio(s *eliminarlote.Salida) dto.Estad
 		Estado:    s.Estado,
 		UpdatedAt: s.UpdatedAt,
 	}
+}
+
+func (LoteMapper) ListarSalidaToResponse(s *listarlotes.Salida) []dto.LoteResponse {
+	resp := make([]dto.LoteResponse, len(s.Lotes))
+	for i, l := range s.Lotes {
+		resp[i] = dto.LoteResponse{
+			ID:          l.ID,
+			FincaID:     l.FincaID,
+			Nombre:      l.Nombre,
+			Area:        l.Area,
+			Descripcion: l.Descripcion,
+			Estado:      l.Estado,
+			CreatedAt:   l.CreatedAt,
+		}
+	}
+	return resp
 }

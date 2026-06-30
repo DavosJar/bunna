@@ -69,3 +69,18 @@ func (h *FincaHandler) Desactivar(c *gin.Context) {
 	})
 	c.JSON(http.StatusOK, response)
 }
+
+func (h *FincaHandler) Listar(c *gin.Context) {
+	auth := middleware.GetAuthContext(c)
+	if auth == nil {
+		auth = &application.AuthContext{}
+	}
+
+	resp, err := h.facade.Listar(c.Request.Context(), auth)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": resp})
+}

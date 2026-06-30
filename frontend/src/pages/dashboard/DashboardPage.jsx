@@ -61,7 +61,85 @@ export default function DashboardPage() {
 
   const handlePointerUp = useCallback(() => setIsPanning(false), []);
 
-  const farmStats = useMemo(() => getGlobalFarmStats(user?.id), [user?.id, historial.length, results]);
+  const [syncTrigger, setSyncTrigger] = useState(0);
+  const farmStats = useMemo(() => getGlobalFarmStats(user?.id), [user?.id, historial.length, results, syncTrigger]);
+
+  // Sincronización global en segundo plano para el Dashboard
+  useEffect(() => {
+    if (!user?.id) return;
+    let isMounted = true;
+    
+    const syncEverything = async () => {
+      try {
+        const { listarFincas, listarLotes, listarNodos, listarMuestras, generarReporteLote } = await import('../../services/fincasApi');
+        const { saveFincaLocal, loadFincasLocal, saveLoteLocal, loadLotesLocal, saveNodoLocal, saveMuestraLocal, saveDiagnosticoLocal } = await import('../../services/localStore');
+        
+        // 1. Sincronizar Fincas
+        const apiFincas = await listarFincas().catch(() => []);
+        apiFincas.forEach(f => saveFincaLocal(user.id, f));
+        
+        // 2. Iterar sobre las fincas activas para sincronizar Lotes, Muestras y Diagnósticos
+        const fincasActivas = loadFincasLocal(user.id).filter(f => f.estado !== 'PENDIENTE_ELIMINACION');
+        
+        await Promise.all(fincasActivas.map(async (finca) => {
+          // Sincronizar Lotes
+          const apiLotes = await listarLotes(finca.id).catch(() => []);
+          apiLotes.forEach(l => saveLoteLocal(user.id, finca.id, l));
+          
+          // Sincronizar Nodos
+          const apiNodos = await listarNodos(finca.id).catch(() => []);
+          apiNodos.forEach(n => saveNodoLocal(user.id, finca.id, n));
+          
+          // Sincronizar Muestras globales de la finca
+          const apiMuestras = await listarMuestras(finca.id, '').catch(() => []);
+          apiMuestras.forEach(m => saveMuestraLocal(user.id, finca.id, m.loteID || '', m));
+          
+          // Sincronizar Diagnósticos iterando por lotes
+          const lotesActivos = loadLotesLocal(user.id, finca.id).filter(l => l.estado !== 'ELIMINADO');
+          await Promise.all(lotesActivos.map(async (lote) => {
+            const reporte = await generarReporteLote(finca.id, lote.id).catch(() => null);
+            if (reporte && reporte.muestras) {
+              reporte.muestras.forEach((rm) => {
+                if (rm.diagnosticoID) {
+                  const API_BASE = import.meta.env.VITE_YOLO_API_URL || (import.meta.env.PROD ? 'https://i2u6hsbhf1.execute-api.us-east-2.amazonaws.com' : '/yolo');
+                  const listD = loadDiagnosticosLocal(user.id, finca.id, lote.id);
+                  const dxBase = listD.find(d => d.muestraID === rm.id);
+                  const dx = {
+                    id: rm.diagnosticoID,
+                    diagnosticoID: rm.diagnosticoID,
+                    muestraID: rm.id,
+                    estado: rm.estadoDiagnostico,
+                    origen: dxBase?.origen || (rm.diagnosticoID.startsWith('NOD') ? 'iot' : 'manual'),
+                    tieneClorosis: rm.tieneClorosis,
+                    yolo: {
+                      ...dxBase?.yolo,
+                      image: rm.imageURL ? (rm.imageURL.startsWith('http') || rm.imageURL.startsWith('data:image/') ? rm.imageURL : `${API_BASE}/${rm.imageURL}`) : dxBase?.yolo?.image
+                    },
+                    _offline: false,
+                  };
+                  saveDiagnosticoLocal(user.id, finca.id, lote.id, { ...dxBase, ...dx });
+                }
+              });
+            }
+          }));
+        }));
+        
+        // Forzar un re-render actualizando un state
+        if (isMounted) {
+          setSyncTrigger(prev => prev + 1);
+        }
+      } catch (error) {
+        console.error("Error en sincronización global del dashboard:", error);
+      }
+    };
+    
+    syncEverything();
+    const interval = setInterval(syncEverything, 15000); // Polling cada 15s globalmente
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') closeLightbox(); };

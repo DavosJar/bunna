@@ -135,6 +135,14 @@ func (c *PermisosConsumer) sincronizarPermisos(ctx context.Context, event Catalo
 		}
 	}
 
+	// Registrar TODOS los permisos del catálogo en el mapa en memoria del admin.
+	// Esto hace que TienePermisoEnRol los encuentre inmediatamente sin consultar la BD.
+	var todosLosCodigos []string
+	for _, p := range event.Permisos {
+		todosLosCodigos = append(todosLosCodigos, p.Codigo)
+	}
+	rbac.RegistrarPermisosDeModulo(rbac.RolAdministrador, todosLosCodigos)
+
 	// Si el rol administrador fue modificado, publicar la lista actualizada
 	// de permisos para CADA tenant existente en el sistema
 	if adminModificado && admin != nil {

@@ -69,7 +69,7 @@ func (uc *UseCase) Ejecutar(ctx context.Context, cmd Command) (*Salida, error) {
 
 	// 3. Construir ResultadoInferencia VO
 	resultadoInferencia, err := diagnosticodomain.NewResultadoInferencia(
-		cmd.ImageURL, cmd.TieneClorosis, cmd.Confianza, cmd.ProcesadoAt,
+		cmd.ImageURL, "", cmd.TieneClorosis, cmd.Confianza, cmd.ProcesadoAt,
 	)
 	if err != nil {
 		return nil, application.ErrValidacion(err.Error())
@@ -120,6 +120,7 @@ func (uc *UseCase) Ejecutar(ctx context.Context, cmd Command) (*Salida, error) {
 		TieneClorosis: cmd.TieneClorosis,
 		Confianza:     cmd.Confianza,
 		ImageURL:      cmd.ImageURL,
+		ImageBase64:   "", // Manual flow keeps it locally
 		ProcesadoAt:   cmd.ProcesadoAt,
 		CreatedAt:     diagnostico.CreatedAt(),
 	}, nil

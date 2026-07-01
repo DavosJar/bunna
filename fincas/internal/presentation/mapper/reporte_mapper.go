@@ -18,6 +18,7 @@ func (ReporteMapper) SalidaToResponse(s *generarreporteporlote.Salida) dto.Repor
 			DiagnosticoID:     m.DiagnosticoID,
 			EstadoDiagnostico: m.EstadoDiagnostico,
 			ImageURL:          m.ImageURL,
+			ImageBase64:       m.ImageBase64,
 			TieneClorosis:     m.TieneClorosis,
 			Confianza:         m.Confianza,
 		}

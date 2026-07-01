@@ -91,6 +91,7 @@ func (NodoMapper) InferenciaSalidaToResponse(s *registrarinferenciadesdenodo.Sal
 		TieneClorosis: s.TieneClorosis,
 		Confianza:     s.Confianza,
 		ImageURL:      s.ImageURL,
+		ImageBase64:   s.ImageBase64,
 		CreatedAt:     s.CreatedAt,
 	}
 }

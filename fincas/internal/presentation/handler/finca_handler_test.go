@@ -39,6 +39,14 @@ func (m *MockFincasFacade) Desactivar(ctx context.Context, auth *application.Aut
 	return args.Get(0).(*dto.EstadoCambioResponse), args.Error(1)
 }
 
+func (m *MockFincasFacade) Listar(ctx context.Context, auth *application.AuthContext) ([]dto.FincaResponse, error) {
+	args := m.Called(ctx, auth)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]dto.FincaResponse), args.Error(1)
+}
+
 func setupTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	return gin.New()

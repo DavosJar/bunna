@@ -14,6 +14,7 @@ type MuestraReporte struct {
 	DiagnosticoID     string   // opcional, solo si existe diagnóstico
 	EstadoDiagnostico string   // opcional
 	ImageURL          string   // opcional, URL de la imagen en YOLO
+	ImageBase64       string   // opcional, imagen en base64 (principalmente para nodos)
 	TieneClorosis     *bool    // puntero, nil si no hay diagnóstico
 	Confianza         *float64 // puntero, nil si no hay diagnóstico
 }

@@ -44,6 +44,13 @@ func (m *MockDiagnosticosFacade) Rechazar(ctx context.Context, auth *application
 	}
 	return args.Get(0).(*dto.EstadoCambioResponse), args.Error(1)
 }
+func (m *MockDiagnosticosFacade) GuardarResultadoManual(ctx context.Context, auth *application.AuthContext, muestraID string, req dto.GuardarResultadoManualRequest) (*dto.DiagnosticoResponse, error) {
+	args := m.Called(ctx, auth, muestraID, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*dto.DiagnosticoResponse), args.Error(1)
+}
 
 func TestDiagnosticoHandler_SolicitarManual(t *testing.T) {
 	tests := []struct {

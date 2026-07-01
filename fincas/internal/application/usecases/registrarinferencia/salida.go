@@ -11,6 +11,7 @@ type Salida struct {
 	TieneClorosis  bool
 	Confianza      float64
 	ImageURL       string
+	ImageBase64    string
 	ProcesadoAt    time.Time
 	CreatedAt      time.Time
 }

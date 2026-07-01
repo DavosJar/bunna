@@ -173,6 +173,7 @@ func (f *nodosFacade) RegistrarInferencia(ctx context.Context, req dto.Registrar
 		LoteID:        req.LoteID,
 		TenantID:      req.TenantID,
 		ImageURL:      req.ImageURL,
+		ImageBase64:   req.ImageBase64,
 		TieneClorosis: req.TieneClorosis,
 		Confianza:     req.Confianza,
 		ProcesadoAt:   req.ProcesadoAt,

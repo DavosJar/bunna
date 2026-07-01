@@ -11,6 +11,7 @@ type Command struct {
 	LoteID        string    `json:"loteID"`
 	TenantID      string    `json:"tenantID"`
 	ImageURL      string    `json:"imageURL"`
+	ImageBase64   string    `json:"imageBase64"`
 	TieneClorosis bool      `json:"tieneClorosis"`
 	Confianza     float64   `json:"confianza"`
 	ProcesadoAt   time.Time `json:"procesadoAt"`

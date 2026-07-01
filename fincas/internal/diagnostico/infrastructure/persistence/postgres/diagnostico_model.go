@@ -16,6 +16,7 @@ type DiagnosticoModel struct {
 	TenantID       string    `gorm:"column:tenant_id;type:varchar(36);index"`
 	Estado         string    `gorm:"column:estado;type:varchar(20);default:PENDIENTE"`
 	ImageURL       string    `gorm:"column:image_url;type:text"`
+	ImageBase64    string    `gorm:"column:image_data;type:text"`
 	TieneClorosis  bool      `gorm:"column:tiene_clorosis"`
 	Confianza      float64   `gorm:"column:confianza;type:decimal(5,4)"`
 	ProcesadoAt    time.Time `gorm:"column:procesado_at"`
@@ -30,6 +31,7 @@ func (DiagnosticoModel) TableName() string { return "diagnosticos" }
 func (m *DiagnosticoModel) ToDomain() (*domain.Diagnostico, error) {
 	resultado, err := domain.NewResultadoInferencia(
 		m.ImageURL,
+		m.ImageBase64,
 		m.TieneClorosis,
 		m.Confianza,
 		m.ProcesadoAt,
@@ -61,6 +63,7 @@ func FromDomainDiagnostico(d *domain.Diagnostico) *DiagnosticoModel {
 		TenantID:      d.TenantID(),
 		Estado:        string(d.Estado()),
 		ImageURL:      ri.ImageUrl(),
+		ImageBase64:   ri.ImageBase64(),
 		TieneClorosis: ri.TieneClorosis(),
 		Confianza:     ri.Confianza(),
 		ProcesadoAt:   ri.ProcesadoAt(),

@@ -173,11 +173,11 @@ export default function FincasPage() {
                   diagnosticoID: rm.diagnosticoID,
                   muestraID: rm.id,
                   estado: rm.estadoDiagnostico,
-                  origen: dxBase?.origen || (rm.diagnosticoID.startsWith('NOD') ? 'iot' : 'manual'),
+                  origen: rm.imageBase64 ? 'iot' : (dxBase?.origen || 'manual'),
                   tieneClorosis: rm.tieneClorosis,
                   yolo: {
                     ...dxBase?.yolo,
-                    image: rm.imageURL ? (rm.imageURL.startsWith('http') || rm.imageURL.startsWith('data:image/') ? rm.imageURL : `${API_BASE}/${rm.imageURL}`) : dxBase?.yolo?.image
+                    image: rm.imageBase64 ? rm.imageBase64 : (rm.imageURL ? (rm.imageURL.startsWith('http') || rm.imageURL.startsWith('data:image/') ? rm.imageURL : `${API_BASE}/${rm.imageURL}`) : dxBase?.yolo?.image)
                   },
                   _offline: false,
                 };
@@ -294,11 +294,11 @@ export default function FincasPage() {
                 diagnosticoID: rm.diagnosticoID,
                 muestraID: rm.id,
                 estado: rm.estadoDiagnostico,
-                origen: dxBase?.origen || (rm.diagnosticoID.startsWith('NOD') ? 'iot' : 'manual'),
+                origen: rm.imageBase64 ? 'iot' : (dxBase?.origen || 'manual'),
                 tieneClorosis: rm.tieneClorosis,
                 yolo: {
                   ...dxBase?.yolo,
-                  image: rm.imageURL ? (rm.imageURL.startsWith('http') || rm.imageURL.startsWith('data:image/') ? rm.imageURL : `${API_BASE}/${rm.imageURL}`) : dxBase?.yolo?.image
+                  image: rm.imageBase64 ? rm.imageBase64 : (rm.imageURL ? (rm.imageURL.startsWith('http') || rm.imageURL.startsWith('data:image/') ? rm.imageURL : `${API_BASE}/${rm.imageURL}`) : dxBase?.yolo?.image)
                 },
                 _offline: false,
               };
@@ -733,7 +733,10 @@ export default function FincasPage() {
 
   const getDiagOrigen = (muestraId) => {
     const d = diagnosticos.find((x) => x.muestraID === muestraId);
-    return d?.origen || 'manual';
+    if (!d) return 'manual';
+    if (d.origen) return d.origen;
+    if (d.nombre && d.nombre.startsWith('NOD-')) return 'iot';
+    return 'manual';
   };
 
   return (

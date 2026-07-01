@@ -29,6 +29,7 @@ type DiagnosticoResponse struct {
 	TieneClorosis bool      `json:"tieneClorosis"`
 	Confianza     float64   `json:"confianza"`
 	ImageURL      string    `json:"imageURL"`
+	ImageBase64   string    `json:"imageBase64"`
 	ProcesadoAt   time.Time `json:"procesadoAt"`
 	CreatedAt     time.Time `json:"createdAt"`
 }

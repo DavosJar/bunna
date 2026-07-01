@@ -37,6 +37,14 @@ func (m *MockLotesFacade) Eliminar(ctx context.Context, auth *application.AuthCo
 	return args.Get(0).(*dto.EstadoCambioResponse), args.Error(1)
 }
 
+func (m *MockLotesFacade) Listar(ctx context.Context, auth *application.AuthContext, fincaID string) ([]dto.LoteResponse, error) {
+	args := m.Called(ctx, auth, fincaID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]dto.LoteResponse), args.Error(1)
+}
+
 func TestLoteHandler_Agregar(t *testing.T) {
 	tests := []struct {
 		name           string

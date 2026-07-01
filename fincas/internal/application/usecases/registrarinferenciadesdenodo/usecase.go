@@ -118,7 +118,7 @@ func (uc *UseCase) Ejecutar(ctx context.Context, cmd Command) (*Salida, error) {
 		}
 
 		resultado, err := diagnosticodomain.NewResultadoInferencia(
-			cmd.ImageURL, cmd.TieneClorosis, cmd.Confianza, cmd.ProcesadoAt,
+			cmd.ImageURL, cmd.ImageBase64, cmd.TieneClorosis, cmd.Confianza, cmd.ProcesadoAt,
 		)
 		if err != nil {
 			return application.ErrValidacion(err.Error())
@@ -166,6 +166,7 @@ func (uc *UseCase) Ejecutar(ctx context.Context, cmd Command) (*Salida, error) {
 		TieneClorosis: cmd.TieneClorosis,
 		Confianza:     cmd.Confianza,
 		ImageURL:      cmd.ImageURL,
+		ImageBase64:   cmd.ImageBase64,
 		CreatedAt:     time.Now(),
 	}, nil
 }

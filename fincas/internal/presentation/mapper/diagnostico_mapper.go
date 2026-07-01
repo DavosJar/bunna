@@ -45,6 +45,7 @@ func (DiagnosticoMapper) InferenciaSalidaToResponse(s *registrarinferencia.Salid
 		TieneClorosis: s.TieneClorosis,
 		Confianza:     s.Confianza,
 		ImageURL:      s.ImageURL,
+		ImageBase64:   s.ImageBase64,
 		ProcesadoAt:   s.ProcesadoAt,
 		CreatedAt:     s.CreatedAt,
 	}

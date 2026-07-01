@@ -9,5 +9,6 @@ type Salida struct {
 	TieneClorosis bool      `json:"tieneClorosis"`
 	Confianza     float64   `json:"confianza"`
 	ImageURL      string    `json:"imageURL"`
+	ImageBase64   string    `json:"imageBase64"`
 	CreatedAt     time.Time `json:"created_at"`
 }

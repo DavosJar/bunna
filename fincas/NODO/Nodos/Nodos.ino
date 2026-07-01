@@ -6,9 +6,10 @@
 // ==========================================
 // PARÁMETROS CONFIGURABLES — solo tocar aquí
 // ==========================================
-const char* WIFI_SSID        = "iPhone de Santiago";
-const char* WIFI_PASSWORD    = "12345687";
+const char* WIFI_SSID        = "Xtrim_Delgado";
+const char* WIFI_PASSWORD    = "Delgado1104030778";
 const char* API_ENDPOINT = "https://bunna-yolo.duckdns.org/api/v1/diagnostico";
+const char* GATEWAY_HEALTH   = "https://i2u6hsbhf1.execute-api.us-east-2.amazonaws.com/api/v1/fincas/health";
 const char* NODE_API_KEY     = "bunna-fincaPrueba";
 const int   CAPTURE_INTERVAL = 10000;  // ms — 10s para pruebas
 
@@ -139,10 +140,27 @@ void captureAndSend() {
 
   http.end();
 }
+void checkHealth() {
+  WiFiClientSecure client;
+  client.setInsecure();
+  HTTPClient http;
+  http.begin(client, GATEWAY_HEALTH);
+  http.addHeader("X-Node-Key", NODE_API_KEY);
+  int code = http.GET();
+  if (code == 200) {
+    String body = http.getString();
+    Serial.printf("[HEALTH] OK — respuesta: %s\n", body.c_str());
+  } else {
+    Serial.printf("[HEALTH] Falló — código: %d\n", code);
+  }
+  http.end();
+}
+
 void setup() {
   Serial.begin(115200);
   initCamera();
   connectWiFi();
+  checkHealth();
 }
 
 void loop() {

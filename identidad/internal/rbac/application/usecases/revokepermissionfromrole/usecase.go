@@ -46,8 +46,7 @@ func (uc *RevocarPermisoDeRolCasoDeUso) Ejecutar(ctx context.Context, cmd *Coman
 		return nil, fmt.Errorf("rol no encontrado: %w", err)
 	}
 
-	// Only sys_admin and administrador are immutable for permission revocation
-	if rol.Nombre == rbac.RolSysAdmin || rol.Nombre == rbac.RolAdministrador {
+	if rol.EsSistema {
 		return nil, rbac.ErrRolInmutable
 	}
 

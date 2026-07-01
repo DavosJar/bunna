@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/updateuser"
 	usuariodomain "github.com/davosjar/bunna/services/identidad/internal/usuarios/domain/usuario"
@@ -62,18 +61,12 @@ func TestModificarUsuarioExitoso(t *testing.T) {
 		},
 	}
 	uc := updateuser.NewModificarUsuarioCasoDeUso(repo, &mockAuthSvcUpdate{ok: true})
-	resp, err := uc.Ejecutar(context.Background(), &updateuser.ComandoModificarUsuario{
+	_, err := uc.Ejecutar(context.Background(), &updateuser.ComandoModificarUsuario{
 		UsuarioID: "user-1", TenantID: "tenant-1", EjecutorID: "admin-1",
 		Nombre: "Juan Modificado", Apellido: "Perez Modificado",
 	})
-	if err != nil {
-		t.Fatalf("error inesperado: %v", err)
-	}
-	if resp.ID != "user-1" {
-		t.Errorf("ID incorrecto: %s", resp.ID)
-	}
-	if resp.ModificadoEn == "" {
-		t.Error("ModificadoEn no debe estar vacío")
+	if err == nil {
+		t.Fatal("esperaba error: caso de uso deshabilitado")
 	}
 }
 
@@ -82,8 +75,8 @@ func TestModificarUsuarioPermisoDenegado(t *testing.T) {
 	_, err := uc.Ejecutar(context.Background(), &updateuser.ComandoModificarUsuario{
 		UsuarioID: "user-1", TenantID: "tenant-1", EjecutorID: "admin-1",
 	})
-	if !errors.Is(err, rbac.ErrPermisoDenegado) {
-		t.Errorf("esperaba ErrPermisoDenegado, got %v", err)
+	if err == nil || err.Error() != "modificación administrativa de usuarios deshabilitada: cada usuario modifica su propio perfil" {
+		t.Errorf("esperaba error de caso de uso deshabilitado, got %v", err)
 	}
 }
 

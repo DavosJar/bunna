@@ -46,8 +46,7 @@ func (uc *AsignarPermisoARolCasoDeUso) Ejecutar(ctx context.Context, cmd *Comand
 		return nil, fmt.Errorf("rol no encontrado: %w", err)
 	}
 
-	// Only sys_admin and administrador are immutable for permission changes
-	if rol.Nombre == rbac.RolSysAdmin || rol.Nombre == rbac.RolAdministrador {
+	if rol.EsSistema {
 		return nil, rbac.ErrRolInmutable
 	}
 

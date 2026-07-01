@@ -24,6 +24,7 @@ func (m *mockInvRepo) MarcarAceptada(ctx context.Context, id string) error { ret
 func (m *mockInvRepo) ObtenerPorID(ctx context.Context, id string) (*invitaciones.Invitacion, error) { return nil, nil }
 func (m *mockInvRepo) ListarPorTenant(ctx context.Context, tenantID string, pag shareddomain.Paginacion, estado string) ([]*invitaciones.Invitacion, int, error) { return nil, 0, nil }
 func (m *mockInvRepo) ActualizarTokenHash(ctx context.Context, id string, tokenHash string) error { return nil }
+func (m *mockInvRepo) Eliminar(ctx context.Context, id string) error { return nil }
 
 type mockTenantRepo struct {
 	tenant *tenant.Tenant
@@ -47,6 +48,7 @@ func (m *mockRolRepo) ObtenerPorID(ctx context.Context, id string) (*rbac.RolDB,
 func (m *mockRolRepo) Listar(ctx context.Context, spec rbac.EspecificacionRol, pag shareddomain.Paginacion) ([]*rbac.RolDB, error) { return nil, nil }
 func (m *mockRolRepo) Crear(ctx context.Context, r *rbac.RolDB) error { return nil }
 func (m *mockRolRepo) ActualizarDescripcion(ctx context.Context, id, desc string) error { return nil }
+func (m *mockRolRepo) Eliminar(ctx context.Context, id string) error { return nil }
 
 type mockGenID struct{ id string }
 

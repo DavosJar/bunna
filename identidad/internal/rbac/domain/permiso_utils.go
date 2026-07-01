@@ -30,9 +30,13 @@ func TienePermisoEnRol(ctx context.Context, permisoRepo PermisoRepositorio, rol 
 	if rol.EsSistema {
 		permisosSistemaInit()
 		if perms, ok := permisosSistemaMap[rol.Nombre]; ok && len(perms) > 0 {
-			return perms[codigoPermiso]
+			if perms[codigoPermiso] {
+				return true
+			}
+			// El permiso no está en el mapa estático, pero podría estar
+			// en la BD (ej: permisos de fincas asignados vía Kafka).
+			// Caemos al query de la BD.
 		}
-		// System roles with empty permissions = dynamic, fall through to DB
 	}
 
 	permisos, err := permisoRepo.ListarPorRol(ctx, rol.ID, tenantID)

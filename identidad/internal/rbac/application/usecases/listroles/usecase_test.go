@@ -22,6 +22,7 @@ func (m *mockRolRepo) Listar(ctx context.Context, spec rbac.EspecificacionRol, p
 }
 func (m *mockRolRepo) Crear(ctx context.Context, r *rbac.RolDB) error { return nil }
 func (m *mockRolRepo) ActualizarDescripcion(ctx context.Context, id, desc string) error { return nil }
+func (m *mockRolRepo) Eliminar(ctx context.Context, id string) error { return nil }
 
 type mockPermisoRepo struct {
 	permisos []*rbac.PermisoDB

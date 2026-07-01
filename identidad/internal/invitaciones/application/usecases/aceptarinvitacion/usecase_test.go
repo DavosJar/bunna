@@ -40,6 +40,7 @@ func (m *mockInvRepo) MarcarAceptada(ctx context.Context, id string) error { ret
 func (m *mockInvRepo) ObtenerPorID(ctx context.Context, id string) (*invitaciones.Invitacion, error) { return nil, nil }
 func (m *mockInvRepo) ListarPorTenant(ctx context.Context, tenantID string, pag shareddomain.Paginacion, estado string) ([]*invitaciones.Invitacion, int, error) { return nil, 0, nil }
 func (m *mockInvRepo) ActualizarTokenHash(ctx context.Context, id string, tokenHash string) error { return nil }
+func (m *mockInvRepo) Eliminar(ctx context.Context, id string) error { return nil }
 
 type mockMembresiaRepo struct {
 	errCrear error

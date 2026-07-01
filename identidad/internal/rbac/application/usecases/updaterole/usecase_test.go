@@ -21,6 +21,7 @@ func (m *mockRolRepo) ObtenerPorID(ctx context.Context, id string) (*rbac.RolDB,
 func (m *mockRolRepo) Listar(ctx context.Context, spec rbac.EspecificacionRol, pag shareddomain.Paginacion) ([]*rbac.RolDB, error) { return nil, nil }
 func (m *mockRolRepo) Crear(ctx context.Context, r *rbac.RolDB) error { return nil }
 func (m *mockRolRepo) ActualizarDescripcion(ctx context.Context, id, desc string) error { return m.errActualizarDesc }
+func (m *mockRolRepo) Eliminar(ctx context.Context, id string) error { return nil }
 
 type mockAuthSvc struct {
 	permiso bool

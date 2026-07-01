@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	seguridad "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
 	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	"github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/createuser"
@@ -97,27 +96,12 @@ func TestCrearUsuarioExitoso(t *testing.T) {
 		userRepo, credRepo, &mockEncriptacionCreate{},
 		&mockAuthSvcCreate{ok: true}, &mockGeneradorIDCreate{id: "new-id"},
 	)
-	resp, err := uc.Ejecutar(context.Background(), &createuser.ComandoCrearUsuario{
+	_, err := uc.Ejecutar(context.Background(), &createuser.ComandoCrearUsuario{
 		Correo: "test@gmail.com", Nombre: "Juan", Apellido: "Perez",
 		Password: "Abcdef1!", EjecutorID: "admin-id",
 	})
-	if err != nil {
-		t.Fatalf("error inesperado: %v", err)
-	}
-	if resp.ID != "new-id" {
-		t.Errorf("ID incorrecto: %s", resp.ID)
-	}
-	if resp.Correo != "test@gmail.com" {
-		t.Errorf("Correo incorrecto: %s", resp.Correo)
-	}
-	if resp.Nombre != "Juan" {
-		t.Errorf("Nombre incorrecto: %s", resp.Nombre)
-	}
-	if !resp.Activo {
-		t.Error("Activo debe ser true")
-	}
-	if resp.CreadoEn == "" {
-		t.Error("CreadoEn no debe estar vacío")
+	if err == nil {
+		t.Fatal("esperaba error: caso de uso deshabilitado")
 	}
 }
 
@@ -130,8 +114,8 @@ func TestCrearUsuarioPermisoDenegado(t *testing.T) {
 	_, err := uc.Ejecutar(context.Background(), &createuser.ComandoCrearUsuario{
 		Correo: "test@gmail.com", Nombre: "Juan", Password: "Abcdef1!",
 	})
-	if !errors.Is(err, rbac.ErrPermisoDenegado) {
-		t.Errorf("esperaba ErrPermisoDenegado, got %v", err)
+	if err == nil || err.Error() != "creación administrativa de usuarios deshabilitada: los usuarios se registran o son invitados" {
+		t.Errorf("esperaba error de caso de uso deshabilitado, got %v", err)
 	}
 }
 
@@ -158,8 +142,8 @@ func TestCrearUsuarioCorreoVacio(t *testing.T) {
 	_, err := uc.Ejecutar(context.Background(), &createuser.ComandoCrearUsuario{
 		Correo: "", Nombre: "Juan", Password: "Abcdef1!",
 	})
-	if err == nil || err.Error() != "correo no puede estar vacío" {
-		t.Errorf("esperaba error de correo vacío, got %v", err)
+	if err == nil || err.Error() != "creación administrativa de usuarios deshabilitada: los usuarios se registran o son invitados" {
+		t.Errorf("esperaba error de caso de uso deshabilitado, got %v", err)
 	}
 }
 
@@ -186,8 +170,8 @@ func TestCrearUsuarioNombreVacio(t *testing.T) {
 	_, err := uc.Ejecutar(context.Background(), &createuser.ComandoCrearUsuario{
 		Correo: "test@gmail.com", Nombre: "", Password: "Abcdef1!",
 	})
-	if err == nil || err.Error() != "nombre no puede estar vacío" {
-		t.Errorf("esperaba error de nombre vacío, got %v", err)
+	if err == nil || err.Error() != "creación administrativa de usuarios deshabilitada: los usuarios se registran o son invitados" {
+		t.Errorf("esperaba error de caso de uso deshabilitado, got %v", err)
 	}
 }
 
@@ -200,8 +184,8 @@ func TestCrearUsuarioPasswordVacio(t *testing.T) {
 	_, err := uc.Ejecutar(context.Background(), &createuser.ComandoCrearUsuario{
 		Correo: "test@gmail.com", Nombre: "Juan", Password: "",
 	})
-	if err == nil || err.Error() != "password no puede estar vacío" {
-		t.Errorf("esperaba error de password vacío, got %v", err)
+	if err == nil || err.Error() != "creación administrativa de usuarios deshabilitada: los usuarios se registran o son invitados" {
+		t.Errorf("esperaba error de caso de uso deshabilitado, got %v", err)
 	}
 }
 

@@ -180,6 +180,7 @@ func (m *mockRolRepo) Listar(ctx context.Context, _ rbac.EspecificacionRol, _ sh
 }
 func (m *mockRolRepo) Crear(ctx context.Context, _ *rbac.RolDB) error { return nil }
 func (m *mockRolRepo) ActualizarDescripcion(ctx context.Context, _, _ string) error { return nil }
+func (m *mockRolRepo) Eliminar(ctx context.Context, id string) error { return nil }
 
 type mockUsuarioTenantRolRepo struct {
 	crearFunc func(ctx context.Context, usuarioID, tenantID, rolID string) error

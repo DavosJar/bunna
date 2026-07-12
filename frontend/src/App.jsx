@@ -8,6 +8,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import VerificacionCorreoPage from './pages/auth/VerificacionCorreoPage';
+import ReenviarVerificacionPage from './pages/auth/ReenviarVerificacionPage';
 import AceptarInvitacionPage from './pages/auth/AceptarInvitacionPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import ToastContainer from './components/toast/ToastContainer';
@@ -25,6 +26,7 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verificar-correo" element={<VerificacionCorreoPage />} />
+      <Route path="/reenviar-verificacion" element={<PublicRoute><ReenviarVerificacionPage /></PublicRoute>} />
       <Route path="/aceptar-invitacion" element={<AceptarInvitacionPage />} />
       <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
       <Route path="/perfil" element={<PrivateRoute><PerfilPage /></PrivateRoute>} />

@@ -18,4 +18,6 @@ type UnitOfWork interface {
 	RolRepository() rbac.RolRepositorio
 	UsuarioTenantRolRepository() rbac.UsuarioTenantRolRepositorio
 	RolPermisoRepository() rbac.RolPermisoRepositorio
+	PermisoRepository() rbac.PermisoRepositorio
+	RolPublisher() rbac.RolPublisher
 }

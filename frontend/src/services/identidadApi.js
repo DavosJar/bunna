@@ -156,8 +156,8 @@ export async function confirmarVerificacion({ token }) {
   return res.data.data;
 }
 
-export async function reenviarVerificacion() {
-  const res = await client.post('/api/v1/identidad/verificacion/reenviar');
+export async function reenviarVerificacion({ correo }) {
+  const res = await client.post('/api/v1/identidad/verificacion/reenviar', { correo });
   return res.data.data;
 }
 

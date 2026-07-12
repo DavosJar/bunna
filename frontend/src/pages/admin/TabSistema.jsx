@@ -6,7 +6,7 @@ import '../admin/Admin.css';
 
 async function pingIdentidad() {
   const base = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-  const res = await axios.get(`${base}/health`, { timeout: 5000 });
+  const res = await axios.get(`${base}/api/v1/identidad/health`, { timeout: 5000 });
   return res.data;
 }
 

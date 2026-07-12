@@ -59,7 +59,7 @@ func (f *authFacadeImpl) Registrar(ctx context.Context, cmd ComandoRegistro) (*R
 			return
 		}
 		if _, err := f.solicitarUseCase.Ejecutar(context.Background(), &uc_solicitar.ComandoSolicitarVerificacion{
-			UsuarioID: respuesta.UsuarioID,
+			Correo: respuesta.Correo,
 		}); err != nil {
 			fmt.Printf("[AuthFacade] Error al solicitar verificación: %v\n", err)
 		}

@@ -5,8 +5,10 @@ import (
 
 	rbac_domain "github.com/davosjar/bunna/services/identidad/internal/rbac/domain"
 	rbac_postgres "github.com/davosjar/bunna/services/identidad/internal/rbac/infrastructure/persistence/postgres"
+	"github.com/davosjar/bunna/services/identidad/internal/rbac/infrastructure/publishers"
 	seguridad_domain "github.com/davosjar/bunna/services/identidad/internal/seguridad/domain"
 	seguridad_postgres "github.com/davosjar/bunna/services/identidad/internal/seguridad/infrastructure/persistence/postgres"
+	shareddomain "github.com/davosjar/bunna/services/identidad/internal/shared/domain"
 	tenant_domain "github.com/davosjar/bunna/services/identidad/internal/tenants/domain/tenant"
 	tenant_postgres "github.com/davosjar/bunna/services/identidad/internal/tenants/infrastructure/persistence/postgres"
 	"github.com/davosjar/bunna/services/identidad/internal/usuarios/application/usecases/register"
@@ -16,6 +18,7 @@ import (
 
 type RegistroUnitOfWorkPostgres struct {
 	db                   *gorm.DB
+	generadorID          shareddomain.GeneradorID
 	usuarioRepo          usuario_domain.UsuarioRepositorio
 	credencialesRepo     seguridad_domain.CredencialesRepositorio
 	tenantRepo           tenant_domain.TenantRepositorio
@@ -23,11 +26,13 @@ type RegistroUnitOfWorkPostgres struct {
 	rolRepo              rbac_domain.RolRepositorio
 	usuarioTenantRolRepo rbac_domain.UsuarioTenantRolRepositorio
 	rolPermisoRepo       rbac_domain.RolPermisoRepositorio
+	permisoRepo          rbac_domain.PermisoRepositorio
 }
 
-func NewRegistroUnitOfWork(db *gorm.DB) register.UnitOfWork {
+func NewRegistroUnitOfWork(db *gorm.DB, generadorID shareddomain.GeneradorID) register.UnitOfWork {
 	return &RegistroUnitOfWorkPostgres{
 		db:                   db,
+		generadorID:          generadorID,
 		usuarioRepo:          NewUsuarioRepositorio(db),
 		credencialesRepo:     seguridad_postgres.NewCredencialesRepositorio(db),
 		tenantRepo:           tenant_postgres.NewTenantRepositorio(db),
@@ -35,6 +40,7 @@ func NewRegistroUnitOfWork(db *gorm.DB) register.UnitOfWork {
 		rolRepo:              rbac_postgres.NewRolRepositorio(db),
 		usuarioTenantRolRepo: rbac_postgres.NewUsuarioTenantRolRepositorio(db),
 		rolPermisoRepo:       rbac_postgres.NewRolPermisoRepositorio(db),
+		permisoRepo:          rbac_postgres.NewPermisoRepositorio(db),
 	}
 }
 
@@ -42,6 +48,7 @@ func (u *RegistroUnitOfWorkPostgres) Transaccional(ctx context.Context, fn func(
 	return u.db.WithContext(ctx).Transaction(func(txDB *gorm.DB) error {
 		txUow := &RegistroUnitOfWorkPostgres{
 			db:                   txDB,
+			generadorID:          u.generadorID,
 			usuarioRepo:          NewUsuarioRepositorio(txDB),
 			credencialesRepo:     seguridad_postgres.NewCredencialesRepositorio(txDB),
 			tenantRepo:           tenant_postgres.NewTenantRepositorio(txDB),
@@ -49,9 +56,14 @@ func (u *RegistroUnitOfWorkPostgres) Transaccional(ctx context.Context, fn func(
 			rolRepo:              rbac_postgres.NewRolRepositorio(txDB),
 			usuarioTenantRolRepo: rbac_postgres.NewUsuarioTenantRolRepositorio(txDB),
 			rolPermisoRepo:       rbac_postgres.NewRolPermisoRepositorio(txDB),
+			permisoRepo:          rbac_postgres.NewPermisoRepositorio(txDB),
 		}
 		return fn(txUow)
 	})
+}
+
+func (u *RegistroUnitOfWorkPostgres) RolPublisher() rbac_domain.RolPublisher {
+	return publishers.NewOutboxRolPublisher(u.db, u.generadorID)
 }
 
 func (u *RegistroUnitOfWorkPostgres) UsuarioRepository() usuario_domain.UsuarioRepositorio {
@@ -80,4 +92,8 @@ func (u *RegistroUnitOfWorkPostgres) UsuarioTenantRolRepository() rbac_domain.Us
 
 func (u *RegistroUnitOfWorkPostgres) RolPermisoRepository() rbac_domain.RolPermisoRepositorio {
 	return u.rolPermisoRepo
+}
+
+func (u *RegistroUnitOfWorkPostgres) PermisoRepository() rbac_domain.PermisoRepositorio {
+	return u.permisoRepo
 }

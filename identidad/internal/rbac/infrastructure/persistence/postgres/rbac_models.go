@@ -5,10 +5,10 @@ import "time"
 // RolModel representa la tabla roles
 type RolModel struct {
 	ID                 string    `gorm:"type:varchar(36);primaryKey;column:id"`
-	Nombre             string    `gorm:"column:nombre;uniqueIndex"`
+	Nombre             string    `gorm:"column:nombre;uniqueIndex:idx_roles_nombre_tenant"`
 	Descripcion        string    `gorm:"column:descripcion"`
 	EsSistema          bool      `gorm:"column:es_sistema;default:false"`
-	TenantID           string    `gorm:"column:tenant_id;default:''"`
+	TenantID           string    `gorm:"column:tenant_id;default:'';uniqueIndex:idx_roles_nombre_tenant"`
 	FechaCreacion      time.Time `gorm:"column:created_at;autoCreateTime"`
 	FechaActualizacion time.Time `gorm:"column:updated_at;autoUpdateTime"`
 }

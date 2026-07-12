@@ -59,6 +59,11 @@ func (p *RolesPublisher) PublicarRolActualizado(ctx context.Context, rolID, tena
 	return nil
 }
 
+// Writer expone el writer de Kafka para que el outbox worker pueda publicar eventos.
+func (p *RolesPublisher) Writer() *kafka.Writer {
+	return p.writer
+}
+
 func (p *RolesPublisher) Close() error {
 	return p.writer.Close()
 }

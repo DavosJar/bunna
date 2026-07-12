@@ -18,12 +18,16 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    volumes:
+      - ./fincas/topics.txt:/etc/kafka/topics.txt:ro
     command: |
       bash -c '
         /etc/confluent/docker/run &
         until kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1; do sleep 2; done;
-        kafka-topics --create --if-not-exists --topic dev.permisos --partitions 1 --replication-factor 1 --bootstrap-server localhost:9092;
-        kafka-topics --create --if-not-exists --topic dev.iam.roles --partitions 1 --replication-factor 1 --bootstrap-server localhost:9092;
+        while IFS= read -r topic; do
+          [ -z "$$topic" ] && continue;
+          kafka-topics --create --if-not-exists --topic "$$topic" --partitions 1 --replication-factor 1 --bootstrap-server localhost:9092;
+        done < /etc/kafka/topics.txt;
         wait
       '
     healthcheck:
@@ -39,6 +43,8 @@ services:
   identidad-db:
     image: postgres:18-alpine
     container_name: identidad-postgres
+    ports:
+      - "5433:5432"
     environment:
       POSTGRES_USER: identidad_user
       POSTGRES_PASSWORD: identidad_pass_dev
@@ -54,6 +60,7 @@ services:
       - bunna-dev
 
   identidad-app:
+    env_file: ./identidad/.env.develop
     build:
       context: ./identidad
       dockerfile: Dockerfile
@@ -84,6 +91,8 @@ services:
   fincas-db:
     image: postgres:18-alpine
     container_name: fincas-postgres
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: fincas_user
       POSTGRES_PASSWORD: fincas_pass_dev

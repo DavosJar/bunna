@@ -29,6 +29,9 @@ func (m *mockVerifRepo) MarcarVerificado(ctx context.Context, usuarioID string) 
 func (m *mockVerifRepo) ObtenerPorID(ctx context.Context, usuarioID string) (*verificacion.UsuarioVerificacion, error) {
 	return m.usuario, m.err
 }
+func (m *mockVerifRepo) ObtenerPorCorreo(ctx context.Context, correo string) (*verificacion.UsuarioVerificacion, error) {
+	return m.usuario, m.err
+}
 
 type mockGenID struct{ id string }
 
@@ -72,7 +75,7 @@ func TestReenviarVerificacionExitoso(t *testing.T) {
 	solicitarUC := uc_solicitar.NewSolicitarVerificacionCasoDeUso(repo, emailSvc, &mockGenID{id: "token-2"}, solicitarConfigValida())
 	uc := uc_reenviar.NewReenviarVerificacionCasoDeUso(repo, emailSvc, &mockGenID{id: "token-2"}, solicitarUC, configValida())
 
-	resp, err := uc.Ejecutar(context.Background(), &uc_reenviar.ComandoReenviarVerificacion{UsuarioID: "user-1"})
+	resp, err := uc.Ejecutar(context.Background(), &uc_reenviar.ComandoReenviarVerificacion{Correo: "juan@test.com"})
 	if err != nil {
 		t.Fatalf("error inesperado: %v", err)
 	}
@@ -95,7 +98,7 @@ func TestReenviarVerificacionUsuarioNoEncontrado(t *testing.T) {
 		&mockVerifRepo{err: errors.New("no encontrado")},
 		emailSvc, &mockGenID{}, solicitarUC, configValida(),
 	)
-	_, err := uc.Ejecutar(context.Background(), &uc_reenviar.ComandoReenviarVerificacion{UsuarioID: "user-x"})
+	_, err := uc.Ejecutar(context.Background(), &uc_reenviar.ComandoReenviarVerificacion{Correo: "user-x@test.com"})
 	if !errors.Is(err, verificacion.ErrUsuarioNoEncontrado) {
 		t.Errorf("esperaba ErrUsuarioNoEncontrado, got %v", err)
 	}

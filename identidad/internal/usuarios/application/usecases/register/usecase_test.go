@@ -15,6 +15,12 @@ import (
 
 // ── Mock UnitOfWork ────────────────────────────────────────────────────────────
 
+type mockRolPublisher struct{}
+
+func (m *mockRolPublisher) PublicarRolActualizado(ctx context.Context, rolID, tenantID string, permisos []string) error {
+	return nil
+}
+
 type mockUnitOfWork struct {
 	usuarioRepo          usuariodomain.UsuarioRepositorio
 	credencialesRepo     domain.CredencialesRepositorio
@@ -23,6 +29,7 @@ type mockUnitOfWork struct {
 	rolRepo              rbac.RolRepositorio
 	usuarioTenantRolRepo rbac.UsuarioTenantRolRepositorio
 	rolPermisoRepo       rbac.RolPermisoRepositorio
+	permisoRepo          rbac.PermisoRepositorio
 }
 
 func (m *mockUnitOfWork) Transaccional(ctx context.Context, fn func(tx register.UnitOfWork) error) error {
@@ -55,6 +62,14 @@ func (m *mockUnitOfWork) UsuarioTenantRolRepository() rbac.UsuarioTenantRolRepos
 
 func (m *mockUnitOfWork) RolPermisoRepository() rbac.RolPermisoRepositorio {
 	return m.rolPermisoRepo
+}
+
+func (m *mockUnitOfWork) PermisoRepository() rbac.PermisoRepositorio {
+	return m.permisoRepo
+}
+
+func (m *mockUnitOfWork) RolPublisher() rbac.RolPublisher {
+	return &mockRolPublisher{}
 }
 
 // ── Other Mocks ────────────────────────────────────────────────────────────────
@@ -172,6 +187,9 @@ type mockRolRepo struct {
 func (m *mockRolRepo) ObtenerPorNombre(ctx context.Context, nombre string) (*rbac.RolDB, error) {
 	return m.obtenerPorNombreFunc(ctx, nombre)
 }
+func (m *mockRolRepo) ObtenerPorNombreYTenant(ctx context.Context, nombre string, tenantID string) (*rbac.RolDB, error) {
+	return m.obtenerPorNombreFunc(ctx, nombre)
+}
 func (m *mockRolRepo) ObtenerPorID(ctx context.Context, id string) (*rbac.RolDB, error) {
 	return &rbac.RolDB{ID: id}, nil
 }
@@ -197,11 +215,30 @@ func (m *mockUsuarioTenantRolRepo) TieneRolEnTenant(ctx context.Context, _, _, _
 	return false, nil
 }
 
+type mockPermisoRepo struct {
+	obtenerPorCodigoFunc func(ctx context.Context, codigo string) (*rbac.PermisoDB, error)
+}
+
+func (m *mockPermisoRepo) ObtenerPorCodigo(ctx context.Context, codigo string) (*rbac.PermisoDB, error) {
+	if m.obtenerPorCodigoFunc != nil {
+		return m.obtenerPorCodigoFunc(ctx, codigo)
+	}
+	return &rbac.PermisoDB{ID: "permiso-" + codigo, Codigo: codigo}, nil
+}
+func (m *mockPermisoRepo) Listar(ctx context.Context) ([]*rbac.PermisoDB, error)     { return nil, nil }
+func (m *mockPermisoRepo) Crear(ctx context.Context, p *rbac.PermisoDB) error        { return nil }
+func (m *mockPermisoRepo) ActualizarNombreDescripcion(ctx context.Context, id, nombre, desc string) error { return nil }
+func (m *mockPermisoRepo) ListarPorRol(ctx context.Context, rolID, tenantID string) ([]*rbac.PermisoDB, error) { return nil, nil }
+
 type mockRolPermisoRepo struct {
 	listarPorRolYTenantFunc func(ctx context.Context, rolID, tenantID string) ([]*rbac.PermisoDB, error)
+	asignarPermisoFunc      func(ctx context.Context, rolID, permisoID, tenantID, asignadoPor string) error
 }
 
 func (m *mockRolPermisoRepo) AsignarPermiso(ctx context.Context, rolID, permisoID, tenantID, asignadoPor string) error {
+	if m.asignarPermisoFunc != nil {
+		return m.asignarPermisoFunc(ctx, rolID, permisoID, tenantID, asignadoPor)
+	}
 	return nil
 }
 func (m *mockRolPermisoRepo) EliminarPermiso(ctx context.Context, rolID, permisoID, tenantID string) error {
@@ -212,17 +249,6 @@ func (m *mockRolPermisoRepo) ListarPorRolYTenant(ctx context.Context, rolID, ten
 		return m.listarPorRolYTenantFunc(ctx, rolID, tenantID)
 	}
 	return nil, nil
-}
-
-type mockRolPublisher struct {
-	publicarRolActualizadoFunc func(ctx context.Context, rolID, tenantID string, permisos []string) error
-}
-
-func (m *mockRolPublisher) PublicarRolActualizado(ctx context.Context, rolID, tenantID string, permisos []string) error {
-	if m.publicarRolActualizadoFunc != nil {
-		return m.publicarRolActualizadoFunc(ctx, rolID, tenantID, permisos)
-	}
-	return nil
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -261,10 +287,10 @@ func newUCSuccess() *register.RegistrarUsuarioCasoDeUso {
 				},
 			},
 			rolPermisoRepo: &mockRolPermisoRepo{},
+			permisoRepo:    &mockPermisoRepo{},
 		},
 		&mockEncriptacion{hash: "$2a$10$hashedpassword"},
-		&mockGeneradorID{ids: []string{"user-id-1", "tenant-id-1"}},
-		&mockRolPublisher{},
+		&mockGeneradorID{ids: []string{"user-id-1", "tenant-id-1", "rol-admin-id-1", "rol-caficultor-id-1", "rol-agronomo-id-1"}},
 	)
 }
 
@@ -278,7 +304,7 @@ func newUCWithRepos(
 	rolRepo *mockRolRepo,
 	usuarioTenantRolRepo *mockUsuarioTenantRolRepo,
 	rolPermisoRepo *mockRolPermisoRepo,
-	rolPublisher *mockRolPublisher,
+	permisoRepo *mockPermisoRepo,
 ) *register.RegistrarUsuarioCasoDeUso {
 	return register.NewRegistrarUsuarioCasoDeUso(
 		&mockUnitOfWork{
@@ -289,10 +315,10 @@ func newUCWithRepos(
 			rolRepo:              rolRepo,
 			usuarioTenantRolRepo: usuarioTenantRolRepo,
 			rolPermisoRepo:       rolPermisoRepo,
+			permisoRepo:          permisoRepo,
 		},
 		encriptacion,
 		generadorID,
-		rolPublisher,
 	)
 }
 
@@ -346,7 +372,7 @@ func TestRegistrarUsuario_CreaTenantConNombreYSlug(t *testing.T) {
 			},
 		},
 		&mockEncriptacion{hash: "$2a$10$hash"},
-		&mockGeneradorID{ids: []string{"uid", "tid"}},
+		&mockGeneradorID{ids: []string{"uid", "tid", "rol-admin-id", "rol-caficultor-id", "rol-agronomo-id"}},
 		&mockTenantRepo{
 			crearFunc: func(_ context.Context, t *tenant.Tenant) (*tenant.Tenant, error) {
 				tenantCreado = t
@@ -369,7 +395,7 @@ func TestRegistrarUsuario_CreaTenantConNombreYSlug(t *testing.T) {
 			},
 		},
 		&mockRolPermisoRepo{},
-		&mockRolPublisher{},
+		&mockPermisoRepo{},
 	)
 
 	cmd := &register.ComandoRegistrarUsuario{
@@ -411,7 +437,7 @@ func TestRegistrarUsuario_CreaMembresia(t *testing.T) {
 			},
 		},
 		&mockEncriptacion{hash: "hash"},
-		&mockGeneradorID{ids: []string{"uid", "tid"}},
+		&mockGeneradorID{ids: []string{"uid", "tid", "rol-admin-id", "rol-caficultor-id", "rol-agronomo-id"}},
 		&mockTenantRepo{
 			crearFunc: func(_ context.Context, t *tenant.Tenant) (*tenant.Tenant, error) {
 				return t, nil
@@ -434,7 +460,8 @@ func TestRegistrarUsuario_CreaMembresia(t *testing.T) {
 			},
 		},
 		&mockRolPermisoRepo{},
-		&mockRolPublisher{},
+		&mockPermisoRepo{},
+
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
@@ -535,7 +562,8 @@ func TestRegistrarUsuarioCorreoDuplicado(t *testing.T) {
 			},
 		},
 		&mockRolPermisoRepo{},
-		&mockRolPublisher{},
+		&mockPermisoRepo{},
+
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
@@ -586,7 +614,8 @@ func TestRegistrarUsuarioErrorPersistiendoCredenciales(t *testing.T) {
 			},
 		},
 		&mockRolPermisoRepo{},
-		&mockRolPublisher{},
+		&mockPermisoRepo{},
+
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
@@ -634,7 +663,8 @@ func TestRegistrarUsuarioErrorPersistiendoTenant(t *testing.T) {
 			},
 		},
 		&mockRolPermisoRepo{},
-		&mockRolPublisher{},
+		&mockPermisoRepo{},
+
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
@@ -682,7 +712,8 @@ func TestRegistrarUsuarioErrorPersistiendoMembresia(t *testing.T) {
 			},
 		},
 		&mockRolPermisoRepo{},
-		&mockRolPublisher{},
+		&mockPermisoRepo{},
+
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
@@ -707,7 +738,7 @@ func TestRegistrarUsuarioIDsInyectados(t *testing.T) {
 			},
 		},
 		&mockEncriptacion{hash: "hash"},
-		&mockGeneradorID{ids: []string{"custom-user-id", "custom-tenant-id"}},
+		&mockGeneradorID{ids: []string{"custom-user-id", "custom-tenant-id", "custom-rol-admin", "custom-rol-caficultor", "custom-rol-agronomo"}},
 		&mockTenantRepo{
 			crearFunc: func(_ context.Context, t *tenant.Tenant) (*tenant.Tenant, error) {
 				return t, nil
@@ -729,7 +760,8 @@ func TestRegistrarUsuarioIDsInyectados(t *testing.T) {
 			},
 		},
 		&mockRolPermisoRepo{},
-		&mockRolPublisher{},
+		&mockPermisoRepo{},
+
 	)
 
 	resp, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
@@ -762,7 +794,7 @@ func TestRegistrarUsuarioPasswordHasheado(t *testing.T) {
 			},
 		},
 		&mockEncriptacion{hash: "bcrypt_hash_123"},
-		&mockGeneradorID{ids: []string{"uid", "tid"}},
+		&mockGeneradorID{ids: []string{"uid", "tid", "rol-admin-id", "rol-caficultor-id", "rol-agronomo-id"}},
 		&mockTenantRepo{
 			crearFunc: func(_ context.Context, t *tenant.Tenant) (*tenant.Tenant, error) {
 				return t, nil
@@ -784,7 +816,8 @@ func TestRegistrarUsuarioPasswordHasheado(t *testing.T) {
 			},
 		},
 		&mockRolPermisoRepo{},
-		&mockRolPublisher{},
+		&mockPermisoRepo{},
+
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
@@ -828,7 +861,7 @@ func TestRegistrarUsuarioSlugGenerado(t *testing.T) {
 					},
 				},
 				&mockEncriptacion{hash: "hash"},
-				&mockGeneradorID{ids: []string{"uid", "tid"}},
+				&mockGeneradorID{ids: []string{"uid", "tid", "rol-admin-id", "rol-caficultor-id", "rol-agronomo-id"}},
 				&mockTenantRepo{
 					crearFunc: func(_ context.Context, t *tenant.Tenant) (*tenant.Tenant, error) {
 						tenantCreado = t
@@ -851,7 +884,8 @@ func TestRegistrarUsuarioSlugGenerado(t *testing.T) {
 					},
 				},
 				&mockRolPermisoRepo{},
-				&mockRolPublisher{},
+				&mockPermisoRepo{},
+		
 			)
 
 			_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{
@@ -902,7 +936,7 @@ func TestRegistrarUsuario_AsignaRolAdministrador(t *testing.T) {
 			},
 		},
 		&mockEncriptacion{hash: "hash"},
-		&mockGeneradorID{ids: []string{"uid", "tid"}},
+		&mockGeneradorID{ids: []string{"uid", "tid", "rol-admin-id", "rol-caficultor-id", "rol-agronomo-id"}},
 		&mockTenantRepo{
 			crearFunc: func(_ context.Context, t *tenant.Tenant) (*tenant.Tenant, error) {
 				return t, nil
@@ -927,7 +961,8 @@ func TestRegistrarUsuario_AsignaRolAdministrador(t *testing.T) {
 			},
 		},
 		&mockRolPermisoRepo{},
-		&mockRolPublisher{},
+		&mockPermisoRepo{},
+
 	)
 
 	_, err := uc.Ejecutar(context.Background(), &register.ComandoRegistrarUsuario{

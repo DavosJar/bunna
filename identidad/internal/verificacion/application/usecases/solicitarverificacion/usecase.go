@@ -51,7 +51,7 @@ func NewSolicitarVerificacionCasoDeUso(
 }
 
 func (uc *SolicitarVerificacionCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoSolicitarVerificacion) (*RespuestaSolicitarVerificacion, error) {
-	usuario, err := uc.repo.ObtenerPorID(ctx, cmd.UsuarioID)
+	usuario, err := uc.repo.ObtenerPorCorreo(ctx, cmd.Correo)
 	if err != nil {
 		return nil, dominio.ErrUsuarioNoEncontrado
 	}
@@ -68,7 +68,7 @@ func (uc *SolicitarVerificacionCasoDeUso) Ejecutar(ctx context.Context, cmd *Com
 	expiraEn := time.Now().Add(uc.config.TokenExpiracion)
 	prueba := dominio.NuevaPruebaVerificacion(token, expiraEn)
 
-	if err := uc.repo.ActualizarPrueba(ctx, cmd.UsuarioID, prueba); err != nil {
+	if err := uc.repo.ActualizarPrueba(ctx, usuario.ID, prueba); err != nil {
 		return nil, fmt.Errorf("error al persistir token: %w", err)
 	}
 

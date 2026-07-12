@@ -28,6 +28,9 @@ func (m *mockVerifRepo) MarcarVerificado(ctx context.Context, usuarioID string) 
 func (m *mockVerifRepo) ObtenerPorID(ctx context.Context, usuarioID string) (*verificacion.UsuarioVerificacion, error) {
 	return m.usuario, m.err
 }
+func (m *mockVerifRepo) ObtenerPorCorreo(ctx context.Context, correo string) (*verificacion.UsuarioVerificacion, error) {
+	return m.usuario, m.err
+}
 
 type mockGenID struct{ id string }
 
@@ -60,7 +63,7 @@ func TestSolicitarVerificacionExitoso(t *testing.T) {
 	emailSvc := &notificaciones.MockEmailServicio{}
 	uc := uc_solicitar.NewSolicitarVerificacionCasoDeUso(repo, emailSvc, &mockGenID{id: "token-1"}, configValida())
 
-	resp, err := uc.Ejecutar(context.Background(), &uc_solicitar.ComandoSolicitarVerificacion{UsuarioID: "user-1"})
+	resp, err := uc.Ejecutar(context.Background(), &uc_solicitar.ComandoSolicitarVerificacion{Correo: "juan@test.com"})
 	if err != nil {
 		t.Fatalf("error inesperado: %v", err)
 	}
@@ -78,7 +81,7 @@ func TestSolicitarVerificacionUsuarioNoEncontrado(t *testing.T) {
 		&mockVerifRepo{err: errors.New("no encontrado")},
 		&notificaciones.MockEmailServicio{}, &mockGenID{}, configValida(),
 	)
-	_, err := uc.Ejecutar(context.Background(), &uc_solicitar.ComandoSolicitarVerificacion{UsuarioID: "user-x"})
+	_, err := uc.Ejecutar(context.Background(), &uc_solicitar.ComandoSolicitarVerificacion{Correo: "user-x@test.com"})
 	if !errors.Is(err, verificacion.ErrUsuarioNoEncontrado) {
 		t.Errorf("esperaba ErrUsuarioNoEncontrado, got %v", err)
 	}
@@ -91,7 +94,7 @@ func TestSolicitarVerificacionYaVerificado(t *testing.T) {
 		&mockVerifRepo{usuario: usuario},
 		&notificaciones.MockEmailServicio{}, &mockGenID{}, configValida(),
 	)
-	_, err := uc.Ejecutar(context.Background(), &uc_solicitar.ComandoSolicitarVerificacion{UsuarioID: "user-1"})
+	_, err := uc.Ejecutar(context.Background(), &uc_solicitar.ComandoSolicitarVerificacion{Correo: "juan@test.com"})
 	if !errors.Is(err, verificacion.ErrCorreoYaVerificado) {
 		t.Errorf("esperaba ErrCorreoYaVerificado, got %v", err)
 	}

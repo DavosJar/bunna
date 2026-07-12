@@ -9,6 +9,7 @@ import (
 // RolRepositorio define las operaciones de persistencia para roles
 type RolRepositorio interface {
 	ObtenerPorNombre(ctx context.Context, nombre string) (*RolDB, error)
+	ObtenerPorNombreYTenant(ctx context.Context, nombre string, tenantID string) (*RolDB, error)
 	ObtenerPorID(ctx context.Context, id string) (*RolDB, error)
 	Listar(ctx context.Context, especificacion EspecificacionRol, paginacion shareddomain.Paginacion) ([]*RolDB, error)
 	Crear(ctx context.Context, rol *RolDB) error

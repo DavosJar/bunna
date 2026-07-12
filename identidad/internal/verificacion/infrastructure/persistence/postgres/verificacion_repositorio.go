@@ -63,3 +63,17 @@ func (r *verificacionRepositorio) ObtenerPorID(ctx context.Context, usuarioID st
 	}
 	return model.ToDomain(), nil
 }
+
+func (r *verificacionRepositorio) ObtenerPorCorreo(ctx context.Context, correo string) (*dominio.UsuarioVerificacion, error) {
+	var model VerificacionUsuarioModel
+	result := r.db.WithContext(ctx).
+		Where("correo = ?", correo).
+		First(&model)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, dominio.ErrUsuarioNoEncontrado
+		}
+		return nil, result.Error
+	}
+	return model.ToDomain(), nil
+}

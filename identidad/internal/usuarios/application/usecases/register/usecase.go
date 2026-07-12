@@ -17,23 +17,20 @@ import (
 )
 
 type RegistrarUsuarioCasoDeUso struct {
-	uow         UnitOfWork
-	encSvc      seguridad.EncriptacionServicio
-	idGen       shareddomain.GeneradorID
-	rolPublisher rbac.RolPublisher
+	uow    UnitOfWork
+	encSvc seguridad.EncriptacionServicio
+	idGen  shareddomain.GeneradorID
 }
 
 func NewRegistrarUsuarioCasoDeUso(
 	uow UnitOfWork,
 	encSvc seguridad.EncriptacionServicio,
 	idGen shareddomain.GeneradorID,
-	rolPublisher rbac.RolPublisher,
 ) *RegistrarUsuarioCasoDeUso {
 	return &RegistrarUsuarioCasoDeUso{
-		uow:         uow,
-		encSvc:      encSvc,
-		idGen:       idGen,
-		rolPublisher: rolPublisher,
+		uow:    uow,
+		encSvc: encSvc,
+		idGen:  idGen,
 	}
 }
 
@@ -99,23 +96,60 @@ func (uc *RegistrarUsuarioCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoR
 			return fmt.Errorf("error al persistir membresía: %w", err)
 		}
 
-		rolAdmin, err := tx.RolRepository().ObtenerPorNombre(ctx, rbac.RolAdministrador)
-		if err != nil {
-			return fmt.Errorf("error al obtener rol administrador: %w", err)
+		// Crear roles de sistema para este tenant (administrador, caficultor, agronomo)
+		rolesTemplate := []struct {
+			Nombre      string
+			Descripcion string
+			Permisos    []string
+		}{
+			{rbac.RolAdministrador, "Administrador del tenant", rbac.RolesDeSistema[1].Permisos},
+			{rbac.RolCaficultor, "Caficultor - operación en finca", nil},
+			{rbac.RolAgronomo, "Agrónomo - soporte técnico", nil},
 		}
 
-		if err := tx.UsuarioTenantRolRepository().Crear(ctx, usuarioCreado.ID(), tenantCreado.ID(), rolAdmin.ID); err != nil {
+		var rolAdminID string
+		var codigosPermisosAdmin []string
+
+		for _, rt := range rolesTemplate {
+			rolID, err := uc.idGen.NextID(ctx)
+			if err != nil {
+				return fmt.Errorf("error al generar ID para rol %s: %w", rt.Nombre, err)
+			}
+
+			rol := &rbac.RolDB{
+				ID:          rolID,
+				Nombre:      rt.Nombre,
+				Descripcion: rt.Descripcion,
+				EsSistema:   true,
+				TenantID:    tenantCreado.ID(),
+			}
+			if err := tx.RolRepository().Crear(ctx, rol); err != nil {
+				return fmt.Errorf("error al crear rol %s: %w", rt.Nombre, err)
+			}
+
+			// Asignar permisos base al administrador
+			for _, codigo := range rt.Permisos {
+				permiso, err := tx.PermisoRepository().ObtenerPorCodigo(ctx, codigo)
+				if err != nil {
+					return fmt.Errorf("error al obtener permiso %s: %w", codigo, err)
+				}
+				if permiso != nil {
+					if err := tx.RolPermisoRepository().AsignarPermiso(ctx, rolID, permiso.ID, tenantCreado.ID(), usuarioCreado.ID()); err != nil {
+						return fmt.Errorf("error al asignar permiso %s al rol %s: %w", codigo, rt.Nombre, err)
+					}
+				}
+			}
+
+			if rt.Nombre == rbac.RolAdministrador {
+				rolAdminID = rolID
+				for _, codigo := range rt.Permisos {
+					codigosPermisosAdmin = append(codigosPermisosAdmin, codigo)
+				}
+			}
+		}
+
+		if err := tx.UsuarioTenantRolRepository().Crear(ctx, usuarioCreado.ID(), tenantCreado.ID(), rolAdminID); err != nil {
 			return fmt.Errorf("error al asignar rol administrador: %w", err)
-		}
-
-		permisosAdmin, err := tx.RolPermisoRepository().ListarPorRolYTenant(ctx, rolAdmin.ID, rbac.TenantIDSistema)
-		if err != nil {
-			return fmt.Errorf("error al obtener permisos base del administrador: %w", err)
-		}
-
-		var codigosPermisos []string
-		for _, p := range permisosAdmin {
-			codigosPermisos = append(codigosPermisos, p.Codigo)
 		}
 
 		respuesta = &RespuestaRegistrarUsuario{
@@ -126,7 +160,7 @@ func (uc *RegistrarUsuarioCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoR
 			CreadoEn:  usuarioCreado.FechaCreacion(),
 		}
 
-		if err := uc.rolPublisher.PublicarRolActualizado(ctx, rbac.RolAdministrador, tenantCreado.ID(), codigosPermisos); err != nil {
+		if err := tx.RolPublisher().PublicarRolActualizado(ctx, rbac.RolAdministrador, tenantCreado.ID(), codigosPermisosAdmin); err != nil {
 			return fmt.Errorf("error al publicar rol administrador para el nuevo tenant: %w", err)
 		}
 

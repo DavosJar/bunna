@@ -172,7 +172,7 @@ export default function PerfilPage() {
         {msgVerificacion && <div className={msgVerificacion.tipo === 'exito' ? 'perfil-success' : 'perfil-error'}>{msgVerificacion.texto}</div>}
         <button type="button" className="btn-perfil btn-perfil--primary" onClick={async () => {
           try {
-            await reenviarVerificacion();
+            await reenviarVerificacion({ correo: user?.correo });
             setMsgVerificacion({ tipo: 'exito', texto: 'Correo de verificación reenviado.' });
           } catch {
             setMsgVerificacion({ tipo: 'error', texto: 'No se pudo reenviar el correo.' });

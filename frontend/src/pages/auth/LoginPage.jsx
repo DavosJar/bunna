@@ -42,7 +42,7 @@ export default function LoginPage() {
     setReenvioError(false);
     try {
       try {
-        await reenviarVerificacion();
+        await reenviarVerificacion({ correo: email });
       } catch {
         await solicitarVerificacion();
       }
@@ -242,6 +242,10 @@ export default function LoginPage() {
           <p className="auth-footer">
             ¿No tienes cuenta?{' '}
             <Link to={registerUrl} className="auth-footer__link">Crear cuenta</Link>
+          </p>
+          <p className="auth-footer">
+            ¿No recibiste el correo de verificación?{' '}
+            <Link to="/reenviar-verificacion" className="auth-footer__link">Reenviar</Link>
           </p>
         </div>
       </div>

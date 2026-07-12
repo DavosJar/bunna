@@ -71,7 +71,11 @@ func (s *SeedServicio) Ejecutar(ctx context.Context) error {
 	}
 
 	// 2. Sembrar roles y sus permisos
+	// Solo sys_admin es global. Los demás roles se crean por tenant.
 	for _, rolInfo := range rbac.RolesDeSistema {
+		if rolInfo.Nombre != rbac.RolSysAdmin {
+			continue
+		}
 		existente, err := s.rolRepo.ObtenerPorNombre(ctx, rolInfo.Nombre)
 		var rolID string
 

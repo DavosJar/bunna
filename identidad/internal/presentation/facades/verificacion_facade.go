@@ -10,7 +10,7 @@ import (
 )
 
 type ComandoSolicitarVerificacion struct {
-	UsuarioID string
+	Email string
 }
 
 type RespuestaSolicitarVerificacion struct {
@@ -26,7 +26,7 @@ type RespuestaConfirmarVerificacion struct {
 }
 
 type ComandoReenviarVerificacion struct {
-	UsuarioID string
+	Email string
 }
 
 type VerificacionFacade interface {
@@ -55,7 +55,7 @@ func NewVerificacionFacade(
 
 func (f *verificacionFacadeImpl) SolicitarVerificacion(ctx context.Context, cmd ComandoSolicitarVerificacion) (*RespuestaSolicitarVerificacion, error) {
 	resp, err := f.solicitarUseCase.Ejecutar(ctx, &uc_solicitar.ComandoSolicitarVerificacion{
-		UsuarioID: cmd.UsuarioID,
+		Correo: cmd.Email,
 	})
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (f *verificacionFacadeImpl) ConfirmarVerificacion(ctx context.Context, cmd 
 
 func (f *verificacionFacadeImpl) ReenviarVerificacion(ctx context.Context, cmd ComandoReenviarVerificacion) (*RespuestaSolicitarVerificacion, error) {
 	resp, err := f.reenviarUseCase.Ejecutar(ctx, &uc_reenviar.ComandoReenviarVerificacion{
-		UsuarioID: cmd.UsuarioID,
+		Correo: cmd.Email,
 	})
 	if err != nil {
 		return nil, err

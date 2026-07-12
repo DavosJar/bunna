@@ -8,6 +8,7 @@ type VerificacionRepositorio interface {
 	ActualizarPrueba(ctx context.Context, usuarioID string, prueba PruebaVerificacion) error
 	MarcarVerificado(ctx context.Context, usuarioID string) error
 	ObtenerPorID(ctx context.Context, usuarioID string) (*UsuarioVerificacion, error)
+	ObtenerPorCorreo(ctx context.Context, correo string) (*UsuarioVerificacion, error)
 }
 
 // UsuarioVerificacion es una proyección del usuario con solo los datos necesarios

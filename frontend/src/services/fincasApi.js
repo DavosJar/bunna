@@ -31,7 +31,7 @@ export function parseErrorFincas(err) {
 }
 
 export async function verificarSaludFincas() {
-  const res = await client.get('/health');
+  const res = await client.get('/api/v1/fincas/health');
   return res.data;
 }
 

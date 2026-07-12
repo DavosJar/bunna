@@ -30,23 +30,14 @@ func NewListarMisPermisosCasoDeUso(
 }
 
 func (uc *ListarMisPermisosCasoDeUso) Ejecutar(ctx context.Context, rolNombre, tenantID string) ([]PermisoDTO, error) {
-	rolDB, err := uc.rolRepo.ObtenerPorNombre(ctx, rolNombre)
+	rolDB, err := uc.rolRepo.ObtenerPorNombreYTenant(ctx, rolNombre, tenantID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Primero busca permisos del tenant específico
 	permisos, err := uc.rolPermisoRepo.ListarPorRolYTenant(ctx, rolDB.ID, tenantID)
 	if err != nil {
 		return nil, err
-	}
-
-	// Si no encuentra, cae al tenant sistema
-	if len(permisos) == 0 {
-		permisos, err = uc.rolPermisoRepo.ListarPorRolYTenant(ctx, rolDB.ID, rbac.TenantIDSistema)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	items := make([]PermisoDTO, len(permisos))

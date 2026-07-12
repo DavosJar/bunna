@@ -47,6 +47,9 @@ type mockRolRepo struct {
 func (m *mockRolRepo) ObtenerPorNombre(ctx context.Context, nombre string) (*rbac.RolDB, error) {
 	return nil, nil
 }
+func (m *mockRolRepo) ObtenerPorNombreYTenant(ctx context.Context, nombre string, tenantID string) (*rbac.RolDB, error) {
+	return nil, nil
+}
 func (m *mockRolRepo) ObtenerPorID(ctx context.Context, id string) (*rbac.RolDB, error) {
 	return m.rol, m.errObtener
 }

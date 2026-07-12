@@ -83,6 +83,7 @@ import (
 	verificacion_postgres "github.com/davosjar/bunna/services/identidad/internal/verificacion/infrastructure/persistence/postgres"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/infrastructure/consumers"
 	"github.com/davosjar/bunna/services/identidad/internal/rbac/infrastructure/publishers"
+	"github.com/davosjar/bunna/services/identidad/internal/shared/infrastructure/outbox"
 	"strings"
 
 	"gorm.io/gorm"
@@ -193,6 +194,8 @@ type Registry struct {
 
 	permisosConsumer *consumers.PermisosConsumer
 	rolesPublisher   *publishers.RolesPublisher
+	outboxWorker     *outbox.OutboxWorker
+	outboxCancel     context.CancelFunc
 }
 
 func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
@@ -294,13 +297,14 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 		Async:    false,
 	})
 
-	registroUoW := usuarios_postgres.NewRegistroUnitOfWork(db)
+	registroUoW := usuarios_postgres.NewRegistroUnitOfWork(db, generadorID)
 	registroUseCase := uc_register.NewRegistrarUsuarioCasoDeUso(
 		registroUoW,
 		encriptacion,
 		generadorID,
-		rolesPublisher,
 	)
+
+	outboxRepo := outbox.NewOutboxRepositorioPostgres(db)
 
 	listarMisPermisosCasoDeUso := uc_listarmispermisos.NewListarMisPermisosCasoDeUso(rolRepo, rolPermisoRepo)
 
@@ -683,6 +687,13 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 	reg.permisosConsumer = permisosConsumer
 	go permisosConsumer.Start(context.Background())
 
+	// Outbox Worker: publica eventos pendientes a Kafka asíncronamente
+	outboxCtx, outboxCancel := context.WithCancel(context.Background())
+	reg.outboxCancel = outboxCancel
+	outboxWorker := outbox.NewOutboxWorker(outboxRepo, rolesPublisher.Writer(), 5*time.Second)
+	reg.outboxWorker = outboxWorker
+	outboxWorker.Start(outboxCtx)
+
 	return reg
 }
 
@@ -721,6 +732,9 @@ func (r *Registry) BootstrapSysAdminCasoDeUso() *bootstrap_uc.CrearPrimerSysAdmi
 func (r *Registry) Close() {
 	if r.telemetryCancel != nil {
 		r.telemetryCancel()
+	}
+	if r.outboxCancel != nil {
+		r.outboxCancel()
 	}
 	if r.permisosConsumer != nil {
 		r.permisosConsumer.Close()

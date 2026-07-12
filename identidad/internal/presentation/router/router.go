@@ -42,6 +42,8 @@ func jwtIfRequired(tokenSvc sesiones_domain.TokenServicio) gin.HandlerFunc {
 		"/api/v1/identidad/recuperacion/validar",
 		"/api/v1/identidad/recuperacion/confirmar",
 		"/api/v1/identidad/verificacion/confirmar",
+		"/api/v1/identidad/verificacion/solicitar",
+		"/api/v1/identidad/verificacion/reenviar",
 	}
 
 	// rutas de invitación cuyo path empieza con /api/v1/identidad/invitaciones/{token}… (públicas)

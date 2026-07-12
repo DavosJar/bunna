@@ -27,6 +27,9 @@ func (m *mockVerifRepo) MarcarVerificado(ctx context.Context, usuarioID string) 
 func (m *mockVerifRepo) ObtenerPorID(ctx context.Context, usuarioID string) (*verificacion.UsuarioVerificacion, error) {
 	return m.usuario, m.err
 }
+func (m *mockVerifRepo) ObtenerPorCorreo(ctx context.Context, correo string) (*verificacion.UsuarioVerificacion, error) {
+	return m.usuario, m.err
+}
 
 type mockGenID struct{ id string }
 

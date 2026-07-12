@@ -1,27 +1,40 @@
-.PHONY: build-agent build-ingestor build-identidad build-fincas build-all \
+.PHONY: compile compile-identidad compile-fincas \
+        build build-agent build-ingestor build-identidad build-fincas build-all \
         push-agent push-ingestor push-identidad push-fincas push-all \
         deploy-infra deploy-test deploy-prod deploy-all \
         remove-infra remove-test remove-prod \
         ps-infra ps-test ps-prod \
         logs-infra logs-test logs-prod \
-        dev-up dev-down dev-logs
+        dev-up dev-down dev-logs \
+        up down
 
 REGISTRY = 172.31.36.189:5000
 
-# ─── Build ───
+# ─── Compile (binarios locales, compilador permanente) ───
+compile: compile-identidad compile-fincas
+
+compile-identidad:
+	cd identidad && CGO_ENABLED=0 go build -o bin/server ./cmd/main.go
+
+compile-fincas:
+	cd fincas && CGO_ENABLED=0 go build -o bin/fincas ./cmd/main.go
+
+# ─── Build imagenes Docker (desde binarios precompilados) ───
+build: build-agent build-ingestor build-identidad build-fincas
+
 build-agent:
 	cd hardware-monitor-agent && docker build -t hardware-monitor-agent:release .
 
 build-ingestor:
 	cd servicio-monitoreo && docker build -t servicio-monitoreo:release .
 
-build-identidad:
+build-identidad: compile-identidad
 	cd identidad && docker build -t identidad:release .
 
-build-fincas:
-	cd fincas && CGO_ENABLED=0 GOOS=linux go build -o bin/fincas ./cmd/main.go && docker build -t fincas:release .
+build-fincas: compile-fincas
+	cd fincas && docker build -t fincas:release .
 
-build-all: build-agent build-ingestor build-identidad build-fincas
+build-all: compile build
 
 # ─── Push ───
 push-agent:
@@ -90,3 +103,11 @@ dev-down:
 
 dev-logs:
 	docker compose -f docker-compose.dev.yml logs -f
+
+# ─── Up / Down: compile + todo en Docker ───
+up: compile
+	docker compose -f docker-compose.dev.yml up -d --build
+	docker compose -f docker-compose.dev.yml logs -f
+
+down:
+	docker compose -f docker-compose.dev.yml down

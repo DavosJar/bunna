@@ -7,11 +7,16 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/dto"
 	"github.com/davosjar/bunna/services/identidad/internal/presentation/facades"
-	"github.com/davosjar/bunna/services/identidad/internal/presentation/middleware"
 	presentation "github.com/davosjar/bunna/services/identidad/internal/shared/presentation"
 )
 
 // ── Solicitar Verificación ─────────────────────────────────────────────────────
+
+type SolicitarVerificacionInput struct {
+	Body struct {
+		Email string `json:"correo" doc:"Correo electrónico del usuario"`
+	}
+}
 
 type SolicitarVerificacionOutput struct {
 	Body presentation.ApiResponse[dto.SolicitarVerificacionResponse]
@@ -31,19 +36,19 @@ func (h *SolicitarVerificacionHandler) Register(api huma.API) {
 		Method:      http.MethodPost,
 		Path:        "/api/v1/identidad/verificacion/solicitar",
 		Summary:     "Solicitar verificación de correo",
-		Description: "Envía un enlace de verificación al correo del usuario autenticado.",
+		Description: "Solicita un enlace de verificación para el correo electrónico indicado. Endpoint público (no requiere JWT).",
 		Tags:        []string{"Verificación"},
 	}, h.handle)
 }
 
-func (h *SolicitarVerificacionHandler) handle(ctx context.Context, input *struct{}) (*SolicitarVerificacionOutput, error) {
-	usuarioID := middleware.GetUsuarioIDFromCtx(ctx)
-	if usuarioID == "" {
-		return nil, huma.Error401Unauthorized("token requerido")
+func (h *SolicitarVerificacionHandler) handle(ctx context.Context, input *SolicitarVerificacionInput) (*SolicitarVerificacionOutput, error) {
+	email := input.Body.Email
+	if email == "" {
+		return nil, huma.Error422UnprocessableEntity("email es requerido")
 	}
 
 	resp, err := h.facade.SolicitarVerificacion(ctx, facades.ComandoSolicitarVerificacion{
-		UsuarioID: usuarioID,
+		Email: email,
 	})
 	if err != nil {
 		return nil, presentation.MapearError(err)
@@ -98,6 +103,12 @@ func (h *ConfirmarVerificacionHandler) handle(ctx context.Context, input *Confir
 
 // ── Reenviar Verificación ─────────────────────────────────────────────────────
 
+type ReenviarVerificacionInput struct {
+	Body struct {
+		Email string `json:"correo" doc:"Correo electrónico del usuario"`
+	}
+}
+
 type ReenviarVerificacionOutput struct {
 	Body presentation.ApiResponse[dto.ReenviarVerificacionResponse]
 }
@@ -116,19 +127,19 @@ func (h *ReenviarVerificacionHandler) Register(api huma.API) {
 		Method:      http.MethodPost,
 		Path:        "/api/v1/identidad/verificacion/reenviar",
 		Summary:     "Reenviar verificación de correo",
-		Description: "Reenvía el enlace de verificación al correo del usuario autenticado.",
+		Description: "Reenvía el enlace de verificación al correo indicado. Endpoint público (no requiere JWT).",
 		Tags:        []string{"Verificación"},
 	}, h.handle)
 }
 
-func (h *ReenviarVerificacionHandler) handle(ctx context.Context, input *struct{}) (*ReenviarVerificacionOutput, error) {
-	usuarioID := middleware.GetUsuarioIDFromCtx(ctx)
-	if usuarioID == "" {
-		return nil, huma.Error401Unauthorized("token requerido")
+func (h *ReenviarVerificacionHandler) handle(ctx context.Context, input *ReenviarVerificacionInput) (*ReenviarVerificacionOutput, error) {
+	email := input.Body.Email
+	if email == "" {
+		return nil, huma.Error422UnprocessableEntity("email es requerido")
 	}
 
 	resp, err := h.facade.ReenviarVerificacion(ctx, facades.ComandoReenviarVerificacion{
-		UsuarioID: usuarioID,
+		Email: email,
 	})
 	if err != nil {
 		return nil, presentation.MapearError(err)

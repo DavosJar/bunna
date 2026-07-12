@@ -9,6 +9,7 @@ import (
 	recuperacion_postgres "github.com/davosjar/bunna/services/identidad/internal/recuperacion/infrastructure/persistence/postgres"
 	seguridad_postgres "github.com/davosjar/bunna/services/identidad/internal/seguridad/infrastructure/persistence/postgres"
 	sesiones_postgres "github.com/davosjar/bunna/services/identidad/internal/sesiones/infrastructure/persistence/postgres"
+	"github.com/davosjar/bunna/services/identidad/internal/shared/infrastructure/outbox"
 	tenant_postgres "github.com/davosjar/bunna/services/identidad/internal/tenants/infrastructure/persistence/postgres"
 	usuarios_postgres "github.com/davosjar/bunna/services/identidad/internal/usuarios/infrastructure/persistence/postgres"
 	verificacion_postgres "github.com/davosjar/bunna/services/identidad/internal/verificacion/infrastructure/persistence/postgres"
@@ -62,6 +63,22 @@ func RunMigrations(db *gorm.DB) error {
 	if err := db.AutoMigrate(&rbac_postgres.RolModel{}); err != nil {
 		return fmt.Errorf("error al migrar roles: %w", err)
 	}
+
+	// Limpiar roles huérfanos de registros fallidos (sin relación con usuario_tenant_roles)
+	db.Exec(`DELETE FROM roles WHERE id IN (
+		SELECT r.id FROM roles r
+		LEFT JOIN usuario_tenant_roles utr ON r.id = utr.rol_id
+		WHERE utr.rol_id IS NULL
+	)`)
+
+	// Migrar unique index de roles: de (nombre) a (nombre, tenant_id)
+	if err := db.Exec(`DROP INDEX IF EXISTS idx_roles_nombre`).Error; err != nil {
+		return fmt.Errorf("error al dropear old index idx_roles_nombre: %w", err)
+	}
+	if err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_roles_nombre_tenant ON roles (nombre, tenant_id)`).Error; err != nil {
+		return fmt.Errorf("error al crear unique index idx_roles_nombre_tenant: %w", err)
+	}
+
 	if err := db.AutoMigrate(&rbac_postgres.PermisoModel{}); err != nil {
 		return fmt.Errorf("error al migrar permisos: %w", err)
 	}
@@ -92,6 +109,11 @@ func RunMigrations(db *gorm.DB) error {
 
 	if err := db.AutoMigrate(&invitaciones_postgres.InvitacionModel{}); err != nil {
 		return fmt.Errorf("error al migrar invitaciones: %w", err)
+	}
+
+	// Migrar event_outbox (Outbox Pattern)
+	if err := db.AutoMigrate(&outbox.EventoOutbox{}); err != nil {
+		return fmt.Errorf("error al migrar event_outbox: %w", err)
 	}
 
 	// Migrar rol_permisos: agregar id, tenant_id, asignado_por y unique index

@@ -30,6 +30,17 @@ func (r *rolRepositorio) ObtenerPorNombre(ctx context.Context, nombre string) (*
 	return toRolDB(&m), nil
 }
 
+func (r *rolRepositorio) ObtenerPorNombreYTenant(ctx context.Context, nombre string, tenantID string) (*rbac.RolDB, error) {
+	var m RolModel
+	if err := r.db.WithContext(ctx).First(&m, "nombre = ? AND tenant_id = ?", nombre, tenantID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, rbac.ErrRolNoEncontrado
+		}
+		return nil, err
+	}
+	return toRolDB(&m), nil
+}
+
 func (r *rolRepositorio) ObtenerPorID(ctx context.Context, id string) (*rbac.RolDB, error) {
 	var m RolModel
 	if err := r.db.WithContext(ctx).First(&m, "id = ?", id).Error; err != nil {
@@ -69,10 +80,9 @@ func (r *rolRepositorio) Listar(ctx context.Context, spec rbac.EspecificacionRol
 		}
 	}
 
-	// Filtro por tenant: si TenantID está especificado y no es vacío,
-	// mostrar roles del tenant + roles de sistema (tenant_id vacío)
+	// Filtro por tenant: si TenantID está especificado, mostrar solo roles del tenant
 	if spec.TenantID != "" {
-		query = query.Where("tenant_id = ? OR tenant_id = '' OR es_sistema = ?", spec.TenantID, true)
+		query = query.Where("tenant_id = ?", spec.TenantID)
 	}
 
 	for _, ord := range pag.Ordenaciones {

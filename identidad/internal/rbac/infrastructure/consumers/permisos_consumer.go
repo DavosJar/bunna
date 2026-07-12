@@ -96,11 +96,14 @@ func (c *PermisosConsumer) Start(ctx context.Context) {
 func (c *PermisosConsumer) sincronizarPermisos(ctx context.Context, event CatalogoPermisosPublicado) {
 	log.Printf("[PermisosConsumer] Recibido catálogo de '%s' con %d permisos", event.Origen, len(event.Permisos))
 
-	// Obtener rol administrador (el único rol que se propaga a los tenants)
-	admin, _ := c.rolRepo.ObtenerPorNombre(ctx, rbac.RolAdministrador)
+	// Obtener TODOS los tenants
+	tenants, err := c.tenantRepo.Listar(ctx)
+	if err != nil {
+		log.Printf("[PermisosConsumer] Error listando tenants: %v", err)
+		return
+	}
 
-	adminModificado := false
-
+	// Crear o actualizar permisos que no existan
 	for _, p := range event.Permisos {
 		existente, err := c.permisoRepo.ObtenerPorCodigo(ctx, p.Codigo)
 		if err != nil {
@@ -121,11 +124,6 @@ func (c *PermisosConsumer) sincronizarPermisos(ctx context.Context, event Catalo
 				log.Printf("[PermisosConsumer] Error creando permiso %s: %v", p.Codigo, err)
 			} else {
 				log.Printf("[PermisosConsumer] Permiso creado: %s", p.Codigo)
-				// Auto-asignar al rol administrador en el tenant de sistema
-				if admin != nil {
-					_ = c.rolPermisoRepo.AsignarPermiso(ctx, admin.ID, nuevoID, rbac.TenantIDSistema, "")
-					adminModificado = true
-				}
 			}
 		} else {
 			// Siempre actualizar para que fincas mande la verdad
@@ -136,55 +134,31 @@ func (c *PermisosConsumer) sincronizarPermisos(ctx context.Context, event Catalo
 	}
 
 	// Registrar TODOS los permisos del catálogo en el mapa en memoria del admin.
-	// Esto hace que TienePermisoEnRol los encuentre inmediatamente sin consultar la BD.
 	var todosLosCodigos []string
 	for _, p := range event.Permisos {
 		todosLosCodigos = append(todosLosCodigos, p.Codigo)
 	}
 	rbac.RegistrarPermisosDeModulo(rbac.RolAdministrador, todosLosCodigos)
 
-	// Si el rol administrador fue modificado, publicar la lista actualizada
-	// de permisos para CADA tenant existente en el sistema
-	if adminModificado && admin != nil {
-		c.publicarPermisosPorTenant(ctx, admin.ID)
-	}
-}
-
-// publicarPermisosPorTenant obtiene todos los permisos del rol administrador
-// y publica un evento de Kafka por cada tenant existente en el sistema.
-// Esto permite que Fincas valide usando el tenant_id exacto del JWT.
-func (c *PermisosConsumer) publicarPermisosPorTenant(ctx context.Context, adminRolID string) {
-	// Obtener todos los permisos del administrador (asignados en el tenant de sistema)
-	permisosDB, err := c.rolPermisoRepo.ListarPorRolYTenant(ctx, adminRolID, rbac.TenantIDSistema)
-	if err != nil {
-		log.Printf("[PermisosConsumer] Error obteniendo permisos del administrador: %v", err)
-		return
-	}
-
-	var codigos []string
-	for _, p := range permisosDB {
-		codigos = append(codigos, p.Codigo)
-	}
-
-	// Obtener todos los tenants del sistema
-	tenants, err := c.tenantRepo.Listar(ctx)
-	if err != nil {
-		log.Printf("[PermisosConsumer] Error listando tenants: %v", err)
-		return
-	}
-
-	// Publicar un evento por cada tenant
+	// Asignar permisos a cada tenant
 	for _, t := range tenants {
-		if err := c.publisher.PublicarRolActualizado(ctx, rbac.RolAdministrador, t.ID(), codigos); err != nil {
-			log.Printf("[PermisosConsumer] Error publicando permisos para tenant %s: %v", t.ID(), err)
-		} else {
-			log.Printf("[PermisosConsumer] Permisos de administrador publicados para tenant: %s (%s) con %d permisos", t.Nombre(), t.ID(), len(codigos))
+		admin, err := c.rolRepo.ObtenerPorNombreYTenant(ctx, rbac.RolAdministrador, t.ID())
+		if err != nil {
+			log.Printf("[PermisosConsumer] No hay rol administrador para tenant %s, saltando", t.ID())
+			continue
 		}
-	}
 
-	// También publicar para el tenant de sistema (por si acaso)
-	_ = c.publisher.PublicarRolActualizado(ctx, rbac.RolAdministrador, rbac.TenantIDSistema, codigos)
-	log.Printf("[PermisosConsumer] Permisos de administrador publicados para tenant de sistema con %d permisos", len(codigos))
+		for _, p := range event.Permisos {
+			permiso, _ := c.permisoRepo.ObtenerPorCodigo(ctx, p.Codigo)
+			if permiso != nil {
+				_ = c.rolPermisoRepo.AsignarPermiso(ctx, admin.ID, permiso.ID, t.ID(), "")
+			}
+		}
+
+		// Publicar evento para este tenant
+		_ = c.publisher.PublicarRolActualizado(ctx, rbac.RolAdministrador, t.ID(), todosLosCodigos)
+		log.Printf("[PermisosConsumer] Permisos asignados al administrador de tenant: %s (%s)", t.Nombre(), t.ID())
+	}
 }
 
 func (c *PermisosConsumer) Close() error {

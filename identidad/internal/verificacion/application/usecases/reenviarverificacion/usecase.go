@@ -54,7 +54,7 @@ func NewReenviarVerificacionCasoDeUso(
 }
 
 func (uc *ReenviarVerificacionCasoDeUso) Ejecutar(ctx context.Context, cmd *ComandoReenviarVerificacion) (*RespuestaSolicitarVerificacion, error) {
-	usuario, err := uc.repo.ObtenerPorID(ctx, cmd.UsuarioID)
+	usuario, err := uc.repo.ObtenerPorCorreo(ctx, cmd.Correo)
 	if err != nil {
 		return nil, dominio.ErrUsuarioNoEncontrado
 	}
@@ -68,6 +68,6 @@ func (uc *ReenviarVerificacionCasoDeUso) Ejecutar(ctx context.Context, cmd *Coma
 	}
 
 	return uc.solicitarUC.Ejecutar(ctx, &uc_solicitar.ComandoSolicitarVerificacion{
-		UsuarioID: cmd.UsuarioID,
+		Correo: cmd.Correo,
 	})
 }

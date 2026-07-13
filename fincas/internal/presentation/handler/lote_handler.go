@@ -30,7 +30,12 @@ func (h *LoteHandler) Agregar(c *gin.Context) {
 
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {
-		auth = &application.AuthContext{}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+	if !auth.TienePermiso(application.PermisoCrearLote) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permiso denegado"})
+		return
 	}
 
 	resp, err := h.facade.Agregar(c.Request.Context(), auth, fincaID, req)
@@ -52,7 +57,12 @@ func (h *LoteHandler) Eliminar(c *gin.Context) {
 
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {
-		auth = &application.AuthContext{}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+	if !auth.TienePermiso(application.PermisoEliminarLote) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permiso denegado"})
+		return
 	}
 
 	resp, err := h.facade.Eliminar(c.Request.Context(), auth, loteID)
@@ -72,7 +82,8 @@ func (h *LoteHandler) Listar(c *gin.Context) {
 
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {
-		auth = &application.AuthContext{}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
 	}
 
 	resp, err := h.facade.Listar(c.Request.Context(), auth, fincaID)

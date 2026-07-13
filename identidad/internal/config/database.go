@@ -64,11 +64,11 @@ func RunMigrations(db *gorm.DB) error {
 		return fmt.Errorf("error al migrar roles: %w", err)
 	}
 
-	// Limpiar roles huérfanos de registros fallidos (sin relación con usuario_tenant_roles)
+	// Limpiar roles huérfanos de sistema (creados en registros fallidos, no toca roles personalizados)
 	db.Exec(`DELETE FROM roles WHERE id IN (
 		SELECT r.id FROM roles r
 		LEFT JOIN usuario_tenant_roles utr ON r.id = utr.rol_id
-		WHERE utr.rol_id IS NULL
+		WHERE utr.rol_id IS NULL AND r.es_sistema = true
 	)`)
 
 	// Migrar unique index de roles: de (nombre) a (nombre, tenant_id)

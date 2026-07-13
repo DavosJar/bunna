@@ -28,7 +28,12 @@ func (h *FincaHandler) Registrar(c *gin.Context) {
 
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {
-		auth = &application.AuthContext{}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+	if !auth.TienePermiso(application.PermisoCrearFinca) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permiso denegado"})
+		return
 	}
 
 	resp, err := h.facade.Registrar(c.Request.Context(), auth, req)
@@ -55,7 +60,12 @@ func (h *FincaHandler) Desactivar(c *gin.Context) {
 
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {
-		auth = &application.AuthContext{}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+	if !auth.TienePermiso(application.PermisoDesactivarFinca) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permiso denegado"})
+		return
 	}
 
 	resp, err := h.facade.Desactivar(c.Request.Context(), auth, fincaID, req)
@@ -73,7 +83,8 @@ func (h *FincaHandler) Desactivar(c *gin.Context) {
 func (h *FincaHandler) Listar(c *gin.Context) {
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {
-		auth = &application.AuthContext{}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
 	}
 
 	resp, err := h.facade.Listar(c.Request.Context(), auth)

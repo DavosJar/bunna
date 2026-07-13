@@ -26,7 +26,12 @@ func (h *ReporteHandler) GenerarPorLote(c *gin.Context) {
 
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {
-		auth = &application.AuthContext{}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+	if !auth.TienePermiso(application.PermisoGenerarReporte) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permiso denegado"})
+		return
 	}
 
 	resp, err := h.facade.GenerarPorLote(c.Request.Context(), auth, loteID)

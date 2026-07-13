@@ -45,8 +45,12 @@ func (m *mockAuthSvc) TienePermiso(ctx context.Context, uid, tid, permiso string
 	return m.permiso, m.err
 }
 
+type mockIDGen struct{}
+
+func (m *mockIDGen) NextID(ctx context.Context) (string, error) { return "rol-uuid-test", nil }
+
 func TestCrearRolExitoso(t *testing.T) {
-	uc := createrole.NewCrearRolCasoDeUso(&mockRolRepo{}, &mockPermisoRepo{}, &mockRolPermisoRepo{}, &mockAuthSvc{permiso: true})
+	uc := createrole.NewCrearRolCasoDeUso(&mockRolRepo{}, &mockPermisoRepo{}, &mockRolPermisoRepo{}, &mockIDGen{}, &mockAuthSvc{permiso: true})
 	resp, err := uc.Ejecutar(context.Background(), &createrole.ComandoCrearRol{
 		Nombre: "editor", Descripcion: "Puede editar", TenantID: "t-1", EjecutorID: "admin-1",
 	})
@@ -57,7 +61,7 @@ func TestCrearRolExitoso(t *testing.T) {
 }
 
 func TestCrearRolSinPermiso(t *testing.T) {
-	uc := createrole.NewCrearRolCasoDeUso(&mockRolRepo{}, &mockPermisoRepo{}, &mockRolPermisoRepo{}, &mockAuthSvc{permiso: false})
+	uc := createrole.NewCrearRolCasoDeUso(&mockRolRepo{}, &mockPermisoRepo{}, &mockRolPermisoRepo{}, &mockIDGen{}, &mockAuthSvc{permiso: false})
 	_, err := uc.Ejecutar(context.Background(), &createrole.ComandoCrearRol{TenantID: "t-1", EjecutorID: "e-1"})
 	if !errors.Is(err, rbac.ErrPermisoDenegado) {
 		t.Errorf("esperaba ErrPermisoDenegado, got %v", err)
@@ -67,7 +71,7 @@ func TestCrearRolSinPermiso(t *testing.T) {
 func TestCrearRolFalloAlCrear(t *testing.T) {
 	uc := createrole.NewCrearRolCasoDeUso(
 		&mockRolRepo{errCrear: errors.New("fallo bd")},
-		&mockPermisoRepo{}, &mockRolPermisoRepo{}, &mockAuthSvc{permiso: true},
+		&mockPermisoRepo{}, &mockRolPermisoRepo{}, &mockIDGen{}, &mockAuthSvc{permiso: true},
 	)
 	_, err := uc.Ejecutar(context.Background(), &createrole.ComandoCrearRol{
 		Nombre: "editor", TenantID: "t-1", EjecutorID: "e-1",

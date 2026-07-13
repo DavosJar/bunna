@@ -31,7 +31,12 @@ func (h *NodoHandler) Registrar(c *gin.Context) {
 
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {
-		auth = &application.AuthContext{}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+	if !auth.TienePermiso(application.PermisoCrearNodo) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permiso denegado"})
+		return
 	}
 
 	resp, err := h.facade.Registrar(c.Request.Context(), auth, req)
@@ -49,7 +54,12 @@ func (h *NodoHandler) Registrar(c *gin.Context) {
 func (h *NodoHandler) Listar(c *gin.Context) {
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {
-		auth = &application.AuthContext{}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+	if !auth.TienePermiso(application.PermisoConsultarNodos) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permiso denegado"})
+		return
 	}
 
 	pagina, _ := strconv.Atoi(c.DefaultQuery("pagina", "1"))
@@ -77,7 +87,12 @@ func (h *NodoHandler) Obtener(c *gin.Context) {
 
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {
-		auth = &application.AuthContext{}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+	if !auth.TienePermiso(application.PermisoConsultarNodos) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permiso denegado"})
+		return
 	}
 
 	resp, err := h.facade.Obtener(c.Request.Context(), auth, nodoID)
@@ -103,7 +118,12 @@ func (h *NodoHandler) Editar(c *gin.Context) {
 
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {
-		auth = &application.AuthContext{}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+	if !auth.TienePermiso(application.PermisoEditarNodo) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permiso denegado"})
+		return
 	}
 
 	resp, err := h.facade.Editar(c.Request.Context(), auth, nodoID, req)
@@ -129,7 +149,12 @@ func (h *NodoHandler) Desactivar(c *gin.Context) {
 
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {
-		auth = &application.AuthContext{}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+	if !auth.TienePermiso(application.PermisoDesactivarNodo) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permiso denegado"})
+		return
 	}
 
 	resp, err := h.facade.Desactivar(c.Request.Context(), auth, nodoID, req)

@@ -35,7 +35,12 @@ func (h *MuestraHandler) Tomar(c *gin.Context) {
 
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {
-		auth = &application.AuthContext{}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+	if !auth.TienePermiso(application.PermisoCrearMuestra) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permiso denegado"})
+		return
 	}
 
 	resp, err := h.facade.Tomar(c.Request.Context(), auth, fincaID, loteID, req)
@@ -61,7 +66,12 @@ func (h *MuestraHandler) ListarPorLote(c *gin.Context) {
 
 	auth := middleware.GetAuthContext(c)
 	if auth == nil {
-		auth = &application.AuthContext{}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+	if !auth.TienePermiso(application.PermisoVerMuestras) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permiso denegado"})
+		return
 	}
 
 	items, err := h.facade.ListarPorLote(c.Request.Context(), auth, fincaID, loteID)

@@ -400,7 +400,7 @@ func NewRegistry(db *gorm.DB, cfg *config.Config) *Registry {
 	// Casos de uso — roles y permisos (solo los que tienen Ejecutar de 1 método)
 	listarRolesUC := listroles.NewListarRolesCasoDeUso(rolRepo, permisoRepo, authSvc)
 	listarRolesDeUsuarioUC := uc_listarrolesdeusuario.NewListarRolesDeUsuarioCasoDeUso(usuarioTenantRolRepo)
-	crearRolUC := createrole.NewCrearRolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, authSvc)
+	crearRolUC := createrole.NewCrearRolCasoDeUso(rolRepo, permisoRepo, rolPermisoRepo, generadorID, authSvc)
 	modificarRolUC := updaterole.NewModificarRolCasoDeUso(rolRepo, authSvc)
 	eliminarRolUC := deleterole.NewEliminarRolCasoDeUso(rolRepo, authSvc)
 	asignarRolUC := assignrole.NewAsignarRolCasoDeUso(usuarioRolRepo, usuarioTenantRolRepo, rolRepo, authSvc)

@@ -7,6 +7,7 @@ import (
 	telemetrymiddleware "github.com/davosjar/bunna/services/fincas/internal/infrastructure/telemetry/middleware"
 	"github.com/davosjar/bunna/services/fincas/internal/presentation/handler"
 	"github.com/davosjar/bunna/services/fincas/internal/presentation/middleware"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,6 +29,13 @@ type Config struct {
 // New crea un nuevo engine Gin con todas las rutas registradas.
 func New(cfg Config) *gin.Engine {
 	r := gin.Default()
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173", "http://127.0.0.1:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
 
 	// Telemetría RECURSO (HTTP): trace_id/span_id + eventos API
 	if cfg.TelemetryEnabled && cfg.TelemetryWriter != nil {

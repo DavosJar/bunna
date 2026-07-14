@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      golang: 1.21
+  pre_build:
+    commands:
+      - echo Ejecutando pruebas unitarias...
+      - go test ./... -v
+  build:
+    commands:
+      - echo Compilando aplicacion...
+      - CGO_ENABLED=0 GOOS=linux go build -o server ./cmd/main.go
+  post_build:
+    commands:
+      - echo Compilacion exitosa
+
+artifacts:
+  files:
+    - server
+    - docker-compose.dev.yml
+    - Dockerfile
+    - appspec.yml
+    - scripts/**/*
+  discard-paths: no

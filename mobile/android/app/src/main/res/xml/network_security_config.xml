@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 9+ (API 28+) bloquea tráfico HTTP en claro por defecto. Los
+  backends identidad/fincas corren en HTTP plano en desarrollo (docker-compose
+  local), así que se permite cleartext ÚNICAMENTE hacia 10.0.2.2 (loopback del
+  host visto desde el emulador Android) — el resto del tráfico de la app
+  (YOLO API en AWS) sigue exigiendo HTTPS por la config base.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>
